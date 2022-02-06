@@ -1,0 +1,9 @@
+name: Terraplusminus
+version: ${project.version}
+main: de.btegermany.terraplusminus.Terraplusminus
+api-version: 1.18
+prefix: T+-
+authors: [ Nachwahl, meysster, ReD_55 ]
+description: A plugin which implements the terra-- api in a papermc plugin
+website: https://bte-germany.de
+load: STARTUP
