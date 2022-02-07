@@ -26,9 +26,10 @@ import java.util.Random;
 public class RealWorldGenerator extends ChunkGenerator {
 
     private Location spawnLocation = null;
+    private TerraConnector terraConnector;
 
     public RealWorldGenerator() {
-
+        this.terraConnector = new TerraConnector();
     }
 
     @Override

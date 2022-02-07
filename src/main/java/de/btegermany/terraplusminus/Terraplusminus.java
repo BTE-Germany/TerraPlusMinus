@@ -23,6 +23,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
 
     public static final PrivateFieldHandler privateFieldHandler;
     public static NMSInjector injector;
+    public static FileBuilder config;
 
     static {
         PrivateFieldHandler handler;
@@ -39,6 +40,11 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
     public void onEnable() {
         Bukkit.getLogger().log(Level.INFO, "Plugin loaded.");
         Bukkit.getPluginManager().registerEvents(this,this);
+
+        config = new FileBuilder("plugins/TerraPlusMinus", "config.yml")
+                .addDefault("min-height", 2032)
+                .addDefault("max-height", 2032)
+                .copyDefaults(true).save();
 
         try {
             injector = new NMSInjector();
