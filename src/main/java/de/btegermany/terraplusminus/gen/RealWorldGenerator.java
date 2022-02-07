@@ -6,6 +6,9 @@ import de.btegermany.terraplusminus.geo.GeographicProjection;
 import de.btegermany.terraplusminus.geo.ModifiedAirocean;
 import de.btegermany.terraplusminus.geo.ScaleProjection;
 import net.buildtheearth.terraminusminus.TerraMinusMinus;
+import net.buildtheearth.terraminusminus.generator.CachedChunkData;
+import net.buildtheearth.terraminusminus.generator.ChunkDataLoader;
+import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
 import net.buildtheearth.terraminusminus.generator.data.HeightsBaker;
 import net.buildtheearth.terraminusminus.substitutes.net.minecraft.util.math.ChunkPos;
 import org.bukkit.*;
@@ -22,14 +25,30 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 
 public class RealWorldGenerator extends ChunkGenerator {
 
     private Location spawnLocation = null;
-    private TerraConnector terraConnector;
+    ChunkDataLoader loader;
 
     public RealWorldGenerator() {
-        this.terraConnector = new TerraConnector();
+        System.out.println("init RealWorldGenerator");
+      /*  final String bteProjectionJson = "{\n"
+                + "        \"scale\": {\n"
+                + "            \"delegate\": {\n"
+                + "                \"flip_vertical\": {\n"
+                + "                    \"delegate\": {\n"
+                + "                        \"bte_conformal_dymaxion\": {}\n"
+                + "                    }\n"
+                + "                }\n"
+                + "            },\n"
+                + "            \"x\": 7318261.522857145,\n"
+                + "            \"y\": 7318261.522857145\n"
+                + "        }\n"
+                + "    }";
+        final EarthGeneratorSettings bteGeneratorSettings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
+        this.loader = new ChunkDataLoader(bteGeneratorSettings);*/
     }
 
     @Override
@@ -38,22 +57,20 @@ public class RealWorldGenerator extends ChunkGenerator {
     }
 
 
-    public void generateSurface(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunbkZ, @NotNull ChunkData chunkData) {
-        worldInfo.getMaxHeight();
+    public void generateSurface(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunkZ, @NotNull ChunkData chunkData) {
 
-        for (int x = 0; x < 16; x++) {
-            for (int z = 0; z < 16; z++) {
-                int posx = x;
-                int posz = z;
-                this.terraConnector.getHeight(x,z).thenAccept(y -> {
-                    int height = y.intValue();
-                    chunkData.setBlock(posx, height, posz, Material.MOSS_BLOCK);
-                });
+
+             /*   loader.load(new ChunkPos(chunkX, chunkZ)).thenAccept((cachedChunkData) -> {*/
+                    for (int x = 0; x < 16; x++) {
+                        for (int z = 0; z < 16; z++) {
+                            chunkData.setBlock(x, 1800, z, Material.MOSS_BLOCK); //cachedChunkData.surfaceHeight(x, z)
+                        }
+                    }
+        /*  });*/
+
 
                 // for (int y = -16; y < 32; y++) { }
 
-            }
-        }
     }
 
 
