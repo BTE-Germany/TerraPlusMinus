@@ -57,7 +57,7 @@
                         <goal>copy-resources</goal>
                     </goals>
                     <configuration>
-                        <outputDirectory>F:\bteg\1.18testserver\plugins</outputDirectory>
+                        <outputDirectory>C:\Users\Leander\Desktop\Plugins\Server 1.18.1\plugins</outputDirectory>
                         <resources>
                             <resource>
                                 <directory>${basedir}/target</directory>
@@ -118,6 +118,18 @@
             <groupId>org.bukkit</groupId>
             <artifactId>craftbukkit</artifactId>
             <version>1.18.1-R0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>RELEASE</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>RELEASE</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 </project>

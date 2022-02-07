@@ -1,6 +1,10 @@
 package de.btegermany.terraplusminus.gen;
 
 import de.btegermany.terraplusminus.Terraplusminus;
+import de.btegermany.terraplusminus.data.TerraConnector;
+import de.btegermany.terraplusminus.geo.GeographicProjection;
+import de.btegermany.terraplusminus.geo.ModifiedAirocean;
+import de.btegermany.terraplusminus.geo.ScaleProjection;
 import net.buildtheearth.terraminusminus.TerraMinusMinus;
 import net.buildtheearth.terraminusminus.generator.data.HeightsBaker;
 import net.buildtheearth.terraminusminus.substitutes.net.minecraft.util.math.ChunkPos;
@@ -38,9 +42,15 @@ public class RealWorldGenerator extends ChunkGenerator {
 
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
-                for (int y = -16; y < 32; y++) {
-                    chunkData.setBlock(x, y * 64, z, Material.MOSS_BLOCK);
-                }
+                int posx = x;
+                int posz = z;
+                this.terraConnector.getHeight(x,z).thenAccept(y -> {
+                    int height = y.intValue();
+                    chunkData.setBlock(posx, height, posz, Material.MOSS_BLOCK);
+                });
+
+                // for (int y = -16; y < 32; y++) { }
+
             }
         }
     }
@@ -139,7 +149,7 @@ public class RealWorldGenerator extends ChunkGenerator {
     }
 
 
-    @NotNull
+  /*  @NotNull
     public ChunkGenerator.ChunkData createVanillaChunkData(@NotNull World world, int x, int z) {
         var chunk = Bukkit.getServer().createVanillaChunkData(world, x, z);
         Field maxHeightField = null;
@@ -152,6 +162,6 @@ public class RealWorldGenerator extends ChunkGenerator {
         }
         return chunk;
 
-    }
+    }*/
     // Paper
 }
