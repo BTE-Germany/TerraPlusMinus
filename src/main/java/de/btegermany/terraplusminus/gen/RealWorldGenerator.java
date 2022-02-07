@@ -150,7 +150,7 @@ public class RealWorldGenerator extends ChunkGenerator {
     }
 
 
-  /*  @NotNull
+    @NotNull
     public ChunkGenerator.ChunkData createVanillaChunkData(@NotNull World world, int x, int z) {
         var chunk = Bukkit.getServer().createVanillaChunkData(world, x, z);
         Field maxHeightField = null;
@@ -163,6 +163,6 @@ public class RealWorldGenerator extends ChunkGenerator {
         }
         return chunk;
 
-    }*/
+    }
     // Paper
 }

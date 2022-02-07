@@ -2,6 +2,8 @@ package de.btegermany.terraplusminus;
 
 import de.btegermany.terraplusminus.gen.*;
 import de.btegermany.terraplusminus.utils.FileBuilder;
+import net.buildtheearth.terraminusminus.TerraConstants;
+import net.buildtheearth.terraminusminus.projection.GeographicProjection;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -18,6 +20,9 @@ import org.bukkit.generator.ChunkGenerator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.bukkit.entity.Player;
+import com.fasterxml.jackson.core.JsonProcessingException;
+
+
 
 public final class Terraplusminus extends JavaPlugin implements Listener {
 
@@ -72,7 +77,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
        //  ChunkGenerator res = new ChunkGenerator() {
 
        //  };
-        return new RealWorldGenerator();
+       return new RealWorldGenerator();
     }
 
 

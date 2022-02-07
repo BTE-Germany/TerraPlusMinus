@@ -5,11 +5,11 @@ import de.btegermany.terraplusminus.geo.ModifiedAirocean;
 import de.btegermany.terraplusminus.geo.ScaleProjection;
 import lombok.NoArgsConstructor;
 import net.buildtheearth.terraminusminus.dataset.IScalarDataset;
-import net.buildtheearth.terraminusminus.generator.EarthGeneratorPipelines;
-import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
-import net.buildtheearth.terraminusminus.generator.GeneratorDatasets;
+import net.buildtheearth.terraminusminus.generator.*;
 import net.buildtheearth.terraminusminus.projection.OutOfProjectionBoundsException;
+import net.buildtheearth.terraminusminus.substitutes.net.minecraft.util.math.ChunkPos;
 
+import java.awt.image.BufferedImage;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -18,11 +18,12 @@ import java.util.concurrent.CompletableFuture;
 @NoArgsConstructor
 public class TerraConnector {
 
-    private final EarthGeneratorSettings bteGeneratorSettings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
+    private static final EarthGeneratorSettings bteGeneratorSettings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
 
-    private static final GeographicProjection projection = new ModifiedAirocean();
-    private static final GeographicProjection uprightProj = GeographicProjection.orientProjection(projection, GeographicProjection.Orientation.upright);
-    private static final ScaleProjection scaleProj = new ScaleProjection(uprightProj, 7318261.522857145, 7318261.522857145);
+
+
+
+    private static final ScaleProjection scaleProj = (ScaleProjection) bteGeneratorSettings.projection();
 
     /**
      * Gets the geographical location from in-game coordinates
@@ -62,4 +63,5 @@ public class TerraConnector {
         }
         return altFuture;
     }
+
 }
