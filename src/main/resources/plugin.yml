@@ -7,3 +7,8 @@ authors: [ Nachwahl, meysster, ReD_55 ]
 description: A plugin which implements the terra-- api in a papermc plugin
 website: https://bte-germany.de
 load: STARTUP
+commands:
+  tpll:
+    description: Teleport
+    usage: /tpll <long> <lat>
+    aliases: [terratpll]

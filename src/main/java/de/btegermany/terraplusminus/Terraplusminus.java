@@ -1,5 +1,6 @@
 package de.btegermany.terraplusminus;
 
+import de.btegermany.terraplusminus.commands.TpllCommand;
 import de.btegermany.terraplusminus.gen.*;
 import de.btegermany.terraplusminus.utils.FileBuilder;
 import net.buildtheearth.terraminusminus.TerraConstants;
@@ -15,6 +16,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Objects;
 import java.util.logging.Level;
 import org.bukkit.generator.ChunkGenerator;
 import org.jetbrains.annotations.NotNull;
@@ -46,7 +48,10 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         Bukkit.getLogger().log(Level.INFO, "Plugin loaded.");
         Bukkit.getPluginManager().registerEvents(this,this);
 
+        Objects.requireNonNull(getCommand("tpll")).setExecutor(new TpllCommand());
+
         config = new FileBuilder("plugins/TerraPlusMinus", "config.yml")
+                .addDefault("prefix","§2§lT+- §8» ")
                 .addDefault("min-height", 2032)
                 .addDefault("max-height", 2032)
                 .copyDefaults(true).save();

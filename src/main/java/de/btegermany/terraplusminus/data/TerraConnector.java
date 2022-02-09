@@ -4,13 +4,6 @@ import de.btegermany.terraplusminus.geo.GeographicProjection;
 import de.btegermany.terraplusminus.geo.ModifiedAirocean;
 import de.btegermany.terraplusminus.geo.ScaleProjection;
 import lombok.NoArgsConstructor;
-import net.buildtheearth.terraminusminus.dataset.IScalarDataset;
-import net.buildtheearth.terraminusminus.generator.*;
-import net.buildtheearth.terraminusminus.projection.OutOfProjectionBoundsException;
-import net.buildtheearth.terraminusminus.substitutes.net.minecraft.util.math.ChunkPos;
-
-import java.awt.image.BufferedImage;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * @author Noah Husby
@@ -18,12 +11,9 @@ import java.util.concurrent.CompletableFuture;
 @NoArgsConstructor
 public class TerraConnector {
 
-    private static final EarthGeneratorSettings bteGeneratorSettings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
-
-
-
-
-    private static final ScaleProjection scaleProj = (ScaleProjection) bteGeneratorSettings.projection();
+    private static final GeographicProjection projection = new ModifiedAirocean();
+    private static final GeographicProjection uprightProj = GeographicProjection.orientProjection(projection, GeographicProjection.Orientation.upright);
+    private static final ScaleProjection scaleProj = new ScaleProjection(uprightProj, 7318261.522857145, 7318261.522857145);
 
     /**
      * Gets the geographical location from in-game coordinates
@@ -48,7 +38,7 @@ public class TerraConnector {
     }
 
 
-    public CompletableFuture<Double> getHeight(double x, double z) {
+ /*   public CompletableFuture<Double> getHeight(double x, double z) {
         double[] adjustedProj = toGeo(x, z);
         double adjustedLon = adjustedProj[0];
         double adjustedLat = adjustedProj[1];
@@ -62,6 +52,6 @@ public class TerraConnector {
             altFuture = CompletableFuture.completedFuture(0.0);
         }
         return altFuture;
-    }
+    }*/
 
 }
