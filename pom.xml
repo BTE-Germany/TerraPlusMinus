@@ -88,16 +88,12 @@
             <url>https://oss.sonatype.org/content/groups/public/</url>
         </repository>
         <repository>
-            <id>JitPack</id>
-            <url>https://jitpack.io/</url>
-        </repository>
-        <repository>
-            <id>DaPorkchop_</id>
-            <url>https://maven.daporkchop.net/</url>
-        </repository>
-        <repository>
             <id>OpenCollab Snapshots</id>
             <url>https://repo.opencollab.dev/snapshot/</url>
+        </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
         </repository>
     </repositories>
 
@@ -109,28 +105,14 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.SmylerMC</groupId>
-            <artifactId>terraminusminus</artifactId>
-            <version>master-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
             <groupId>org.bukkit</groupId>
             <artifactId>craftbukkit</artifactId>
             <version>1.18.1-R0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>RELEASE</version>
-            <scope>compile</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.13.1</version>
-            <scope>compile</scope>
+            <groupId>com.github.SmylerMC</groupId>
+            <artifactId>terraminusminus</artifactId>
+            <version>java17-SNAPSHOT</version>
         </dependency>
     </dependencies>
 </project>

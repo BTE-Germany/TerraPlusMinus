@@ -3,12 +3,12 @@ package de.btegermany.terraplusminus.data;
 import de.btegermany.terraplusminus.geo.GeographicProjection;
 import de.btegermany.terraplusminus.geo.ModifiedAirocean;
 import de.btegermany.terraplusminus.geo.ScaleProjection;
-import lombok.NoArgsConstructor;
+
 
 /**
  * @author Noah Husby
  */
-@NoArgsConstructor
+
 public class TerraConnector {
 
     private static final GeographicProjection projection = new ModifiedAirocean();

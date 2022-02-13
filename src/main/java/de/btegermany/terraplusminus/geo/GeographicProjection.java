@@ -23,7 +23,7 @@ import de.btegermany.terraplusminus.geo.Airocean;
 
 import java.util.Map;
 
-public class GeographicProjection {
+public class GeographicProjection implements net.buildtheearth.terraminusminus.projection.GeographicProjection {
 
     public static double EARTH_CIRCUMFERENCE = 40075017;
     public static double EARTH_POLAR_CIRCUMFERENCE = 40008000;

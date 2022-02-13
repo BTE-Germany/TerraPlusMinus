@@ -1,23 +1,17 @@
 package de.btegermany.terraplusminus.gen;
 
-import de.btegermany.terraplusminus.Terraplusminus;
-import de.btegermany.terraplusminus.data.TerraConnector;
-import de.btegermany.terraplusminus.geo.GeographicProjection;
-import de.btegermany.terraplusminus.geo.ModifiedAirocean;
-import de.btegermany.terraplusminus.geo.ScaleProjection;
-import net.buildtheearth.terraminusminus.TerraMinusMinus;
-import net.buildtheearth.terraminusminus.generator.CachedChunkData;
 import net.buildtheearth.terraminusminus.generator.ChunkDataLoader;
 import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
-import net.buildtheearth.terraminusminus.generator.data.HeightsBaker;
-import net.buildtheearth.terraminusminus.substitutes.net.minecraft.util.math.ChunkPos;
+;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+
+import org.bukkit.entity.Player;
 import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.generator.WorldInfo;
-import org.bukkit.util.noise.SimplexOctaveGenerator;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,31 +19,21 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.CompletableFuture;
+
 
 public class RealWorldGenerator extends ChunkGenerator {
-
     private Location spawnLocation = null;
+
+
+    EarthGeneratorSettings settings = EarthGeneratorSettings.parseUncached(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
     ChunkDataLoader loader;
 
-    public RealWorldGenerator() {
-        System.out.println("init RealWorldGenerator");
-      /*  final String bteProjectionJson = "{\n"
-                + "        \"scale\": {\n"
-                + "            \"delegate\": {\n"
-                + "                \"flip_vertical\": {\n"
-                + "                    \"delegate\": {\n"
-                + "                        \"bte_conformal_dymaxion\": {}\n"
-                + "                    }\n"
-                + "                }\n"
-                + "            },\n"
-                + "            \"x\": 7318261.522857145,\n"
-                + "            \"y\": 7318261.522857145\n"
-                + "        }\n"
-                + "    }";
-        final EarthGeneratorSettings bteGeneratorSettings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
-        this.loader = new ChunkDataLoader(bteGeneratorSettings);*/
+    public RealWorldGenerator(){
+        System.out.println(settings);
+        this.loader = new ChunkDataLoader(settings);
+        System.out.println("ChunkDataLoader erstellt");
     }
+
 
     @Override
     public void generateNoise(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull ChunkData chunkData) {
@@ -60,19 +44,28 @@ public class RealWorldGenerator extends ChunkGenerator {
     public void generateSurface(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunkZ, @NotNull ChunkData chunkData) {
 
 
-             /*   loader.load(new ChunkPos(chunkX, chunkZ)).thenAccept((cachedChunkData) -> {*/
+              //  loader.load(new ChunkPos(chunkX, chunkZ)).thenAccept((cachedChunkData) -> {
                     for (int x = 0; x < 16; x++) {
                         for (int z = 0; z < 16; z++) {
                             chunkData.setBlock(x, 1800, z, Material.MOSS_BLOCK); //cachedChunkData.surfaceHeight(x, z)
                         }
                     }
-        /*  });*/
+             //   });
 
 
                 // for (int y = -16; y < 32; y++) { }
 
     }
 
+    public void regenerateSurface(WorldInfo worldInfo, int chunkX, int chunkZ, Player player){
+        ChunkData chunk = createVanillaChunkData(player.getWorld(), chunkX, chunkZ);
+
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                chunk.setBlock(x, 1800, z, Material.COPPER_BLOCK);
+            }
+        }
+    }
 
     public void generateBedrock(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull ChunkGenerator.ChunkData chunkData) {
         // no bedrock, because bedrock bad

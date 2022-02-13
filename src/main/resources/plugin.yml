@@ -12,3 +12,8 @@ commands:
     description: Teleport
     usage: /tpll <long> <lat>
     aliases: [terratpll]
+  regen:
+    description: Re-Generate
+    usage: /regen
+    aliases: [ terraregen ]
+
