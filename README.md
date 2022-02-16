@@ -14,4 +14,16 @@ This plugin expands the height of a 1.18.1 Vanilla world to 1967. It will ~(even
 World generation up to 1967 meters above sea level
 ![](https://i.imgur.com/DE4aAhk.jpg)
 
-> The NMSInjection Part is from the plugin https://github.com/Hex27/TerraformGenerator and can be found there. Credits go to Hex27.
+# Dependencies
+
+TerraMinusMinus - [Terra--](https://github.com/SmylerMC/terraminusminus) developed by [@SmylerMC](https://github.com/SmylerMC)
+
+# Commands
+
+/tpll <latitudes> <longitudes> - `terra+-.tpll`
+
+/regen - `terra+-.regen` 
+
+# 
+
+> The NMSInjection Part is from the plugin https://github.com/Hex27/TerraformGenerator and can be found there. Credits go to [@Hex27](https://github.com/Hex27).
