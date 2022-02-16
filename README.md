@@ -1,4 +1,4 @@
-![](https://i.imgur.com/iNlTCjYh.jpg)
+![](https://i.imgur.com/XKVkhH1.png)
 
 # TerraPlusMinus
 [![Build Terra+-](https://github.com/Build-the-Earth-Germany/terraplusminus/actions/workflows/maven.yml/badge.svg)](https://github.com/Build-the-Earth-Germany/terraplusminus/actions/workflows/maven.yml)
