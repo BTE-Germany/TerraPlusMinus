@@ -41,6 +41,10 @@ public class RealWorldGenerator extends ChunkGenerator {
 
     }
 
+    @Override
+    public BiomeProvider getDefaultBiomeProvider(@NotNull WorldInfo worldInfo) {
+        return new CustomBiomeProvider();
+    }
 
     public void generateSurface(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunkZ, @NotNull ChunkData chunkData) {
         final int minY = worldInfo.getMinHeight();
@@ -60,6 +64,7 @@ public class RealWorldGenerator extends ChunkGenerator {
                     for (int y = minY; y < Math.min(maxY, groundY); y++) chunkData.setBlock(x, y, z, Material.STONE);
                     if (groundY < maxY) chunkData.setBlock(x, groundY, z, material);
                     for (int y = groundY + 1; y < Math.min(maxY, waterY); y++) chunkData.setBlock(x, y, z, Material.WATER);
+
                 }
             }
         } catch (InterruptedException | ExecutionException e) {
@@ -86,10 +91,6 @@ public class RealWorldGenerator extends ChunkGenerator {
         // no caves, because caves scary
     }
 
-    @Nullable
-    public BiomeProvider getDefaultBiomeProvider(@NotNull WorldInfo worldInfo) {
-        return null;
-    }
 
 
     public int getBaseHeight(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull HeightMap heightMap) {
@@ -171,7 +172,7 @@ public class RealWorldGenerator extends ChunkGenerator {
     }
 
 
-    @NotNull
+    /*@NotNull
     public ChunkGenerator.ChunkData createVanillaChunkData(@NotNull World world, int x, int z) {
         var chunk = Bukkit.getServer().createVanillaChunkData(world, x, z);
         Field maxHeightField = null;
@@ -184,6 +185,6 @@ public class RealWorldGenerator extends ChunkGenerator {
         }
         return chunk;
 
-    }
+    }*/
     // Paper
 }
