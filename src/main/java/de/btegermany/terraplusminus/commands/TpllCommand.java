@@ -20,12 +20,13 @@ public class TpllCommand implements CommandExecutor {
                 if (player.hasPermission("t+-.tpll")) {
 
                     double[] coordinates = new double[2];
-                    coordinates[0] = Double.parseDouble(args[0].replace(",", ""));
-                    coordinates[1] = Double.parseDouble(args[1]);
+                    coordinates[1] = Double.parseDouble(args[0].replace(",", ""));
+                    coordinates[0] = Double.parseDouble(args[1]);
 
-                    double[] mccoordinates = TerraConnector.fromGeo(coordinates[0], coordinates[1]);
 
-                    Location location = new Location(player.getWorld(), mccoordinates[0], player.getWorld().getHighestBlockYAt((int) mccoordinates[0], (int) mccoordinates[1]) + 1, mccoordinates[1]);
+                    double[] mcCoordinates = TerraConnector.fromGeo(coordinates[0], coordinates[1]);
+
+                    Location location = new Location(player.getWorld(), mcCoordinates[0], player.getWorld().getHighestBlockYAt((int) mcCoordinates[0], (int) mcCoordinates[1]) + 1, mcCoordinates[1]);
 
                     player.teleport(location);
 
