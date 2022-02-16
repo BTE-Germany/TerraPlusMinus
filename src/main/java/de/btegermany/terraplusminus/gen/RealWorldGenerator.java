@@ -3,8 +3,8 @@ package de.btegermany.terraplusminus.gen;
 import net.buildtheearth.terraminusminus.generator.CachedChunkData;
 import net.buildtheearth.terraminusminus.generator.ChunkDataLoader;
 import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
-import net.buildtheearth.terraminusminus.substitutes.net.minecraft.block.state.IBlockState;
-import net.buildtheearth.terraminusminus.substitutes.net.minecraft.util.math.ChunkPos;
+import net.buildtheearth.terraminusminus.substitutes.*;
+import net.minecraft.world.level.block.state.properties.IBlockState;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -19,20 +19,19 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 
 public class RealWorldGenerator extends ChunkGenerator {
     private Location spawnLocation = null;
 
-
     EarthGeneratorSettings settings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
     ChunkDataLoader loader;
+    World zWorld;
 
     public RealWorldGenerator(){
-        System.out.println(settings);
         this.loader = new ChunkDataLoader(settings);
-        System.out.println("ChunkDataLoader erstellt");
     }
 
 
@@ -51,18 +50,42 @@ public class RealWorldGenerator extends ChunkGenerator {
         final int maxY = worldInfo.getMaxHeight();
 
         try {
-            CachedChunkData terraData = this.loader.load(new ChunkPos(chunkX, chunkZ)).get();
+            CachedChunkData terraData = this.loader.load(new ChunkPos(chunkX, chunkZ)).get(); //new ChunkPos(chunkX, chunkZ)
             for (int x = 0; x < 16; x++) {
                 for (int z = 0; z < 16; z++) {
 
                     int groundY = terraData.groundHeight(x, z);
                     int waterY = terraData.waterHeight(x, z);
-                    IBlockState state = terraData.surfaceBlock(x, z);
+                    //terraData.biome(x,z);
+                    BlockState state = terraData.surfaceBlock(x, z);
+
+
+                   //if (state != null) material = Material.BRICKS;
+
                     Material material = Material.GRASS_BLOCK;
-                    if (state != null) material = Material.BRICKS;
+                    // Generates mountains over 1700m only from stone
+                    int randomizer = (int) Math.floor(Math.random()*(1700-1695+1)+1695);
+                    if(groundY >= randomizer) {
+                        material = Material.STONE;
+                    }
+                    //--------------------------------------------------------
+
 
                     for (int y = minY; y < Math.min(maxY, groundY); y++) chunkData.setBlock(x, y, z, Material.STONE);
-                    if (groundY < maxY) chunkData.setBlock(x, groundY, z, material);
+
+                    if (groundY < maxY) {
+                        System.out.println("BlockState: "+state);
+                        System.out.println("BlockData: "+BukkitBindings.getAsBlockData(state));
+                        if(state != null){
+                            System.out.println("state is there");
+                            System.out.println(BukkitBindings.getAsBlockData(state));
+                            chunkData.setBlock(x, groundY, z, BukkitBindings.getAsBlockData(state));
+                        } else {
+                            chunkData.setBlock(x, groundY, z, material);
+                        }
+
+
+                    }
                     for (int y = groundY + 1; y < Math.min(maxY, waterY); y++) chunkData.setBlock(x, y, z, Material.WATER);
 
                 }
@@ -129,6 +152,7 @@ public class RealWorldGenerator extends ChunkGenerator {
     public Location getFixedSpawnLocation(@NotNull World world, @NotNull Random random) {
         if (spawnLocation == null)
             spawnLocation = new Location(world, 3517417, 58,-5288234);
+        zWorld = world;
         return spawnLocation;
     }
 

@@ -2,6 +2,7 @@ package de.btegermany.terraplusminus.commands;
 
 import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.data.TerraConnector;
+import io.papermc.lib.PaperLib;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -28,7 +29,8 @@ public class TpllCommand implements CommandExecutor {
 
                     Location location = new Location(player.getWorld(), mcCoordinates[0], player.getWorld().getHighestBlockYAt((int) mcCoordinates[0], (int) mcCoordinates[1]) + 1, mcCoordinates[1]);
 
-                    player.teleport(location);
+                   player.teleport(location);
+                   // PaperLib.teleportAsync(player,location);
 
                     player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleported to " + coordinates[0] + ", " + coordinates[1] + ".");
                     return true;
