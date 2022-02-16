@@ -1,17 +1,17 @@
 package de.btegermany.terraplusminus.gen;
 
+import net.buildtheearth.terraminusminus.generator.CachedChunkData;
 import net.buildtheearth.terraminusminus.generator.ChunkDataLoader;
 import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
-;
+import net.buildtheearth.terraminusminus.substitutes.net.minecraft.block.state.IBlockState;
+import net.buildtheearth.terraminusminus.substitutes.net.minecraft.util.math.ChunkPos;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-
 import org.bukkit.entity.Player;
 import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.generator.WorldInfo;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,13 +19,14 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 
 
 public class RealWorldGenerator extends ChunkGenerator {
     private Location spawnLocation = null;
 
 
-    EarthGeneratorSettings settings = EarthGeneratorSettings.parseUncached(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
+    EarthGeneratorSettings settings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
     ChunkDataLoader loader;
 
     public RealWorldGenerator(){
@@ -42,29 +43,39 @@ public class RealWorldGenerator extends ChunkGenerator {
 
 
     public void generateSurface(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunkZ, @NotNull ChunkData chunkData) {
+        final int minY = worldInfo.getMinHeight();
+        final int maxY = worldInfo.getMaxHeight();
 
+        try {
+            CachedChunkData terraData = this.loader.load(new ChunkPos(chunkX, chunkZ)).get();
+            for (int x = 0; x < 16; x++) {
+                for (int z = 0; z < 16; z++) {
 
-              //  loader.load(new ChunkPos(chunkX, chunkZ)).thenAccept((cachedChunkData) -> {
-                    for (int x = 0; x < 16; x++) {
-                        for (int z = 0; z < 16; z++) {
-                            chunkData.setBlock(x, 1800, z, Material.MOSS_BLOCK); //cachedChunkData.surfaceHeight(x, z)
-                        }
-                    }
-             //   });
+                    int groundY = terraData.groundHeight(x, z);
+                    int waterY = terraData.waterHeight(x, z);
+                    IBlockState state = terraData.surfaceBlock(x, z);
+                    Material material = Material.GRASS_BLOCK;
+                    if (state != null) material = Material.BRICKS;
 
-
-                // for (int y = -16; y < 32; y++) { }
+                    for (int y = minY; y < Math.min(maxY, groundY); y++) chunkData.setBlock(x, y, z, Material.STONE);
+                    if (groundY < maxY) chunkData.setBlock(x, groundY, z, material);
+                    for (int y = groundY + 1; y < Math.min(maxY, waterY); y++) chunkData.setBlock(x, y, z, Material.WATER);
+                }
+            }
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
 
     }
 
     public void regenerateSurface(WorldInfo worldInfo, int chunkX, int chunkZ, Player player){
-        ChunkData chunk = createVanillaChunkData(player.getWorld(), chunkX, chunkZ);
+       /* ChunkData chunk = createVanillaChunkData(player.getWorld(), chunkX, chunkZ);
 
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
                 chunk.setBlock(x, 1800, z, Material.COPPER_BLOCK);
             }
-        }
+        }*/
     }
 
     public void generateBedrock(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull ChunkGenerator.ChunkData chunkData) {
@@ -116,7 +127,7 @@ public class RealWorldGenerator extends ChunkGenerator {
     @Nullable
     public Location getFixedSpawnLocation(@NotNull World world, @NotNull Random random) {
         if (spawnLocation == null)
-            spawnLocation = new Location(world, 0, 0, 0);
+            spawnLocation = new Location(world, 3517417, 58,-5288234);
         return spawnLocation;
     }
 

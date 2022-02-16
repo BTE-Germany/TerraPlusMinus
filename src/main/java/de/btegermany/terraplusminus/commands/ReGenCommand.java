@@ -1,17 +1,12 @@
 package de.btegermany.terraplusminus.commands;
 
 import de.btegermany.terraplusminus.Terraplusminus;
-import de.btegermany.terraplusminus.data.TerraConnector;
 import de.btegermany.terraplusminus.gen.RealWorldGenerator;
-import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.generator.ChunkGenerator;
 import org.jetbrains.annotations.NotNull;
-
-import static org.bukkit.Bukkit.createChunkData;
 
 public class ReGenCommand implements CommandExecutor {
 
@@ -24,7 +19,7 @@ public class ReGenCommand implements CommandExecutor {
 
 
                     RealWorldGenerator real = new RealWorldGenerator();
-                    real.regenerateSurface(player.getWorld(), player.getChunk().getX(), player.getChunk().getZ(), player);
+                  //  real.regenerateSurface(player.getWorld(), player.getChunk().getX(), player.getChunk().getZ(), player);
 
                     player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Succesfully regened.");
                     return true;

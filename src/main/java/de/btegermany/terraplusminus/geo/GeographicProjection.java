@@ -19,7 +19,6 @@
 package de.btegermany.terraplusminus.geo;
 
 import com.google.common.collect.Maps;
-import de.btegermany.terraplusminus.geo.Airocean;
 
 import java.util.Map;
 

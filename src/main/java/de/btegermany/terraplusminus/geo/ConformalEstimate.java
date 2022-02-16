@@ -18,8 +18,6 @@
 
 package de.btegermany.terraplusminus.geo;
 
-import de.btegermany.terraplusminus.geo.Airocean;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Scanner;

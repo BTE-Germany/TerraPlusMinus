@@ -1,14 +1,14 @@
 package de.btegermany.terraplusminus.gen;
 
-import java.lang.reflect.Field;
-import java.util.OptionalLong;
-
 import de.btegermany.terraplusminus.Terraplusminus;
 import net.minecraft.resources.MinecraftKey;
 import net.minecraft.server.level.WorldServer;
 import net.minecraft.world.level.dimension.DimensionManager;
 import org.bukkit.World;
 import org.bukkit.craftbukkit.v1_18_R1.CraftWorld;
+
+import java.lang.reflect.Field;
+import java.util.OptionalLong;
 
 
 public class NMSInjector {
@@ -30,9 +30,9 @@ public class NMSInjector {
 		(boolean) queryDimensionManagerPrivateField("E",delegate),
 		(boolean) queryDimensionManagerPrivateField("F",delegate),
 		(boolean) queryDimensionManagerPrivateField("G",delegate),
-		(int) Terraplusminus.config.getInt("min-height"),//queryDimensionManagerPrivateField("H",delegate), //minY
-		(int) Terraplusminus.config.getInt("max-height"),//queryDimensionManagerPrivateField("I",delegate), //Height
-		(int) Terraplusminus.config.getInt("max-height"),//queryDimensionManagerPrivateField("J",delegate), //Logical Height
+				Terraplusminus.config.getInt("min-height"),//queryDimensionManagerPrivateField("H",delegate), //minY
+				Terraplusminus.config.getInt("max-height"),//queryDimensionManagerPrivateField("I",delegate), //Height
+				Terraplusminus.config.getInt("max-height"),//queryDimensionManagerPrivateField("J",delegate), //Logical Height
 		(MinecraftKey) queryDimensionManagerPrivateField("K",delegate),
 		(MinecraftKey) queryDimensionManagerPrivateField("L",delegate),
 		(float) queryDimensionManagerPrivateField("M",delegate)
@@ -40,7 +40,7 @@ public class NMSInjector {
 
 		try {
             Terraplusminus.privateFieldHandler.injectField(
-                    (net.minecraft.world.level.World) ws,
+					ws,
                     net.minecraft.world.level.World.class.getDeclaredField("C"),
                     replacement);
 			System.out.println("&aSuccessfully injected custom world height!");

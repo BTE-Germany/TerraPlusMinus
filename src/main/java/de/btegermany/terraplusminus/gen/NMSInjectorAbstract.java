@@ -1,6 +1,5 @@
 package de.btegermany.terraplusminus.gen;
 
-import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
@@ -21,7 +20,7 @@ public abstract class NMSInjectorAbstract {
      */
     public void updatePhysics(World world, org.bukkit.block.Block block) {
         throw new UnsupportedOperationException("Tried to update physics without implementing.");
-    };
+    }
 
     public int getMinY() {
         return 0;
