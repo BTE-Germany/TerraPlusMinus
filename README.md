@@ -1,9 +1,16 @@
 ![](https://i.imgur.com/iNlTCjYh.jpg)
 
 # TerraPlusMinus
+[![Build Terra+-](https://github.com/Build-the-Earth-Germany/terraplusminus/actions/workflows/maven.yml/badge.svg)](https://github.com/Build-the-Earth-Germany/terraplusminus/actions/workflows/maven.yml)
+[![GitHub license](https://badgen.net/github/license/Build-the-Earth-Germany/terraplusminus)](https://github.com/Build-the-Earth-Germany/terraplusminus/blob/master/LICENSE)
+[![Discord](https://img.shields.io/discord/692825222373703772.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/GkSxGTYaAJ)
 
-This plugin expands the height of a 1.18.1 Vanilla world to 1967. It will (eventually) generate outlines and correct heights of the real world.
+`❌ Don't even think about using this for building. It is hightly WIP and extremely unstable!`
 
-❌ Don't even think about using this. It is hightly WIP!
+This plugin expands the height of a 1.18.1 Vanilla world to 1967. It will ~(eventually)~ generate outlines and correct heights of the real world.
 
-The NMSInjection Part is from the plugin https://github.com/Hex27/TerraformGenerator and can be found there. Credits go to Hex27.
+![](https://i.imgur.com/AAJGVF5.png)
+
+
+
+> The NMSInjection Part is from the plugin https://github.com/Hex27/TerraformGenerator and can be found there. Credits go to Hex27.
