@@ -7,6 +7,7 @@ import net.buildtheearth.terraminusminus.substitutes.*;
 import net.minecraft.world.level.block.state.properties.IBlockState;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.BlockPopulator;
@@ -56,11 +57,9 @@ public class RealWorldGenerator extends ChunkGenerator {
 
                     int groundY = terraData.groundHeight(x, z);
                     int waterY = terraData.waterHeight(x, z);
-                    //terraData.biome(x,z);
                     BlockState state = terraData.surfaceBlock(x, z);
 
-
-                   //if (state != null) material = Material.BRICKS;
+                    
 
                     Material material = Material.GRASS_BLOCK;
                     // Generates mountains over 1700m only from stone
@@ -74,12 +73,19 @@ public class RealWorldGenerator extends ChunkGenerator {
                     for (int y = minY; y < Math.min(maxY, groundY); y++) chunkData.setBlock(x, y, z, Material.STONE);
 
                     if (groundY < maxY) {
-                        System.out.println("BlockState: "+state);
-                        System.out.println("BlockData: "+BukkitBindings.getAsBlockData(state));
                         if(state != null){
-                            System.out.println("state is there");
-                            System.out.println(BukkitBindings.getAsBlockData(state));
-                            chunkData.setBlock(x, groundY, z, BukkitBindings.getAsBlockData(state));
+
+                            //System.out.println(state.getBlock().toString());
+                            switch (state.getBlock().toString()) {
+                                case "minecraft:dirt_path":
+                                    chunkData.setBlock(x, groundY, z, Material.MOSS_BLOCK);
+                                    break;
+                                default:
+                                    chunkData.setBlock(x, groundY, z, BukkitBindings.getAsBlockData(state));
+                                    break;
+                            }
+
+
                         } else {
                             chunkData.setBlock(x, groundY, z, material);
                         }

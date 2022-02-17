@@ -111,7 +111,7 @@
         <dependency>
             <groupId>com.github.SmylerMC</groupId>
             <artifactId>terraminusminus</artifactId>
-            <version>feature~bukkit-703bf8b553-1</version>
+            <version>feature~bukkit-5907790da3-1</version>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
