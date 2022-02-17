@@ -1,6 +1,5 @@
 package de.btegermany.terraplusminus;
 
-import de.btegermany.terraplusminus.commands.ReGenCommand;
 import de.btegermany.terraplusminus.commands.TpllCommand;
 import de.btegermany.terraplusminus.gen.*;
 import de.btegermany.terraplusminus.utils.FileBuilder;
@@ -40,7 +39,6 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         Bukkit.getPluginManager().registerEvents(this,this);
 
         Objects.requireNonNull(getCommand("tpll")).setExecutor(new TpllCommand());
-        Objects.requireNonNull(getCommand("regen")).setExecutor(new ReGenCommand());
 
         config = new FileBuilder("plugins/TerraPlusMinus", "config.yml")
                 .addDefault("prefix","§2§lT+- §8» ")

@@ -4,6 +4,7 @@ import net.buildtheearth.terraminusminus.generator.CachedChunkData;
 import net.buildtheearth.terraminusminus.generator.ChunkDataLoader;
 import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
 import net.buildtheearth.terraminusminus.substitutes.*;
+import net.minecraft.network.protocol.game.PacketPlayInAutoRecipe;
 import net.minecraft.world.level.block.state.properties.IBlockState;
 import org.bukkit.*;
 import org.bukkit.block.Block;
