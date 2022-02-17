@@ -1,4 +1,4 @@
-![](https://i.imgur.com/iNlTCjYh.jpg)
+![](https://i.imgur.com/XKVkhH1.png)
 
 # TerraPlusMinus
 [![Build Terra+-](https://github.com/Build-the-Earth-Germany/terraplusminus/actions/workflows/maven.yml/badge.svg)](https://github.com/Build-the-Earth-Germany/terraplusminus/actions/workflows/maven.yml)
@@ -11,6 +11,19 @@ This plugin expands the height of a 1.18.1 Vanilla world to 1967. It will ~(even
 
 ![](https://i.imgur.com/AAJGVF5.png)
 
+World generation up to 1967 meters above sea level
+![](https://i.imgur.com/DE4aAhk.jpg)
 
+# Dependencies
 
-> The NMSInjection Part is from the plugin https://github.com/Hex27/TerraformGenerator and can be found there. Credits go to Hex27.
+TerraMinusMinus - [Terra--](https://github.com/SmylerMC/terraminusminus) developed by [@SmylerMC](https://github.com/SmylerMC)
+
+# Commands
+
+/tpll <latitudes> <longitudes> - `terra+-.tpll`
+
+/regen - `terra+-.regen` 
+
+# 
+
+> The NMSInjection Part is from the plugin https://github.com/Hex27/TerraformGenerator and can be found there. Credits go to [@Hex27](https://github.com/Hex27).
