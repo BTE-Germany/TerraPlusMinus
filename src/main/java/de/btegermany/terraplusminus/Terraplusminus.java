@@ -42,6 +42,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
 
         config = new FileBuilder("plugins/TerraPlusMinus", "config.yml")
                 .addDefault("prefix","§2§lT+- §8» ")
+                .addDefault("nms","false")
                 .addDefault("min-height", 2032)
                 .addDefault("max-height", 2032)
                 .copyDefaults(true).save();
@@ -64,17 +65,16 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onWorldInit(WorldInitEvent event) {
-        if (event.getWorld().getGenerator() instanceof RealWorldGenerator) {
-            injector.attemptInject(event.getWorld());
+        if(Terraplusminus.config.getBoolean("nms")){
+            if (event.getWorld().getGenerator() instanceof RealWorldGenerator) {
+                injector.attemptInject(event.getWorld());
+            }
         }
     }
 
     @Override
     public ChunkGenerator getDefaultWorldGenerator(String worldName, String id){
-       //  ChunkGenerator res = new ChunkGenerator() {
-
-       //  };
-       return new RealWorldGenerator();
+       return new RealWorldGenerator(this);
     }
 
 

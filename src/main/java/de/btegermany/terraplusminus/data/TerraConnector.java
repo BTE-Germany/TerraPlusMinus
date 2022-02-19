@@ -3,7 +3,14 @@ package de.btegermany.terraplusminus.data;
 import de.btegermany.terraplusminus.geo.GeographicProjection;
 import de.btegermany.terraplusminus.geo.ModifiedAirocean;
 import de.btegermany.terraplusminus.geo.ScaleProjection;
+import net.buildtheearth.terraminusminus.dataset.IScalarDataset;
+import net.buildtheearth.terraminusminus.generator.EarthGeneratorPipelines;
+import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
+import net.buildtheearth.terraminusminus.generator.GeneratorDatasets;
+import net.buildtheearth.terraminusminus.projection.OutOfProjectionBoundsException;
 import net.buildtheearth.terraminusminus.projection.transform.ScaleProjectionTransform;
+
+import java.util.concurrent.CompletableFuture;
 
 
 /**
@@ -40,7 +47,9 @@ public class TerraConnector {
     }
 
 
- /*   public CompletableFuture<Double> getHeight(double x, double z) {
+    private final EarthGeneratorSettings bteGeneratorSettings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
+
+    public CompletableFuture<Double> getHeight(double x, double z) {
         double[] adjustedProj = toGeo(x, z);
         double adjustedLon = adjustedProj[0];
         double adjustedLat = adjustedProj[1];
@@ -54,6 +63,6 @@ public class TerraConnector {
             altFuture = CompletableFuture.completedFuture(0.0);
         }
         return altFuture;
-    }*/
+    }
 
 }
