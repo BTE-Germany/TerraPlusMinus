@@ -22,8 +22,6 @@ TerraMinusMinus - [Terra--](https://github.com/SmylerMC/terraminusminus) develop
 
 /tpll <latitudes> <longitudes> - `terra+-.tpll`
 
-/regen - `terra+-.regen` 
-
 # 
 
 > The NMSInjection Part is from the plugin https://github.com/Hex27/TerraformGenerator and can be found there. Credits go to [@Hex27](https://github.com/Hex27).
