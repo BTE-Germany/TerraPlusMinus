@@ -10,6 +10,7 @@ import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.awt.*;
 import java.lang.reflect.Field;
 import java.util.Objects;
 import java.util.logging.Level;
@@ -35,7 +36,15 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        Bukkit.getLogger().log(Level.INFO, "Plugin loaded.");
+        System.out.println("\n" +
+                "╭━━━━╮\n" +
+                "┃╭╮╭╮┃\n" +
+                "╰╯┃┃┣┻━┳━┳━┳━━╮╭╮\n" +
+                "╱╱┃┃┃┃━┫╭┫╭┫╭╮┣╯╰┳━━╮\n" +
+                "╱╱┃┃┃┃━┫┃┃┃┃╭╮┣╮╭┻━━╯\n" +
+                "╱╱╰╯╰━━┻╯╰╯╰╯╰╯╰╯");
+
+
         Bukkit.getPluginManager().registerEvents(this,this);
 
         Objects.requireNonNull(getCommand("tpll")).setExecutor(new TpllCommand());
@@ -43,9 +52,15 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         config = new FileBuilder("plugins/TerraPlusMinus", "config.yml")
                 .addDefault("prefix","§2§lT+- §8» ")
                 .addDefault("nms","false")
-                .addDefault("min-height", 2032)
+                .addDefault("min-height", -64)
                 .addDefault("max-height", 2032)
                 .copyDefaults(true).save();
+
+        if(Terraplusminus.config.getBoolean("nms")) {
+            System.out.println("[T+-] §4Activated height expansion");
+        }else{
+            System.out.println("[T+-] §4Deactivated height expansion");
+        }
 
         try {
             injector = new NMSInjector();
@@ -54,6 +69,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
             e.printStackTrace();
         }
 
+        Bukkit.getLogger().log(Level.INFO, "[T+-] Plugin loaded.");
 
     }
 

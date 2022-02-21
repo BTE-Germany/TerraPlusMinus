@@ -24,12 +24,13 @@ public class TpllCommand implements CommandExecutor {
                     coordinates[1] = Double.parseDouble(args[0].replace(",", ""));
                     coordinates[0] = Double.parseDouble(args[1]);
 
-
                     double[] mcCoordinates = TerraConnector.fromGeo(coordinates[0], coordinates[1]);
                     TerraConnector terraConnector = new TerraConnector();
+                    Location location = new Location(player.getWorld(), mcCoordinates[0], terraConnector.getHeight((int) mcCoordinates[0], (int) mcCoordinates[1]).join(), mcCoordinates[1]);
 
-                    Location location = new Location(player.getWorld(), mcCoordinates[0], terraConnector.getHeight((int) mcCoordinates[0], (int) mcCoordinates[1]).join(), mcCoordinates[1]); // player.getWorld().getHighestBlockYAt((int) mcCoordinates[0], (int) mcCoordinates[1])
-                   //player.teleport(location);
+                    if(location.getChunk().isLoaded()){
+                        location = new Location(player.getWorld(), mcCoordinates[0], player.getWorld().getHighestBlockYAt((int) mcCoordinates[0], (int) mcCoordinates[1])+1, mcCoordinates[1]);
+                    }
                     PaperLib.teleportAsync(player,location);
 
                     player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleported to " + coordinates[0] + ", " + coordinates[1] + ".");

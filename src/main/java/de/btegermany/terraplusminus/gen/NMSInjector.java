@@ -30,9 +30,9 @@ public class NMSInjector {
 		(boolean) queryDimensionManagerPrivateField("E",delegate),
 		(boolean) queryDimensionManagerPrivateField("F",delegate),
 		(boolean) queryDimensionManagerPrivateField("G",delegate),
-				Terraplusminus.config.getInt("min-height"),//queryDimensionManagerPrivateField("H",delegate), //minY
-				Terraplusminus.config.getInt("max-height"),//queryDimensionManagerPrivateField("I",delegate), //Height
-				Terraplusminus.config.getInt("max-height"),//queryDimensionManagerPrivateField("J",delegate), //Logical Height
+				Terraplusminus.config.getInt("min-height"),//minY
+				Terraplusminus.config.getInt("max-height"), //Height
+				Terraplusminus.config.getInt("max-height"), //Logical Height
 		(MinecraftKey) queryDimensionManagerPrivateField("K",delegate),
 		(MinecraftKey) queryDimensionManagerPrivateField("L",delegate),
 		(float) queryDimensionManagerPrivateField("M",delegate)
