@@ -1,12 +1,18 @@
 package de.btegermany.terraplusminus.gen;
 
+import de.btegermany.terraplusminus.data.KoppenClimateData;
+import de.btegermany.terraplusminus.data.TerraConnector;
+import net.buildtheearth.terraminusminus.projection.OutOfProjectionBoundsException;
+import net.minecraft.world.level.biome.Biomes;
 import org.bukkit.block.Biome;
 import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.WorldInfo;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class CustomBiomeProvider extends BiomeProvider {
 
