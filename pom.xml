@@ -156,5 +156,15 @@
             <version>1.0.7</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>net.daporkchop.lib</groupId>
+            <artifactId>common</artifactId>
+            <version>0.5.7-SNAPSHOT</version>
+    </dependency>
+        <dependency>
+            <groupId>lzma</groupId>
+            <artifactId>lzma</artifactId>
+            <version>0.0.1</version>
+        </dependency>
     </dependencies>
 </project>
