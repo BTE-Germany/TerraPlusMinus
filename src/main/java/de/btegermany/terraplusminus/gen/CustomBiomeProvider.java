@@ -1,9 +1,9 @@
 package de.btegermany.terraplusminus.gen;
 
+import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.data.KoppenClimateData;
 import de.btegermany.terraplusminus.data.TerraConnector;
 import net.buildtheearth.terraminusminus.projection.OutOfProjectionBoundsException;
-import net.minecraft.world.level.biome.Biomes;
 import org.bukkit.block.Biome;
 import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.WorldInfo;
@@ -26,25 +26,30 @@ public class CustomBiomeProvider extends BiomeProvider {
     @NotNull
     @Override
     public Biome getBiome(@NotNull WorldInfo worldInfo, int x, int y, int z) {
-     /*   double[] coords = TerraConnector.toGeo(x, z);
-        try {
-            double biomeData = (Double) this.climateData.getAsync(coords[0], coords[1]).get();
-            return koppenDataToBukkitBiome(biomeData);
-        } catch (InterruptedException | ExecutionException | OutOfProjectionBoundsException e) {
-            e.printStackTrace();
+        if(Terraplusminus.config.getBoolean("useBiomes")) {
+            double[] coords = TerraConnector.toGeo(x, z);
+            try {
+                biomeData = this.climateData.getAsync(coords[0], coords[1]).get();
+                return koppenDataToBukkitBiome(biomeData);
+            } catch (InterruptedException | ExecutionException | OutOfProjectionBoundsException e) {
+                e.printStackTrace();
 
-        }*/
-        return Biome.FOREST;
+            }
+        }else biomeData = 8;
+        return Biome.PLAINS;
+    }
+
+    public double getBiome(){
+        return biomeData;
     }
 
     @NotNull
     @Override
     public List<Biome> getBiomes(@NotNull WorldInfo worldInfo) {
         return biomeList;
-
     }
 
-    private Biome koppenDataToBukkitBiome(double koppenData){
+    public static Biome koppenDataToBukkitBiome(double koppenData){
           switch ((int)koppenData){
             case 0:
                 return Biome.OCEAN;

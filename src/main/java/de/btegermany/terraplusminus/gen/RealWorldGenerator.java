@@ -1,36 +1,25 @@
 package de.btegermany.terraplusminus.gen;
 
-import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
-import de.btegermany.terraplusminus.data.TerraConnector;
-import io.papermc.lib.PaperLib;
-import lombok.SneakyThrows;
-import net.buildtheearth.terraminusminus.generator.CachedChunkData;
-import net.buildtheearth.terraminusminus.generator.ChunkDataLoader;
-import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
+import de.btegermany.terraplusminus.Terraplusminus;
+import net.buildtheearth.terraminusminus.dataset.IScalarDataset;
+import net.buildtheearth.terraminusminus.generator.*;
 import net.buildtheearth.terraminusminus.substitutes.*;
+import net.buildtheearth.terraminusminus.util.CornerBoundingBox2d;
+import net.buildtheearth.terraminusminus.util.bvh.Bounds2d;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.Player;
 import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.generator.WorldInfo;
-import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 
 public class RealWorldGenerator extends ChunkGenerator {
@@ -41,11 +30,13 @@ public class RealWorldGenerator extends ChunkGenerator {
 
     Plugin plugin;
     public LoadingCache<ChunkPos, CompletableFuture<CachedChunkData>> cache = null;
+    private CustomBiomeProvider customBiomeProvider;
 
 
     public RealWorldGenerator(Plugin pPlugin){
         plugin = pPlugin;
         this.loader = new ChunkDataLoader(settings);
+        this.customBiomeProvider = new CustomBiomeProvider();
     }
 
 
@@ -56,7 +47,7 @@ public class RealWorldGenerator extends ChunkGenerator {
 
     @Override
     public BiomeProvider getDefaultBiomeProvider(@NotNull WorldInfo worldInfo) {
-        return new CustomBiomeProvider();
+        return this.customBiomeProvider;
     }
 
 
@@ -78,16 +69,22 @@ public class RealWorldGenerator extends ChunkGenerator {
                         BlockState state = terraData.surfaceBlock(x, z);
 
                         Material material = Material.GRASS_BLOCK;
-                        // Generates mountains over 1700m only from stone
+
+                        //Generates sand in deserts
+                        if((int)customBiomeProvider.getBiome()==4)
+                            material = Material.SAND;
+
+                        // Sets block on mountains over 1700m to stone
                         int randomizer = (int) Math.floor(Math.random()*(1700-1695+1)+1695);
                         if(groundY >= randomizer) {
                             material = Material.STONE;
                         }
                         //--------------------------------------------------------
 
-
+                        //Generates stone under all surfaces
                         for (int y = minY; y < Math.min(maxY, groundY); y++) chunkData.setBlock(x, y, z, Material.STONE);
 
+                        //Genrates terrain with block states
                         if (groundY < maxY) {
                             if(state != null){
 
@@ -95,6 +92,9 @@ public class RealWorldGenerator extends ChunkGenerator {
                                 switch (state.getBlock().toString()) {
                                     case "minecraft:dirt_path":
                                         chunkData.setBlock(x, groundY, z, Material.MOSS_BLOCK);
+                                        break;
+                                    case "minecraft:gray_concrete":
+                                        chunkData.setBlock(x, groundY, z, Material.GRAY_CONCRETE_POWDER);
                                         break;
                                     default:
                                         chunkData.setBlock(x, groundY, z, BukkitBindings.getAsBlockData(state));
@@ -110,12 +110,10 @@ public class RealWorldGenerator extends ChunkGenerator {
 
                     }
                 }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
+            } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
-     //   });
+        //   });
     }
 /*
     public CompletableFuture<Void> getChunkAsync(World world, int x, int z) {
@@ -174,7 +172,7 @@ public class RealWorldGenerator extends ChunkGenerator {
 
     @NotNull
     public List<BlockPopulator> getDefaultPopulators(@NotNull World world) {
-        return new ArrayList<BlockPopulator>();
+        return Arrays.asList(new TreePopulator());
     }
 
     @Nullable
