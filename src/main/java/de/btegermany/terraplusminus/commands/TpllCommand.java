@@ -28,7 +28,7 @@ public class TpllCommand implements CommandExecutor {
                     TerraConnector terraConnector = new TerraConnector();
                     Location location = new Location(player.getWorld(), mcCoordinates[0], terraConnector.getHeight((int) mcCoordinates[0], (int) mcCoordinates[1]).join(), mcCoordinates[1]);
 
-                    if(location.getChunk().isLoaded()){
+                    if(PaperLib.isChunkGenerated(location)){
                         location = new Location(player.getWorld(), mcCoordinates[0], player.getWorld().getHighestBlockYAt((int) mcCoordinates[0], (int) mcCoordinates[1])+1, mcCoordinates[1]);
                     }
                     PaperLib.teleportAsync(player,location);
