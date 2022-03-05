@@ -19,7 +19,6 @@ public class KoppenClimateData extends AbstractBuiltinDataset {
     }
 
     private static final Cached<RLEByteArray> CACHE = Cached.global((Supplier<RLEByteArray>) () -> {
-        ByteBuf buffered = null;
         RLEByteArray.Builder builder = RLEByteArray.builder();
 
         try(LzmaInputStream is = new LzmaInputStream(KoppenClimateData.class.getResourceAsStream("/koppen_map.lzma"))){
