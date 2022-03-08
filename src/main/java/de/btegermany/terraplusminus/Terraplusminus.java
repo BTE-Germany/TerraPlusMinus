@@ -53,6 +53,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
                 .addDefault("min-height", -64)
                 .addDefault("max-height", 2032)
                 .addDefault("useBiomes", true)
+                .addDefault("generateTrees",true)
                 .copyDefaults(true).save();
 
         if(Terraplusminus.config.getBoolean("nms")) {

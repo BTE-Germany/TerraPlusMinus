@@ -2,6 +2,7 @@ package de.btegermany.terraplusminus.gen;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
+import de.btegermany.terraplusminus.Terraplusminus;
 import net.buildtheearth.terraminusminus.generator.CachedChunkData;
 import net.buildtheearth.terraminusminus.generator.ChunkDataLoader;
 import net.buildtheearth.terraminusminus.generator.EarthGeneratorPipelines;
@@ -11,6 +12,7 @@ import net.buildtheearth.terraminusminus.substitutes.ChunkPos;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.LimitedRegion;
 import org.bukkit.generator.WorldInfo;
@@ -28,8 +30,6 @@ public class TreePopulator extends BlockPopulator {
     ChunkDataLoader loader = new ChunkDataLoader(bteGeneratorSettings);
     public static final Cached<byte[]> RNG_CACHE = Cached.threadLocal(() -> new byte[16 * 16], ReferenceStrength.SOFT);
 
-
-
     public TreePopulator() {
         this.cache = CacheBuilder.newBuilder()
                 .expireAfterAccess(5L, TimeUnit.MINUTES)
@@ -39,32 +39,38 @@ public class TreePopulator extends BlockPopulator {
 
     public void populate(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull LimitedRegion limitedRegion) {
         World world = Bukkit.getWorld(worldInfo.getName());
-        CachedChunkData data = null;
-        try {
+        if(Terraplusminus.config.getBoolean("generateTrees")) {
+            try {
 
-            data = this.loader.load(new ChunkPos(x, z)).get();
+                CachedChunkData data = this.loader.load(new ChunkPos(x, z)).get();
 
-            byte[] treeCover = data.getCustom(EarthGeneratorPipelines.KEY_DATA_TREE_COVER, TreeCoverBaker.FALLBACK_TREE_DENSITY);
-            byte[] rng = RNG_CACHE.get();
+                byte[] treeCover = data.getCustom(EarthGeneratorPipelines.KEY_DATA_TREE_COVER, TreeCoverBaker.FALLBACK_TREE_DENSITY);
+                byte[] rng = RNG_CACHE.get();
 
+                random.nextBytes(rng);
+                for (int i = 0, dx = 0; dx < 16 >> 1; dx++) {
+                    for (int dz = 0; dz < 16 >> 1; dz++, i++) {
+                        if ((rng[i] & 0xFF) < (treeCover[(((x * 16 + dx) & 0xF) << 4) | ((z * 16 + dz) & 0xF)] & 0xFF)) {
 
-            for (int cx = 0; cx < 2; cx++) {
-                for (int cz = 0; cz < 2; cz++) {
-                    random.nextBytes(rng);
-                    for (int i = 0, dx = 0; dx < 16 >> 1; dx++) {
-                        for (int dz = 0; dz < 16 >> 1; dz++, i++) {
-                            if ((rng[i] & 0xFF) < (treeCover[(((x * 16 + dx) & 0xF) << 4) | ((z * 16 + dz) & 0xF)] & 0xFF)) {
-                                Location loc = new Location(world, x * 16 + (16 >> 1) * (cx + 1) + dx, data.groundHeight(dx, dz) + 1, z * 16 + (16 >> 1) * (cz + 1) + dz);
+                            int value = random.nextInt(17) + 1;
+                            int groundY = data.groundHeight(8+dx, 8+dz);
+                            int waterY = data.waterHeight(8+dx, 8+dz);
+
+                            Location loc = new Location(world, x * 16 + value, groundY + 1, z * 16 + value);
+                            //System.out.println(data.waterHeight(dx, dz));
+
+                            if (!(groundY < waterY)) {
                                 limitedRegion.generateTree(loc, random, TreeType.TREE);
                             }
+
                         }
                     }
-
                 }
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
 
+
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
