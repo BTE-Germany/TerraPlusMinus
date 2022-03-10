@@ -59,7 +59,7 @@ public class TreePopulator extends BlockPopulator {
                             Location loc = new Location(world, x * 16 + value, groundY + 1, z * 16 + value);
                             //System.out.println(data.waterHeight(dx, dz));
 
-                            if (!(groundY < waterY)) {
+                            if (!(groundY < waterY) && groundY < 1955) {
                                 limitedRegion.generateTree(loc, random, TreeType.TREE);
                             }
 
