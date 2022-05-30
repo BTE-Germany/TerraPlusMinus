@@ -6,8 +6,6 @@
 [![Discord](https://img.shields.io/discord/692825222373703772.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/GkSxGTYaAJ)
 ![https://github.com/buildtheearth](https://go.buildtheearth.net/community-shield)
 
-`❌ Don't use this for building. World expansion is experimental.`
-
 TerraPlusMinus is a plugin for 1.18.1 which generates the real world height and outlines in the projection of [BuildTheEarth](https://en.wikipedia.org/wiki/Build_the_Earth).
 Optionally it can expand the world height to 1967 ([more stable Paper Version for height expansion](https://github.com/Build-the-Earth-Germany/PaperPlusMinus/releases)). 
 
@@ -46,7 +44,14 @@ worlds:
 
 3. Add `--add-exports=java.desktop/sun.awt.image=ALL-UNNAMED` to your jvm arguments in the start.bat
 4. Start your server 
-5. (Optional) To activate height expansion set **nms** in the config.yml to `true` and restart your server
+5. Download [osm.json5](https://github.com/BuildTheEarth/terraplusplus/blob/35615cfe037b933a2b0e24271ba4759d5f94f5eb/src/main/resources/net/buildtheearth/terraplusplus/dataset/osm/osm.json5) and put it in `.\terraplusplus\config\`. 
+6. Restart your server
+
+7. If you only plan to use Minecraft Vanilla heights from -64 to 320, but e.g. your city is on height 500 you can set `moveTerrain: -300` in the config.yml.
+
+`❌ Don't use height expansion for building. World expansion is experimental.`
+  
+8. (Optional) To activate height expansion set **nms** in the config.yml to `true` and restart your server
 
 # Config
 
@@ -58,6 +63,7 @@ min-height: -64
 max-height: 2032
 useBiomes: true
 generateTrees: true
+moveTerrain: 0 
 ```
   
 # 
