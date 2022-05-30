@@ -3,6 +3,8 @@ package de.btegermany.terraplusminus.commands;
 import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.data.TerraConnector;
 import io.papermc.lib.PaperLib;
+import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
+import net.buildtheearth.terraminusminus.projection.OutOfProjectionBoundsException;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -12,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class TpllCommand implements CommandExecutor {
 
+    private final EarthGeneratorSettings bteGeneratorSettings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
 
     @Override
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
@@ -20,11 +23,18 @@ public class TpllCommand implements CommandExecutor {
             if (args.length == 2) {
                 if (player.hasPermission("t+-.tpll")) {
 
+
+
                     double[] coordinates = new double[2];
                     coordinates[1] = Double.parseDouble(args[0].replace(",", ""));
                     coordinates[0] = Double.parseDouble(args[1]);
 
-                    double[] mcCoordinates = TerraConnector.fromGeo(coordinates[0], coordinates[1]);
+                    double[] mcCoordinates = new double[0];
+                    try {
+                        mcCoordinates = bteGeneratorSettings.projection().fromGeo(coordinates[0], coordinates[1]);
+                    } catch (OutOfProjectionBoundsException e) {
+                        e.printStackTrace();
+                    }
                     TerraConnector terraConnector = new TerraConnector();
                     Location location = new Location(player.getWorld(), mcCoordinates[0], terraConnector.getHeight((int) mcCoordinates[0], (int) mcCoordinates[1]).join(), mcCoordinates[1]);
 

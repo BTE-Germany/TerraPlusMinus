@@ -49,12 +49,15 @@ public class TerraConnector {
     private final EarthGeneratorSettings bteGeneratorSettings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
 
     public CompletableFuture<Double> getHeight(double x, double z) {
-        double[] adjustedProj = toGeo(x, z);
-        double adjustedLon = adjustedProj[0];
-        double adjustedLat = adjustedProj[1];
-        GeneratorDatasets datasets = new GeneratorDatasets(bteGeneratorSettings);
         CompletableFuture<Double> altFuture;
         try {
+            double[] adjustedProj = bteGeneratorSettings.projection().toGeo(x, z);
+
+            double adjustedLon = adjustedProj[0];
+            double adjustedLat = adjustedProj[1];
+            GeneratorDatasets datasets = new GeneratorDatasets(bteGeneratorSettings);
+
+
             altFuture = datasets.<IScalarDataset>getCustom(EarthGeneratorPipelines.KEY_DATASET_HEIGHTS)
                     .getAsync(adjustedLon, adjustedLat)
                     .thenApply(a -> a + 1.0d);

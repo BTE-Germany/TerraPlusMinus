@@ -9,6 +9,7 @@ import net.buildtheearth.terraminusminus.util.CornerBoundingBox2d;
 import net.buildtheearth.terraminusminus.util.bvh.Bounds2d;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
@@ -82,25 +83,30 @@ public class RealWorldGenerator extends ChunkGenerator {
                         //--------------------------------------------------------
 
                         //Generates stone under all surfaces
-                        for (int y = minY; y < Math.min(maxY, groundY); y++) chunkData.setBlock(x, y, z, Material.STONE);
+                        for (int y = groundY-64; y < Math.min(maxY, groundY); y++) chunkData.setBlock(x, y, z, Material.STONE);
+
+
 
                         //Genrates terrain with block states
                         if (groundY < maxY) {
                             if(state != null){
-
-                                //System.out.println(state.getBlock().toString());
-                                switch (state.getBlock().toString()) {
-                                    case "minecraft:dirt_path":
-                                        chunkData.setBlock(x, groundY, z, Material.MOSS_BLOCK);
-                                        break;
-                                    case "minecraft:gray_concrete":
-                                        chunkData.setBlock(x, groundY, z, Material.GRAY_CONCRETE_POWDER);
-                                        break;
-                                    default:
-                                        chunkData.setBlock(x, groundY, z, BukkitBindings.getAsBlockData(state));
-                                        break;
+                                BlockData blockData = BukkitBindings.getAsBlockData(state);
+                                if(blockData != null) {
+                                    //System.out.println(state.getBlock().toString());
+                                    switch (state.getBlock().toString()) {
+                                        case "minecraft:dirt_path":
+                                            chunkData.setBlock(x, groundY, z, Material.MOSS_BLOCK);
+                                            break;
+                                        case "minecraft:gray_concrete":
+                                            chunkData.setBlock(x, groundY, z, Material.GRAY_CONCRETE_POWDER);
+                                            break;
+                                        default:
+                                            chunkData.setBlock(x, groundY, z, BukkitBindings.getAsBlockData(state));
+                                            break;
+                                    }
+                                }else{
+                                    chunkData.setBlock(x, groundY, z, material);
                                 }
-
                             } else {
                                 chunkData.setBlock(x, groundY, z, material);
                             }
