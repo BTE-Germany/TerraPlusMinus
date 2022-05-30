@@ -6,8 +6,6 @@
 [![Discord](https://img.shields.io/discord/692825222373703772.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/GkSxGTYaAJ)
 ![https://github.com/buildtheearth](https://go.buildtheearth.net/community-shield)
 
-`❌ Don't use this for building. World expansion is experimental.`
-
 TerraPlusMinus is a plugin for 1.18.1 which generates the real world height and outlines in the projection of [BuildTheEarth](https://en.wikipedia.org/wiki/Build_the_Earth).
 Optionally it can expand the world height to 1967 ([more stable Paper Version for height expansion](https://github.com/Build-the-Earth-Germany/PaperPlusMinus/releases)). 
 
@@ -46,6 +44,9 @@ worlds:
 
 3. Add `--add-exports=java.desktop/sun.awt.image=ALL-UNNAMED` to your jvm arguments in the start.bat
 4. Start your server 
+
+`❌ Don't use height expansion for building. World expansion is experimental.`
+  
 5. (Optional) To activate height expansion set **nms** in the config.yml to `true` and restart your server
 
 # Config
