@@ -8,6 +8,7 @@ import net.buildtheearth.terraminusminus.generator.ChunkDataLoader;
 import net.buildtheearth.terraminusminus.generator.EarthGeneratorPipelines;
 import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
 import net.buildtheearth.terraminusminus.generator.data.TreeCoverBaker;
+import net.buildtheearth.terraminusminus.substitutes.BlockState;
 import net.buildtheearth.terraminusminus.substitutes.ChunkPos;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
@@ -47,25 +48,40 @@ public class TreePopulator extends BlockPopulator {
                 byte[] treeCover = data.getCustom(EarthGeneratorPipelines.KEY_DATA_TREE_COVER, TreeCoverBaker.FALLBACK_TREE_DENSITY);
                 byte[] rng = RNG_CACHE.get();
 
-                random.nextBytes(rng);
-                for (int i = 0, dx = 0; dx < 16 >> 1; dx++) {
-                    for (int dz = 0; dz < 16 >> 1; dz++, i++) {
-                        if ((rng[i] & 0xFF) < (treeCover[(((x * 16 + dx) & 0xF) << 4) | ((z * 16 + dz) & 0xF)] & 0xFF)) {
 
-                            int value = random.nextInt(17) + 1;
-                            int groundY = data.groundHeight(8+dx, 8+dz);
-                            int waterY = data.waterHeight(8+dx, 8+dz);
+                        for (int i = 0, dx = 0; dx < 16 >> 1; dx++) {
+                            for (int dz = 0; dz < 16 >> 1; dz++, i++) {
+                                if ((rng[i] & 0xFF) < (treeCover[(((x * 16 + dx) & 0xF) << 4) | ((z * 16 + dz) & 0xF)] & 0xFF)) {
+                                    random.nextBytes(rng);
 
-                            Location loc = new Location(world, x * 16 + value, groundY + 1, z * 16 + value);
-                            //System.out.println(data.waterHeight(dx, dz));
+                                    int valueX = random.nextInt(8) + 1;
+                                    int valueZ = random.nextInt(8) + 1;
+                                    int groundY = 0;
+                                    int waterY = 0;
+                                    BlockState state = data.surfaceBlock(0,0);
 
-                            if (!(groundY < waterY) && groundY < 1955) {
-                                limitedRegion.generateTree(loc, random, TreeType.TREE);
+                                    try{
+                                        groundY = data.groundHeight(valueX + dx, valueZ + dz);
+                                        waterY = data.waterHeight(valueX + dx, valueZ + dz);
+                                        state = data.surfaceBlock(valueX+dx, valueZ+dz);
+                                    }catch (IndexOutOfBoundsException e){
+                                        e.printStackTrace();
+                                    }
+
+                                    if (groundY < waterY) { return; }
+
+                                    Location loc = new Location(world, valueX+dx + x * 16 , groundY+1 , valueZ+dz + z * 16);
+
+                                    if (!(groundY < waterY) && groundY < 1955 && state == null) {
+
+                                        limitedRegion.generateTree(loc, random, TreeType.TREE);
+
+                                    }
+
+                                }
                             }
-
                         }
-                    }
-                }
+
 
 
             } catch (InterruptedException | ExecutionException e) {

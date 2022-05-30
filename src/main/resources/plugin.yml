@@ -1,12 +1,13 @@
 name: Terraplusminus
-version: ${project.version}
+version: 1.0-SNAPSHOT
 main: de.btegermany.terraplusminus.Terraplusminus
 api-version: 1.18
 prefix: T+-
-authors: [ Nachwahl, meysster, ReD_55 ]
+authors: [ Nachwahl, meysster]
 description: A plugin which implements the terra-- api in a papermc plugin
 website: https://bte-germany.de
 load: STARTUP
+
 commands:
   tpll:
     description: Teleport
