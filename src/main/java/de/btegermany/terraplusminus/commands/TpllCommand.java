@@ -23,7 +23,7 @@ public class TpllCommand implements CommandExecutor {
             if (args.length == 2) {
                 if (player.hasPermission("t+-.tpll")) {
 
-
+                    int move = Terraplusminus.config.getInt("moveTerrain");
 
                     double[] coordinates = new double[2];
                     coordinates[1] = Double.parseDouble(args[0].replace(",", ""));
@@ -36,14 +36,14 @@ public class TpllCommand implements CommandExecutor {
                         e.printStackTrace();
                     }
                     TerraConnector terraConnector = new TerraConnector();
-                    Location location = new Location(player.getWorld(), mcCoordinates[0], terraConnector.getHeight((int) mcCoordinates[0], (int) mcCoordinates[1]).join(), mcCoordinates[1]);
+                    Location location = new Location(player.getWorld(), mcCoordinates[0], terraConnector.getHeight((int) mcCoordinates[0], (int) mcCoordinates[1]).join()+move, mcCoordinates[1]);
 
                     if(PaperLib.isChunkGenerated(location)){
                         location = new Location(player.getWorld(), mcCoordinates[0], player.getWorld().getHighestBlockYAt((int) mcCoordinates[0], (int) mcCoordinates[1])+1, mcCoordinates[1]);
                     }
                     PaperLib.teleportAsync(player,location);
 
-                    player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleported to " + coordinates[0] + ", " + coordinates[1] + ".");
+                    player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleported to " + coordinates[1] + ", " + coordinates[0] + ".");
                     return true;
                 } else {
                     player.sendMessage(Terraplusminus.config.getString("prefix") + "§7No permission for /tpll");

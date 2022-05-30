@@ -40,6 +40,7 @@ public class TreePopulator extends BlockPopulator {
 
     public void populate(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull LimitedRegion limitedRegion) {
         World world = Bukkit.getWorld(worldInfo.getName());
+        int move = Terraplusminus.config.getInt("moveTerrain");
         if(Terraplusminus.config.getBoolean("generateTrees")) {
             try {
 
@@ -70,9 +71,9 @@ public class TreePopulator extends BlockPopulator {
 
                                     if (groundY < waterY) { return; }
 
-                                    Location loc = new Location(world, valueX+dx + x * 16 , groundY+1 , valueZ+dz + z * 16);
+                                    Location loc = new Location(world, valueX+dx + x * 16 , groundY+1+move , valueZ+dz + z * 16);
 
-                                    if (!(groundY < waterY) && groundY < 1955 && state == null) {
+                                    if (!(groundY < waterY) && groundY < world.getMaxHeight()-12 && state == null) {
 
                                         limitedRegion.generateTree(loc, random, TreeType.TREE);
 

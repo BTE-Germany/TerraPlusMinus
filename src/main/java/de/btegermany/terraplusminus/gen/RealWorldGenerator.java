@@ -61,6 +61,7 @@ public class RealWorldGenerator extends ChunkGenerator {
 
 
             try {
+                int move = Terraplusminus.config.getInt("moveTerrain");
                 CachedChunkData terraData = this.loader.load(new ChunkPos(chunkX,chunkZ)).get();//this.loader.load(new ChunkPos(chunkX, chunkZ)).get();//new ChunkPos(chunkX, chunkZ)
                 for (int x = 0; x < 16; x++) {
                     for (int z = 0; z < 16; z++) {
@@ -83,7 +84,7 @@ public class RealWorldGenerator extends ChunkGenerator {
                         //--------------------------------------------------------
 
                         //Generates stone under all surfaces
-                        for (int y = minY; y < Math.min(maxY, groundY); y++) chunkData.setBlock(x, y, z, Material.STONE);
+                        for (int y = minY; y < Math.min(maxY, groundY); y++) chunkData.setBlock(x, y+move, z, Material.STONE);
 
 
 
@@ -95,24 +96,24 @@ public class RealWorldGenerator extends ChunkGenerator {
                                     //System.out.println(state.getBlock().toString());
                                     switch (state.getBlock().toString()) {
                                         case "minecraft:dirt_path":
-                                            chunkData.setBlock(x, groundY, z, Material.MOSS_BLOCK);
+                                            chunkData.setBlock(x, groundY+move, z, Material.MOSS_BLOCK);
                                             break;
                                         case "minecraft:gray_concrete":
-                                            chunkData.setBlock(x, groundY, z, Material.GRAY_CONCRETE_POWDER);
+                                            chunkData.setBlock(x, groundY+move, z, Material.GRAY_CONCRETE_POWDER);
                                             break;
                                         default:
-                                            chunkData.setBlock(x, groundY, z, BukkitBindings.getAsBlockData(state));
+                                            chunkData.setBlock(x, groundY+move, z, BukkitBindings.getAsBlockData(state));
                                             break;
                                     }
                                 }else{
-                                    chunkData.setBlock(x, groundY, z, material);
+                                    chunkData.setBlock(x, groundY+move, z, material);
                                 }
                             } else {
-                                chunkData.setBlock(x, groundY, z, material);
+                                chunkData.setBlock(x, groundY+move, z, material);
                             }
 
                         }
-                        for (int y = groundY + 1; y < Math.min(maxY, waterY); y++) chunkData.setBlock(x, y, z, Material.WATER);
+                        for (int y = groundY + 1; y < Math.min(maxY, waterY); y++) chunkData.setBlock(x, y+move, z, Material.WATER);
 
                     }
                 }
