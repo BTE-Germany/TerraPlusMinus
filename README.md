@@ -43,11 +43,12 @@ worlds:
 ```
 
 3. Add `--add-exports=java.desktop/sun.awt.image=ALL-UNNAMED` to your jvm arguments in the start.bat
-4. Start your server 
+4. Download [osm.json5](https://github.com/BuildTheEarth/terraplusplus/blob/35615cfe037b933a2b0e24271ba4759d5f94f5eb/src/main/resources/net/buildtheearth/terraplusplus/dataset/osm/osm.json5) and put it in `.\terraplusplus\config\`. 
+5. Start your server 
 
 `❌ Don't use height expansion for building. World expansion is experimental.`
   
-5. (Optional) To activate height expansion set **nms** in the config.yml to `true` and restart your server
+6. (Optional) To activate height expansion set **nms** in the config.yml to `true` and restart your server
 
 # Config
 
