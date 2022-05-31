@@ -6,6 +6,7 @@ import de.btegermany.terraplusminus.gen.*;
 import de.btegermany.terraplusminus.utils.FileBuilder;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldInitEvent;
@@ -23,6 +24,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
     public static final PrivateFieldHandler privateFieldHandler;
     public static NMSInjector injector;
     public static FileBuilder config;
+
 
     static {
         PrivateFieldHandler handler;
@@ -58,8 +60,11 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
                 .addDefault("useBiomes", true)
                 .addDefault("generateTrees",true)
                 .addDefault("moveTerrain",0)
+                .addDefault("surface", "GRASS_BLOCK")
+                .addDefault("houseOutlines","BRICKS")
+                .addDefault("streets", "GRAY_CONCRETE_POWDER")
+                .addDefault("paths","MOSS_BLOCK")
                 .copyDefaults(true).save();
-
      /*   ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
         protocolManager.addPacketListener(
                 new PacketAdapter(this, ListenerPriority.NORMAL,

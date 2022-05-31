@@ -56,7 +56,10 @@ public class RealWorldGenerator extends ChunkGenerator {
         final int minY = worldInfo.getMinHeight();
         final int maxY = worldInfo.getMaxHeight();
 
-
+        String houses = Terraplusminus.config.getString("houseOutlines");
+        String streets = Terraplusminus.config.getString("streets");
+        String paths = Terraplusminus.config.getString("paths");
+        String surface = Terraplusminus.config.getString("surface");
        // getChunkAsync(Bukkit.getWorld(worldInfo.getUID()),chunkX, chunkZ).whenComplete((ignored, throwable) -> {
 
 
@@ -69,8 +72,7 @@ public class RealWorldGenerator extends ChunkGenerator {
                         int groundY = terraData.groundHeight(x, z);
                         int waterY = terraData.waterHeight(x, z);
                         BlockState state = terraData.surfaceBlock(x, z);
-
-                        Material material = Material.GRASS_BLOCK;
+                        Material material = Material.getMaterial(surface);
 
                         //Generates sand in deserts
                         if((int)customBiomeProvider.getBiome()==4)
@@ -96,10 +98,13 @@ public class RealWorldGenerator extends ChunkGenerator {
                                     //System.out.println(state.getBlock().toString());
                                     switch (state.getBlock().toString()) {
                                         case "minecraft:dirt_path":
-                                            chunkData.setBlock(x, groundY+move, z, Material.MOSS_BLOCK);
+                                            chunkData.setBlock(x, groundY+move, z, Material.getMaterial(paths));
                                             break;
                                         case "minecraft:gray_concrete":
-                                            chunkData.setBlock(x, groundY+move, z, Material.GRAY_CONCRETE_POWDER);
+                                            chunkData.setBlock(x, groundY+move, z, Material.getMaterial(streets));
+                                            break;
+                                        case "minecraft:bricks":
+                                            chunkData.setBlock(x,groundY+move,z,Material.getMaterial(houses));
                                             break;
                                         default:
                                             chunkData.setBlock(x, groundY+move, z, BukkitBindings.getAsBlockData(state));
@@ -113,7 +118,7 @@ public class RealWorldGenerator extends ChunkGenerator {
                             }
 
                         }
-                        for (int y = groundY + 1; y < Math.min(maxY, waterY); y++) chunkData.setBlock(x, y+move, z, Material.WATER);
+                        for (int y = groundY+move + 1; y < Math.min(maxY, waterY+move); y++) chunkData.setBlock(x, y, z, Material.WATER);
 
                     }
                 }
