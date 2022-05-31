@@ -84,7 +84,7 @@ public class RealWorldGenerator extends ChunkGenerator {
                         //--------------------------------------------------------
 
                         //Generates stone under all surfaces
-                        for (int y = minY; y < Math.min(maxY, groundY); y++) chunkData.setBlock(x, y+move, z, Material.STONE);
+                        for (int y = minY; y < Math.min(maxY, groundY+move); y++) chunkData.setBlock(x, y, z, Material.STONE);
 
 
 
