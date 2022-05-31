@@ -73,12 +73,11 @@ public class TreePopulator extends BlockPopulator {
 
                                     Location loc = new Location(world, valueX+dx + x * 16 , groundY+1+move , valueZ+dz + z * 16);
 
-                                    if (!(groundY < waterY) && groundY < world.getMaxHeight()-12 && state == null) {
+                                    if (!(groundY < waterY) && groundY+move < world.getMaxHeight()-12 && groundY+move > world.getMinHeight() && state == null) {
 
                                         limitedRegion.generateTree(loc, random, TreeType.TREE);
 
                                     }
-
                                 }
                             }
                         }

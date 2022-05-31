@@ -57,7 +57,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
                 .addDefault("max-height", 2032)
                 .addDefault("useBiomes", true)
                 .addDefault("generateTrees",true)
-A                .addDefault("moveTerrain",0)
+                .addDefault("moveTerrain",0)
                 .copyDefaults(true).save();
 
      /*   ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();

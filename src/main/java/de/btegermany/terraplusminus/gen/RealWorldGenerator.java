@@ -89,7 +89,7 @@ public class RealWorldGenerator extends ChunkGenerator {
 
 
                         //Genrates terrain with block states
-                        if (groundY < maxY) {
+                        if (groundY+move < maxY) {
                             if(state != null){
                                 BlockData blockData = BukkitBindings.getAsBlockData(state);
                                 if(blockData != null) {
