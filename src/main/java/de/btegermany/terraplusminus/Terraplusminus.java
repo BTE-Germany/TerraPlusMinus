@@ -2,7 +2,6 @@ package de.btegermany.terraplusminus;
 
 
 import de.btegermany.terraplusminus.commands.TpllCommand;
-import de.btegermany.terraplusminus.events.PlayerBlockPlacingEvent;
 import de.btegermany.terraplusminus.events.PlayerMoveEvent;
 import de.btegermany.terraplusminus.gen.*;
 import de.btegermany.terraplusminus.utils.FileBuilder;
@@ -55,7 +54,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
 
 
         Bukkit.getPluginManager().registerEvents(this, this);
-        // Bukkit.getPluginManager().registerEvents(new PlayerBlockPlacingEvent(), this);
+
 
         Objects.requireNonNull(getCommand("tpll")).setExecutor(new TpllCommand());
 
