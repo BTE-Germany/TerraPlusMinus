@@ -2,15 +2,21 @@ package de.btegermany.terraplusminus;
 
 
 import de.btegermany.terraplusminus.commands.TpllCommand;
+import de.btegermany.terraplusminus.events.PlayerBlockPlacingEvent;
+import de.btegermany.terraplusminus.events.PlayerMoveEvent;
 import de.btegermany.terraplusminus.gen.*;
 import de.btegermany.terraplusminus.utils.FileBuilder;
 
+import io.papermc.lib.environments.Environment;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.WorldCreator;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.generator.ChunkGenerator;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.Field;
@@ -39,6 +45,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+
         Bukkit.getLogger().log(Level.INFO, "\n╭━━━━╮\n" +
                 "┃╭╮╭╮┃\n" +
                 "╰╯┃┃┣┻━┳━┳━┳━━╮╭╮\n" +
@@ -47,24 +54,29 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
                 "╱╱╰╯╰━━┻╯╰╯╰╯╰╯╰╯");
 
 
-        Bukkit.getPluginManager().registerEvents(this,this);
-       // Bukkit.getPluginManager().registerEvents(new PlayerBlockPlacingEvent(), this);
+        Bukkit.getPluginManager().registerEvents(this, this);
+        // Bukkit.getPluginManager().registerEvents(new PlayerBlockPlacingEvent(), this);
 
         Objects.requireNonNull(getCommand("tpll")).setExecutor(new TpllCommand());
 
         config = new FileBuilder("plugins/TerraPlusMinus", "config.yml")
-                .addDefault("prefix","§2§lT+- §8» ")
-                .addDefault("nms","false")
+                .addDefault("prefix", "§2§lT+- §8» ")
+                .addDefault("nms", "false")
                 .addDefault("min-height", -64)
                 .addDefault("max-height", 2032)
                 .addDefault("useBiomes", true)
-                .addDefault("generateTrees",true)
-                .addDefault("moveTerrain",0)
+                .addDefault("generateTrees", true)
+                .addDefault("moveTerrain", 0)
                 .addDefault("surface", "GRASS_BLOCK")
-                .addDefault("houseOutlines","BRICKS")
+                .addDefault("houseOutlines", "BRICKS")
                 .addDefault("streets", "GRAY_CONCRETE_POWDER")
-                .addDefault("paths","MOSS_BLOCK")
+                .addDefault("paths", "MOSS_BLOCK")
+                .addDefault("height-in-actionbar", false)
                 .copyDefaults(true).save();
+
+        if (Terraplusminus.config.getBoolean("height-in-actionbar")){
+            Bukkit.getPluginManager().registerEvents(new PlayerMoveEvent(this), this);
+         }
      /*   ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
         protocolManager.addPacketListener(
                 new PacketAdapter(this, ListenerPriority.NORMAL,
@@ -146,6 +158,15 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
     public void onDisable() {
         Bukkit.getLogger().log(Level.INFO, "[T+-] Plugin deactivated");
     }
+
+    public void createWorld(){
+        WorldCreator wc = new WorldCreator("world");
+
+        wc.generator(new RealWorldGenerator(this));
+
+        getServer().createWorld(wc);
+    }
+
 
     @EventHandler
     public void onWorldInit(WorldInitEvent event) {
