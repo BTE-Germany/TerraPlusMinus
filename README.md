@@ -57,7 +57,7 @@ Extended Render Distance with [Distant Horizons](https://www.curseforge.com/mine
 
 # Commands
 
-/tpll <latitudes> <longitudes> - `terra+-.tpll`
+/tpll <latitudes> <longitudes> - `t+-.tpll`
   
 # Installation 
 
