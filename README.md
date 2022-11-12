@@ -6,7 +6,9 @@
 [![Discord](https://img.shields.io/discord/692825222373703772.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/GkSxGTYaAJ)
 ![https://github.com/buildtheearth](https://go.buildtheearth.net/community-shield)
 
-Tested Minecraft-Versions: Paper 1.18.1, Paper 1.18.2
+Tested Minecraft-Versions: **Paper 1.18 - 1.19**
+
+Recommended Minecraft Version for BuildTheEarth: **Paper 1.18.2** 
 
 <!-- TABLE OF CONTENTS -->
 # Table of Contents
@@ -25,15 +27,14 @@ Tested Minecraft-Versions: Paper 1.18.1, Paper 1.18.2
 
 # Features
 
-TerraPlusMinus is a plugin for 1.18.1 which generates the real world terrain and outlines in the projection of [BuildTheEarth](https://en.wikipedia.org/wiki/Build_the_Earth).
-Optionally it can expand the world height to 1967 ([more stable Paper Version for height expansion](https://github.com/Build-the-Earth-Germany/PaperPlusMinus/releases)). 
+TerraPlusMinus is a plugin which generates the real world terrain and outlines in the projection of [BuildTheEarth](https://en.wikipedia.org/wiki/Build_the_Earth).
 
 - choose your own blocks for outlines
 - choose the height section you want to fit between -64 and 320 (or more)
 - choose if you want to use different biomes or just plains
 - choose if you want to generate trees
 - lidar is supported in the same way as in [Terra++](https://github.com/BuildTheEarth/terraplusplus)
-- choose if you want height expansion (experimental)
+- choose if you want height expansion
 
 # Images
 
@@ -77,9 +78,13 @@ worlds:
 
 7. If you only plan to use Minecraft Vanilla heights from -64 to 320, but e.g. your city is on height 500 you can set `moveTerrain: -300` in the config.yml.
 
-`❌ Don't use height expansion for building. World expansion is experimental.`
-  
-8. (Optional) To activate height expansion set **nms** in the config.yml to `true` and restart your server
+8. Use a datapack to expand your world height. Download it [here](https://github.com/BTE-Germany/TerraPlusMinus/blob/master/src/main/resources/world-height-datapack.zip) to expand 512 blocks and put it in `\world\datapacks\`.
+
+----------------------
+
+`❌ Don't use nms height expansion for building. NMS World expansion is experimental.`
+
+9. (Optional) To activate height expansion set **nms** in the config.yml to `true` and restart your server
 
 # Config
 
@@ -96,6 +101,7 @@ surface: GRASS_BLOCK
 houseOutlines: BRICKS
 streets: GRAY_CONCRETE_POWDER
 paths: MOSS_BLOCK
+height-in-actionbar: true
 ```
   
 # Dependencies
