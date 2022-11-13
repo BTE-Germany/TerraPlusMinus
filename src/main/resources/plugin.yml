@@ -1,6 +1,7 @@
 name: Terraplusminus
 version: 1.0-SNAPSHOT
 main: de.btegermany.terraplusminus.Terraplusminus
+api-version: 1.18
 prefix: T+-
 authors: [ Nachwahl, meysster ]
 description: A plugin which implements the terra-- api in a papermc plugin
