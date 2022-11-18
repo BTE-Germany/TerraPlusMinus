@@ -93,7 +93,9 @@ exec java -jar --add-exports=java.desktop/sun.awt.image=ALL-UNNAMED server-execu
 
 7. If you only plan to use Minecraft Vanilla heights from -64 to 320, but e.g. your city is on height 500 you can set `moveTerrain: -300` in the config.yml to offset your section which fits into the world.
 
-8. Use a datapack to expand your world height. Download it [here](https://github.com/BTE-Germany/TerraPlusMinus/blob/master/src/main/resources/world-height-datapack.zip) to expand 512 blocks and put it in `\world\datapacks\`.
+*Now your world is from -64 to 320, if you need more height, go to step 8.*
+
+8. (Optional) Use a datapack to expand your world height. Download it [here](https://github.com/BTE-Germany/TerraPlusMinus/blob/master/src/main/resources/world-height-datapack.zip) to expand 512 blocks or use your own datapack and put it in `\world\datapacks\`.
 
 ----------------------
 
