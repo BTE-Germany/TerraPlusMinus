@@ -36,7 +36,15 @@ public class TpllCommand implements CommandExecutor {
                         e.printStackTrace();
                     }
                     TerraConnector terraConnector = new TerraConnector();
-                    Location location = new Location(player.getWorld(), mcCoordinates[0], terraConnector.getHeight((int) mcCoordinates[0], (int) mcCoordinates[1]).join()+move, mcCoordinates[1]);
+
+                    double height = terraConnector.getHeight((int) mcCoordinates[0], (int) mcCoordinates[1]).join()+move;
+
+                    if(height > player.getWorld().getMaxHeight()){
+                        player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because the world is not high enough yet.");
+                        return true;
+                    }
+
+                    Location location = new Location(player.getWorld(), mcCoordinates[0], height, mcCoordinates[1]);
 
                     if(PaperLib.isChunkGenerated(location)){
                         location = new Location(player.getWorld(), mcCoordinates[0], player.getWorld().getHighestBlockYAt((int) mcCoordinates[0], (int) mcCoordinates[1])+1, mcCoordinates[1]);
