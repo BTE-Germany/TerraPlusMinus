@@ -63,7 +63,7 @@ Extended Render Distance with [Distant Horizons](https://www.curseforge.com/mine
 # Installation 
 
 1. Download the latest build of [Terra+- here](https://github.com/Build-the-Earth-Germany/terraplusminus/actions/workflows/maven.yml) and add it to your plugin folder
-2. Add these lines at the end of your bukkit.yml and replace "world" with the name of the server's main world name
+2. Add these lines at the end of your `bukkit.yml` and replace "world" with the name of the server's main world name
 
 ```
 worlds:
@@ -71,14 +71,31 @@ worlds:
     generator: TerraPlusMinus
 ```
 
-3. Add `--add-exports=java.desktop/sun.awt.image=ALL-UNNAMED` to your jvm arguments in the start.bat
+3. Add `--add-exports=java.desktop/sun.awt.image=ALL-UNNAMED` to your jvm arguments in the start file. It should look like this:
+
+Windows `start.bat` with:
+```
+@ECHO OFF
+java -jar --add-exports=java.desktop/sun.awt.image=ALL-UNNAMED server-executable-name.jar
+pause
+```
+Or Linux/Mac `start.sh` with: 
+```
+#!/bin/sh
+cd "$(dirname "$0")"
+exec java -jar --add-exports=java.desktop/sun.awt.image=ALL-UNNAMED server-executable-name.jar
+```
+
+
 4. Start your server 
 5. Download [osm.json5](https://github.com/BuildTheEarth/terraplusplus/blob/35615cfe037b933a2b0e24271ba4759d5f94f5eb/src/main/resources/net/buildtheearth/terraplusplus/dataset/osm/osm.json5) and put it in `.\terraplusplus\config\`. 
 6. Restart your server
 
-7. If you only plan to use Minecraft Vanilla heights from -64 to 320, but e.g. your city is on height 500 you can set `moveTerrain: -300` in the config.yml.
+7. If you only plan to use Minecraft Vanilla heights from -64 to 320, but e.g. your city is on height 500 you can set `moveTerrain: -300` in the config.yml to offset your section which fits into the world.
 
-8. Use a datapack to expand your world height. Download it [here](https://github.com/BTE-Germany/TerraPlusMinus/blob/master/src/main/resources/world-height-datapack.zip) to expand 512 blocks and put it in `\world\datapacks\`.
+*Now your world is from -64 to 320, if you need more height, go to step 8.*
+
+8. (Optional) Use a datapack to expand your world height. Download it [here](https://github.com/BTE-Germany/TerraPlusMinus/blob/master/src/main/resources/world-height-datapack.zip) to expand 512 blocks or use your own datapack and put it in `\world\datapacks\`.
 
 ----------------------
 
