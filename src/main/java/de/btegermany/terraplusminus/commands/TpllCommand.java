@@ -40,7 +40,7 @@ public class TpllCommand implements CommandExecutor {
                     double height = terraConnector.getHeight((int) mcCoordinates[0], (int) mcCoordinates[1]).join()+move;
 
                     if(height > player.getWorld().getMaxHeight()){
-                        player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because the world is not high enough yet.");
+                        player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because the world is not high enough at the moment.");
                         return true;
                     }
 

@@ -2,20 +2,19 @@ package de.btegermany.terraplusminus;
 
 
 import de.btegermany.terraplusminus.commands.TpllCommand;
+import de.btegermany.terraplusminus.commands.WhereCommand;
+import de.btegermany.terraplusminus.events.PacketListener;
 import de.btegermany.terraplusminus.events.PlayerMoveEvent;
 import de.btegermany.terraplusminus.gen.*;
 import de.btegermany.terraplusminus.utils.FileBuilder;
 
-import io.papermc.lib.environments.Environment;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.World;
-import org.bukkit.WorldCreator;
+
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.generator.ChunkGenerator;
-import org.bukkit.plugin.Plugin;
+
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.Field;
@@ -27,9 +26,7 @@ import java.util.logging.Level;
 public final class Terraplusminus extends JavaPlugin implements Listener {
 
     public static final PrivateFieldHandler privateFieldHandler;
-    public static NMSInjector injector;
     public static FileBuilder config;
-
 
     static {
         PrivateFieldHandler handler;
@@ -55,11 +52,13 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
 
         Bukkit.getPluginManager().registerEvents(this, this);
 
-
-        Objects.requireNonNull(getCommand("tpll")).setExecutor(new TpllCommand());
+        getCommand("where").setExecutor(new WhereCommand());
+        getCommand("tpll").setExecutor(new TpllCommand());
+        //Objects.requireNonNull(getCommand("tree")).setExecutor(new SchematicCommand());
 
         config = new FileBuilder("plugins/TerraPlusMinus", "config.yml")
                 .addDefault("prefix", "§2§lT+- §8» ")
+                .addDefault("height-datapack", "false")
                 .addDefault("nms", "false")
                 .addDefault("min-height", -64)
                 .addDefault("max-height", 2032)
@@ -76,78 +75,8 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         if (Terraplusminus.config.getBoolean("height-in-actionbar")){
             Bukkit.getPluginManager().registerEvents(new PlayerMoveEvent(this), this);
          }
-     /*   ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
-        protocolManager.addPacketListener(
-                new PacketAdapter(this, ListenerPriority.NORMAL,
-                        PacketType.Play.Server.MAP_CHUNK) {
 
 
-                    @Override
-                    public void onPacketSending(PacketEvent event) {
-
-                        if (event.getPacketID() == 0x22) { //event.getPacketID() == 0x22
-                            PacketContainer packet = event.getPacket();
-
-                            ClientboundLevelChunkPacketData oldChunkData = (ClientboundLevelChunkPacketData) packet.getModifier().read(2);
-                            byte[] chunkSections = oldChunkData.a().b();
-
-                            System.out.println("ByteArray: "+ Arrays.toString(chunkSections));
-
-                            byte[] newChunkSections = new byte[3];
-
-                            newChunkSections[0] = chunkSections[chunkSections.length-3];
-                            newChunkSections[1] = chunkSections[chunkSections.length-2];
-                            newChunkSections[2] = chunkSections[chunkSections.length-1];
-
-                            PacketDataSerializer updatedData = new PacketDataSerializer(null);
-
-
-                            updatedData.writeNbt(oldChunkData.getHeightmaps());
-
-                            updatedData.writeInt(newChunkSections.length);
-                            updatedData.writeBytes(newChunkSections);
-
-                            ClientboundLevelChunkPacketData newChunkData = new ClientboundLevelChunkPacketData(updatedData, i , j); //I have no clue about this integers, I'll investigate a bit but not now
-                            event.getPacket().getModifier().write(2,newChunkData);
-
-                            try {
-                                event.getPacket().getModifier().write(2, newPacketDataSerializer);
-                                event.getPlayer().sendMessage("Changed chunk!");
-                            }catch(Exception e){
-                                e.printStackTrace();
-                            }
-
-
-                     }
-                    }
-                });
-        protocolManager.addPacketListener(
-                new PacketAdapter(this, ListenerPriority.NORMAL,
-                        PacketType.Play.Client.POSITION) {
-                    @Override
-                    public void onPacketReceiving(PacketEvent event) {
-
-                        if(event.getPacketType() == PacketType.Play.Client.POSITION){
-                            PacketContainer packet = event.getPacket();
-                            double height = packet.getDoubles().read(1);
-                            //System.out.println("Höhe: "+height);
-
-
-                        }
-                    }
-                });
-*/
-        if(Terraplusminus.config.getBoolean("nms")) {
-            try {
-                injector = new NMSInjector();
-
-            } catch (IllegalArgumentException | SecurityException e) {
-                e.printStackTrace();
-            }
-            Bukkit.getLogger().log(Level.INFO,"[T+-] §4Activated height expansion");
-        }else{
-            Bukkit.getLogger().log(Level.INFO,"[T+-] §4Deactivated height expansion");
-        }
 
         Bukkit.getLogger().log(Level.INFO, "[T+-] Plugin loaded");
 
@@ -158,27 +87,64 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         Bukkit.getLogger().log(Level.INFO, "[T+-] Plugin deactivated");
     }
 
-    public void createWorld(){
-        WorldCreator wc = new WorldCreator("world");
-
-        wc.generator(new RealWorldGenerator(this));
-
-        getServer().createWorld(wc);
-    }
 
 
     @EventHandler
     public void onWorldInit(WorldInitEvent event) {
         if(Terraplusminus.config.getBoolean("nms")){
             if (event.getWorld().getGenerator() instanceof RealWorldGenerator) {
+                NMSInjector injector = null;
+                try {
+                    injector = new NMSInjector();
+                } catch (IllegalArgumentException | SecurityException e) {
+                    e.printStackTrace();
+                }
                 injector.attemptInject(event.getWorld());
+                Bukkit.getLogger().log(Level.INFO,"[T+-] §4Activated height expansion");
             }
         }
+        if(Terraplusminus.config.getBoolean("height-datapack")) {
+/*
+            if (event.getWorld().getGenerator().toString().equalsIgnoreCase("TerraPlusMinus")) {
+
+                String datapackPath = event.getWorld().getWorldFolder() + File.separator + "datapacks" + File.separator;
+                System.out.println(datapackPath);
+
+                InputStream inputStream = getResource("world-height-datapack.zip");
+                OutputStream out = new FileOutputStream(file);
+                byte[] buf = new byte[1024];
+                int len;
+                try {
+                    while ((len = in.read(buf)) > 0) {
+                        out.write(buf, 0, len);
+                    }
+                } catch (IOException io) {
+                    System.err.println("[TARDIS] Checker: Could not save the file (" + file + ").");
+                } finally {
+                    try {
+                        out.close();
+                    } catch (IOException e) {
+                        System.err.println("[TARDIS] Checker: Could not close the output stream.");
+                    }
+                }
+            } catch(FileNotFoundException e){
+                System.err.println("[TARDIS] Checker: File not found: " + filename);
+            } */
+        }
+
+
+
     }
 
     @Override
     public ChunkGenerator getDefaultWorldGenerator(String worldName, String id){
-       return new RealWorldGenerator(this);
+        if(Bukkit.getBukkitVersion().equalsIgnoreCase("1.17.1-R0.1-SNAPSHOT")){
+            Bukkit.getLogger().log(Level.WARNING,"[T+-] §cWorld generation does not work in 1.17");
+            return new RealWorldGenerator(this);
+        }else {
+            return new RealWorldGenerator(this);
+        }
+
     }
 
 }

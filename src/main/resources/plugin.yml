@@ -10,6 +10,10 @@ load: STARTUP
 
 commands:
   tpll:
-    description: Teleport
+    description: Teleports you to longitude and latitude
     usage: /tpll <long> <lat>
-    aliases: [terratpll]
+    aliases: [ tpc ]
+  where:
+    description: Gives you the longitude and latitude of your minecraft coordinates
+    usage: /where
+
