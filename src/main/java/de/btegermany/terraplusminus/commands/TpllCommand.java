@@ -44,14 +44,16 @@ public class TpllCommand implements CommandExecutor {
                         return true;
                     }
 
-                    Location location = new Location(player.getWorld(), mcCoordinates[0], height, mcCoordinates[1]);
+                    Location location = new Location(player.getWorld(), mcCoordinates[0], height, mcCoordinates[1],player.getLocation().getYaw(), player.getLocation().getPitch());
 
                     if(PaperLib.isChunkGenerated(location)){
-                        location = new Location(player.getWorld(), mcCoordinates[0], player.getWorld().getHighestBlockYAt((int) mcCoordinates[0], (int) mcCoordinates[1])+1, mcCoordinates[1]);
+                        location = new Location(player.getWorld(), mcCoordinates[0], player.getWorld().getHighestBlockYAt((int) mcCoordinates[0], (int) mcCoordinates[1])+1, mcCoordinates[1], player.getLocation().getYaw(), player.getLocation().getPitch());
+                    }else{
+                        player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Location is generating. Please wait a moment...");
                     }
                     PaperLib.teleportAsync(player,location);
-
                     player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleported to " + coordinates[1] + ", " + coordinates[0] + ".");
+
                     return true;
                 } else {
                     player.sendMessage(Terraplusminus.config.getString("prefix") + "§7No permission for /tpll");
