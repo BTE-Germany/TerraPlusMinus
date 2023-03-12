@@ -35,7 +35,7 @@ TerraPlusMinus is a plugin which generates the real world terrain and outlines i
 - choose if you want to generate trees
 - lidar is supported in the same way as in [Terra++](https://github.com/BuildTheEarth/terraplusplus)
 - automatic datapack installation
-- set coordinate bounds to prevent players from teleporting to areas, which are being workes on by other build teams
+- set coordinate bounds to prevent players from teleporting to areas, which are being worked on by other build teams
 
 # Images
 
