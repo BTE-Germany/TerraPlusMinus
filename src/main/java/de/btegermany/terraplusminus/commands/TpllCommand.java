@@ -24,6 +24,10 @@ public class TpllCommand implements CommandExecutor {
                 if (player.hasPermission("t+-.tpll")) {
 
                     int move = Terraplusminus.config.getInt("moveTerrain");
+                    Double minLat = Terraplusminus.config.getDouble("minLat");
+                    Double maxLat = Terraplusminus.config.getDouble("maxLat");
+                    Double minLon = Terraplusminus.config.getDouble("minLon");
+                    Double maxLon = Terraplusminus.config.getDouble("maxLon");
 
                     double[] coordinates = new double[2];
                     coordinates[1] = Double.parseDouble(args[0].replace(",", ""));
@@ -35,8 +39,15 @@ public class TpllCommand implements CommandExecutor {
                     } catch (OutOfProjectionBoundsException e) {
                         e.printStackTrace();
                     }
-                    TerraConnector terraConnector = new TerraConnector();
 
+                    if(minLat != 0 && maxLat != 0 && minLon != 0 && maxLon != 0){
+                        if(coordinates[1] < minLat || coordinates[0] < minLon || coordinates[1] > maxLat || coordinates[0] > maxLon){
+                            player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because this area is being worked on by another build team.");
+                            return true;
+                        }
+                    }
+
+                    TerraConnector terraConnector = new TerraConnector();
                     double height = terraConnector.getHeight((int) mcCoordinates[0], (int) mcCoordinates[1]).join()+move;
 
                     if(height > player.getWorld().getMaxHeight()){
