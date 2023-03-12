@@ -3,8 +3,8 @@ version: 1.0-SNAPSHOT
 main: de.btegermany.terraplusminus.Terraplusminus
 api-version: 1.18
 prefix: T+-
-authors: [ Nachwahl, meysster ]
-description: A plugin which implements the terra-- api in a papermc plugin
+authors: [ meysster, Nachwahl ]
+description: A plugin which implements the terra-- api in a spigot plugin
 website: https://bte-germany.de
 load: STARTUP
 
