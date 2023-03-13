@@ -17,7 +17,7 @@ Recommended Minecraft Version for BuildTheEarth: **Paper 1.18.2**
   <ol>
     <li><a href="#features">Features</a></li>
     <li><a href="#images">Images</a></li>
-    <li><a href="#commands">Commands</a></li>
+    <li><a href="#commands-and-permissions">Commands and Permissions</a></li>
     <li><a href="#installation">Installation</a></li>
     <li><a href="#config">Config</a></li>
     <li><a href="#dependencies">Dependencies</a></li>
@@ -34,13 +34,14 @@ TerraPlusMinus is a plugin which generates the real world terrain and outlines i
 - choose if you want to use different biomes or just plains
 - choose if you want to generate trees
 - lidar is supported in the same way as in [Terra++](https://github.com/BuildTheEarth/terraplusplus)
-- choose if you want height expansion
+- automatic datapack installation
+- set coordinate bounds to prevent players from teleporting to areas, which are being worked on by other build teams
 
 # Images
 
 ![](https://media.discordapp.net/attachments/795327112767602738/950790467908431982/2022-03-08_17.19.31.png?width=1329&height=702)
 
-World generation up to 1967 meters above sea level:
+World generation up to 1960 meters above sea level:
 
 ![](https://i.imgur.com/DE4aAhk.jpg)
 
@@ -56,10 +57,12 @@ Extended Render Distance with [Distant Horizons](https://www.curseforge.com/mine
 
 ![](https://media.discordapp.net/attachments/795314415816933427/950796277971554324/2022-03-08_17.42.16.png?width=1329&height=702)
 
-# Commands
+# Commands and Permissions
 
-/tpll <latitudes> <longitudes> - `t+-.tpll`
-  
+`/tpll <latitudes> <longitudes>` - Permission node: `t+-.tpll`
+
+`/where` - Permission node: `t+-.where`
+
 # Installation 
 
 1. Download the latest build of [Terra+- here](https://github.com/Build-the-Earth-Germany/terraplusminus/actions/workflows/maven.yml) and add it to your plugin folder
@@ -95,36 +98,29 @@ exec java -jar --add-exports=java.desktop/sun.awt.image=ALL-UNNAMED server-execu
 
 *Now your world is from -64 to 320, if you need more height, go to step 8.*
 
-8. (Optional) Use a datapack to expand your world height. Download it [here](https://github.com/BTE-Germany/TerraPlusMinus/blob/master/src/main/resources/world-height-datapack.zip) to expand 512 blocks or use your own datapack and put it in `\world\datapacks\`.
-
-----------------------
-
-`❌ Don't use nms height expansion for building. NMS World expansion is experimental.`
-
-9. (Optional) To activate height expansion set **nms** in the config.yml to `true` and restart your server
+8. (Optional) Use a datapack to expand your world height. You can set `height-datapack` in config.yml to`true` and restart your server. It will automaticly copy a datapack (with maximum world height possibly with a datapack) into your world folder.
 
 # Config
 
 Standard-Config:
 ```
 prefix: '§2§lT+- §8» '
-nms: false
-min-height: -64
-max-height: 2032
+height-datapack: false
 useBiomes: true
 generateTrees: true
+height-in-actionbar: true
 moveTerrain: 0
+minLat: 0
+maxLat: 0
+minLon: 0
+maxLon: 0
 surface: GRASS_BLOCK
 houseOutlines: BRICKS
 streets: GRAY_CONCRETE_POWDER
 paths: MOSS_BLOCK
-height-in-actionbar: true
 ```
   
 # Dependencies
 
 TerraMinusMinus - [Terra--](https://github.com/SmylerMC/terraminusminus) developed by [@SmylerMC](https://github.com/SmylerMC)
 
-# 
-
-> The NMSInjection Part is from the plugin https://github.com/Hex27/TerraformGenerator and can be found there. Credits go to [@Hex27](https://github.com/Hex27).
