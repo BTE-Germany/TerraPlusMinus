@@ -41,15 +41,20 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
 
         config = new FileBuilder("plugins/TerraPlusMinus", "config.yml")
                 .addDefault("prefix", "§2§lT+- §8» ")
+
                 .addDefault("height-datapack", false)
-                .addDefault("useBiomes", true)
-                .addDefault("generateTrees", true)
-                .addDefault("height-in-actionbar", false)
                 .addDefault("moveTerrain", 0)
+
+                .addDefault("height-in-actionbar", false)
+
+                .addDefault("passthroughTpll", "")
                 .addDefault("minLat", 0) // 46.94694079137405
                 .addDefault("maxLat", 0) // 55.337721930180116
                 .addDefault("minLon", 0) // 1.9049932813372725
                 .addDefault("maxLon", 0) // 15.665992332846406
+
+                .addDefault("generateTrees", true)
+                .addDefault("useBiomes", true)
                 .addDefault("surface", "GRASS_BLOCK")
                 .addDefault("houseOutlines", "BRICKS")
                 .addDefault("streets", "GRAY_CONCRETE_POWDER")
