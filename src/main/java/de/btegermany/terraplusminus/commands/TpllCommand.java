@@ -22,8 +22,8 @@ public class TpllCommand implements CommandExecutor {
         if (command.getName().equalsIgnoreCase("tpll")){
             Player player = (Player) commandSender;
             // Option to passthrough tpll to other bukkit plugins
-            String passthroughTpll = Terraplusminus.config.getString("passthroughTpll");
-            if(!passthroughTpll.isEmpty()){
+            String passthroughTpll = Terraplusminus.config.getString("passthrough_tpll");
+            if(passthroughTpll!=null){
                 player.chat("/" + passthroughTpll + ":tpll "+ args[0] + " " + args[1]);
                 return true;
             }

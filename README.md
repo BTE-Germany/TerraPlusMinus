@@ -124,8 +124,8 @@ max_latitude: 0.0               #          55.337721930180116
 min_longitude: 0.0              #          1.9049932813372725
 max_longitude: 0.0              #          15.665992332846406
 
-# Passthrough tpll to other bukkit plugins.
-passthrough_tpll: false
+# Passthrough tpll to other bukkit plugins. It will not passthrough when it's empty. Type in the name of your plugin. E.g. Your plugin name is vanillatpll you set passthrough_tpll: vanillatpll 
+passthrough_tpll:
 
 
 
