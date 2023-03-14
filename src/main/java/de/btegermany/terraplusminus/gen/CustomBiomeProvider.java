@@ -26,7 +26,7 @@ public class CustomBiomeProvider extends BiomeProvider {
     @NotNull
     @Override
     public Biome getBiome(@NotNull WorldInfo worldInfo, int x, int y, int z) {
-        if(Terraplusminus.config.getBoolean("useBiomes")) {
+        if(Terraplusminus.config.getBoolean("different_biomes")) {
             double[] coords = TerraConnector.toGeo(x, z);
             try {
                 biomeData = this.climateData.getAsync(coords[0], coords[1]).get();

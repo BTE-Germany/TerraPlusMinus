@@ -9,6 +9,7 @@ import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
@@ -30,11 +31,11 @@ public class TpllCommand implements CommandExecutor {
             if (args.length == 2) {
                 if (player.hasPermission("t+-.tpll")) {
 
-                    int move = Terraplusminus.config.getInt("moveTerrain");
-                    Double minLat = Terraplusminus.config.getDouble("minLat");
-                    Double maxLat = Terraplusminus.config.getDouble("maxLat");
-                    Double minLon = Terraplusminus.config.getDouble("minLon");
-                    Double maxLon = Terraplusminus.config.getDouble("maxLon");
+                    int move = Terraplusminus.config.getInt("terrain_offset");
+                    Double minLat = Terraplusminus.config.getDouble("min_latitude");
+                    Double maxLat = Terraplusminus.config.getDouble("max_latitude");
+                    Double minLon = Terraplusminus.config.getDouble("min_longitude");
+                    Double maxLon = Terraplusminus.config.getDouble("max_longitude");
 
                     double[] coordinates = new double[2];
                     coordinates[1] = Double.parseDouble(args[0].replace(",", ""));

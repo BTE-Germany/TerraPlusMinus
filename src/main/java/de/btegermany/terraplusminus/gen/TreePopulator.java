@@ -9,6 +9,7 @@ import net.buildtheearth.terraminusminus.generator.EarthGeneratorPipelines;
 import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
 import net.buildtheearth.terraminusminus.generator.data.TreeCoverBaker;
 import net.buildtheearth.terraminusminus.substitutes.BlockState;
+import net.buildtheearth.terraminusminus.substitutes.BukkitBindings;
 import net.buildtheearth.terraminusminus.substitutes.ChunkPos;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
@@ -19,10 +20,17 @@ import org.bukkit.generator.LimitedRegion;
 import org.bukkit.generator.WorldInfo;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+
+import static org.bukkit.Bukkit.getServer;
+import static org.bukkit.Bukkit.getWorld;
 
 public class TreePopulator extends BlockPopulator {
 
@@ -40,8 +48,8 @@ public class TreePopulator extends BlockPopulator {
 
     public void populate(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull LimitedRegion limitedRegion) {
         World world = Bukkit.getWorld(worldInfo.getName());
-        int move = Terraplusminus.config.getInt("moveTerrain");
-        if(Terraplusminus.config.getBoolean("generateTrees")) {
+        int move = Terraplusminus.config.getInt("terrain_offset");
+        if(Terraplusminus.config.getBoolean("generate_trees")) {
             try {
 
                 CachedChunkData data = this.loader.load(new ChunkPos(x, z)).get();
@@ -89,4 +97,7 @@ public class TreePopulator extends BlockPopulator {
             }
         }
     }
+
+
+
 }

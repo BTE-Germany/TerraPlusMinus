@@ -23,7 +23,7 @@ public class PlayerMoveEvent implements Listener {
 
     public PlayerMoveEvent(Plugin pPlugin){
         plugin = pPlugin;
-        move = Terraplusminus.config.getInt("moveTerrain");
+        move = Terraplusminus.config.getInt("terrain_offset");
     }
 
     @EventHandler
