@@ -104,20 +104,51 @@ exec java -jar --add-exports=java.desktop/sun.awt.image=ALL-UNNAMED server-execu
 
 Standard-Config:
 ```
+# The prefix is written in front of every message that is sent to the chat by the plugin.
 prefix: '§2§lT+- §8» '
-height-datapack: false
-useBiomes: true
-generateTrees: true
-height-in-actionbar: true
-moveTerrain: 0
-minLat: 0
-maxLat: 0
-minLon: 0
-maxLon: 0
-surface: GRASS_BLOCK
-houseOutlines: BRICKS
-streets: GRAY_CONCRETE_POWDER
-paths: MOSS_BLOCK
+
+# If this option is enabled, the plugin will copy a datapack with the name 'world-height-datapack.zip' to the world directory, which expands the world to the maximum possibly with a datapack 2016 (real 1960).
+height_datapack: false
+
+# If enabled, it will show the height of the player in the actionbar.
+height_in_actionbar: false
+
+
+
+# Tpll ------------------------------------------------
+# Set bounds so that players can only tpll within these limits. They will get a message that the area is being worked on by another build team.
+# The option is turned off when all values are 0.0
+# -----------------------------------------------------
+min_latitude: 0.0               # Example: 46.94694079137405
+max_latitude: 0.0               #          55.337721930180116
+min_longitude: 0.0              #          1.9049932813372725
+max_longitude: 0.0              #          15.665992332846406
+
+# Passthrough tpll to other bukkit plugins.
+passthrough_tpll: false
+
+
+
+# Generation -------------------------------------------
+# Offset your section which fits into the world.
+terrain_offset: 0
+
+# If disabled, tree generation is turned off.
+generate_trees: true
+
+# The biomes will be generated with https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification.
+# If turned off, everything will be plains biome.
+different_biomes: true
+
+# Customize the material, the blocks will be generated with.
+surface_material: GRASS_BLOCK
+building_outlines_material: BRICKS
+road_material: GRAY_CONCRETE_POWDER
+path_material: MOSS_BLOCK
+# -----------------------------------------------------
+
+# NOTE: Do not change
+config_version: 1.0
 ```
   
 # Dependencies
