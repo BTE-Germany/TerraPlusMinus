@@ -89,16 +89,13 @@ cd "$(dirname "$0")"
 exec java -jar --add-exports=java.desktop/sun.awt.image=ALL-UNNAMED server-executable-name.jar
 ```
 
+4. Start your server
 
-4. Start your server 
-5. Download [osm.json5](https://github.com/BuildTheEarth/terraplusplus/blob/35615cfe037b933a2b0e24271ba4759d5f94f5eb/src/main/resources/net/buildtheearth/terraplusplus/dataset/osm/osm.json5) and put it in `.\terraplusplus\config\`. 
-6. Restart your server
+*Now your world is from -64 to 320, if you need more height, go to step 6.*
 
-7. If you only plan to use Minecraft Vanilla heights from -64 to 320, but e.g. your city is on height 500 you can set `moveTerrain: -300` in the config.yml to offset your section which fits into the world.
+5. (Optional) If you only plan to use Minecraft Vanilla heights from -64 to 320, but e.g. your city is on height 500 you can set `moveTerrain: -300` in the config.yml to offset your section which fits into the world and restart your server.
 
-*Now your world is from -64 to 320, if you need more height, go to step 8.*
-
-8. (Optional) Use a datapack to expand your world height. You can set `height-datapack` in config.yml to`true` and restart your server. It will automaticly copy a datapack (with maximum world height possibly with a datapack) into your world folder.
+6. (Optional) Use a datapack to expand your world height. You can set `height_datapack` in config.yml to`true` and restart your server. It will automaticly copy a datapack (with maximum world height possibly with a datapack) into your world folder.
 
 # Config
 
