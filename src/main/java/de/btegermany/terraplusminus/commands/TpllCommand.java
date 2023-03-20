@@ -34,7 +34,7 @@ public class TpllCommand implements CommandExecutor {
                 if (args.length == 0) {
                     player.chat("/" + passthroughTpll + ":tpll");
                 } else {
-                    player.chat("/" + passthroughTpll + ":tpll " + String.join(" ", args);
+                    player.chat("/" + passthroughTpll + ":tpll " + String.join(" ", args));
                 }
                 return true;
             }
