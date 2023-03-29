@@ -1,5 +1,5 @@
 name: Terraplusminus
-version: 1.1.0
+version: 1.1.1
 main: de.btegermany.terraplusminus.Terraplusminus
 api-version: 1.18
 prefix: T+-
@@ -16,4 +16,7 @@ commands:
   where:
     description: Gives you the longitude and latitude of your minecraft coordinates
     usage: /where
+  offset:
+    description: Displays the x,y and z offset of your world
+    usage: /offset
 

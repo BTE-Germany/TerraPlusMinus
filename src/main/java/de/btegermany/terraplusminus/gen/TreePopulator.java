@@ -9,28 +9,22 @@ import net.buildtheearth.terraminusminus.generator.EarthGeneratorPipelines;
 import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
 import net.buildtheearth.terraminusminus.generator.data.TreeCoverBaker;
 import net.buildtheearth.terraminusminus.substitutes.BlockState;
-import net.buildtheearth.terraminusminus.substitutes.BukkitBindings;
 import net.buildtheearth.terraminusminus.substitutes.ChunkPos;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
-import org.bukkit.*;
-import org.bukkit.block.Block;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.TreeType;
+import org.bukkit.World;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.LimitedRegion;
 import org.bukkit.generator.WorldInfo;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
-import static org.bukkit.Bukkit.getServer;
-import static org.bukkit.Bukkit.getWorld;
 
 public class TreePopulator extends BlockPopulator {
 
@@ -38,58 +32,64 @@ public class TreePopulator extends BlockPopulator {
     private final EarthGeneratorSettings bteGeneratorSettings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
     ChunkDataLoader loader = new ChunkDataLoader(bteGeneratorSettings);
     public static final Cached<byte[]> RNG_CACHE = Cached.threadLocal(() -> new byte[16 * 16], ReferenceStrength.SOFT);
+    int xOffset;
+    int yOffset;
+    int zOffset;
+    boolean generate_trees;
 
     public TreePopulator() {
         this.cache = CacheBuilder.newBuilder()
                 .expireAfterAccess(5L, TimeUnit.MINUTES)
                 .softValues()
                 .build(new ChunkDataLoader(this.bteGeneratorSettings));
+        this.xOffset = Terraplusminus.config.getInt("terrain_offset.x");
+        this.yOffset = Terraplusminus.config.getInt("terrain_offset.y");
+        this.zOffset = Terraplusminus.config.getInt("terrain_offset.z");
+        this.generate_trees = Terraplusminus.config.getBoolean("generate_trees");
     }
 
     public void populate(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull LimitedRegion limitedRegion) {
         World world = Bukkit.getWorld(worldInfo.getName());
-        int move = Terraplusminus.config.getInt("terrain_offset");
-        if(Terraplusminus.config.getBoolean("generate_trees")) {
+        if (generate_trees) {
             try {
-
-                CachedChunkData data = this.loader.load(new ChunkPos(x, z)).get();
+                CachedChunkData data = this.loader.load(new ChunkPos(x - (xOffset / 16), z - (zOffset / 16))).get();
 
                 byte[] treeCover = data.getCustom(EarthGeneratorPipelines.KEY_DATA_TREE_COVER, TreeCoverBaker.FALLBACK_TREE_DENSITY);
                 byte[] rng = RNG_CACHE.get();
 
+                for (int i = 0, dx = 0; dx < 16 >> 1; dx++) {
+                    for (int dz = 0; dz < 16 >> 1; dz++, i++) {
+                        if ((rng[i] & 0xFF) < (treeCover[(((x * 16 + dx) & 0xF) << 4) | ((z * 16 + dz) & 0xF)] & 0xFF)) {
+                            random.nextBytes(rng);
 
-                        for (int i = 0, dx = 0; dx < 16 >> 1; dx++) {
-                            for (int dz = 0; dz < 16 >> 1; dz++, i++) {
-                                if ((rng[i] & 0xFF) < (treeCover[(((x * 16 + dx) & 0xF) << 4) | ((z * 16 + dz) & 0xF)] & 0xFF)) {
-                                    random.nextBytes(rng);
+                            int valueX = random.nextInt(8) + 1;
+                            int valueZ = random.nextInt(8) + 1;
+                            int groundY = 0;
+                            int waterY = 0;
+                            BlockState state = data.surfaceBlock(0, 0);
 
-                                    int valueX = random.nextInt(8) + 1;
-                                    int valueZ = random.nextInt(8) + 1;
-                                    int groundY = 0;
-                                    int waterY = 0;
-                                    BlockState state = data.surfaceBlock(0,0);
+                            try {
+                                groundY = data.groundHeight(valueX + dx, valueZ + dz);
+                                waterY = data.waterHeight(valueX + dx, valueZ + dz);
+                                state = data.surfaceBlock(valueX + dx, valueZ + dz);
+                            } catch (IndexOutOfBoundsException e) {
+                                e.printStackTrace();
+                            }
 
-                                    try{
-                                        groundY = data.groundHeight(valueX + dx, valueZ + dz);
-                                        waterY = data.waterHeight(valueX + dx, valueZ + dz);
-                                        state = data.surfaceBlock(valueX+dx, valueZ+dz);
-                                    }catch (IndexOutOfBoundsException e){
-                                        e.printStackTrace();
-                                    }
+                            if (groundY < waterY) {
+                                return;
+                            }
 
-                                    if (groundY < waterY) { return; }
+                            Location loc = new Location(world, valueX + dx + x * 16, groundY + 1 + yOffset, valueZ + dz + z * 16);
 
-                                    Location loc = new Location(world, valueX+dx + x * 16 , groundY+1+move , valueZ+dz + z * 16);
+                            if (!(groundY < waterY) && groundY + yOffset < world.getMaxHeight() - 12 && groundY + yOffset > world.getMinHeight() && state == null) {
 
-                                    if (!(groundY < waterY) && groundY+move < world.getMaxHeight()-12 && groundY+move > world.getMinHeight() && state == null) {
+                                limitedRegion.generateTree(loc, random, TreeType.TREE);
 
-                                        limitedRegion.generateTree(loc, random, TreeType.TREE);
-
-                                    }
-                                }
                             }
                         }
-
+                    }
+                }
 
 
             } catch (InterruptedException | ExecutionException e) {
@@ -97,7 +97,6 @@ public class TreePopulator extends BlockPopulator {
             }
         }
     }
-
 
 
 }

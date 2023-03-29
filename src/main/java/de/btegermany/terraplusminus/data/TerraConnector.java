@@ -12,7 +12,6 @@ import net.buildtheearth.terraminusminus.projection.OutOfProjectionBoundsExcepti
 import java.util.concurrent.CompletableFuture;
 
 
-
 /**
  * @author Noah Husby
  */

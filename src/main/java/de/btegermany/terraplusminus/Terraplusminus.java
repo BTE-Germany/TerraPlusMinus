@@ -1,19 +1,18 @@
 package de.btegermany.terraplusminus;
 
 
+import de.btegermany.terraplusminus.commands.OffsetCommand;
 import de.btegermany.terraplusminus.commands.TpllCommand;
 import de.btegermany.terraplusminus.commands.WhereCommand;
 import de.btegermany.terraplusminus.events.PlayerMoveEvent;
-import de.btegermany.terraplusminus.gen.*;
-
-
+import de.btegermany.terraplusminus.gen.RealWorldGenerator;
+import de.btegermany.terraplusminus.utils.FileBuilder;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.generator.ChunkGenerator;
-
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -28,7 +27,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         PluginDescriptionFile pdf = this.getDescription();
         String pluginVersion = pdf.getVersion();
 
-        Bukkit.getLogger().log(Level.INFO,"\n╭━━━━╮\n" +
+        Bukkit.getLogger().log(Level.INFO, "\n╭━━━━╮\n" +
                 "┃╭╮╭╮┃\n" +
                 "╰╯┃┃┣┻━┳━┳━┳━━╮╭╮\n" +
                 "╱╱┃┃┃┃━┫╭┫╭┫╭╮┣╯╰┳━━╮\n" +
@@ -39,32 +38,25 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         // Config ------------------
         this.saveDefaultConfig();
         this.config = getConfig();
-
-        Double configVersion = null;
-        try{
-            configVersion = this.config.getDouble("config_version");
-        }catch (Exception e){
-            e.printStackTrace();
-            Bukkit.getLogger().log(Level.SEVERE, "[T+-] Old config detected. Please delete and restart/reload.");
-        }
+        this.updateConfig();
         // --------------------------
 
         // Copies osm.json5 into terraplusplus/config/
         File[] terraPlusPlusDirectories = {new File("terraplusplus"), new File("terraplusplus/config/")};
-        for(File file : terraPlusPlusDirectories){
-            if(!file.exists()){
+        for (File file : terraPlusPlusDirectories) {
+            if (!file.exists()) {
                 file.mkdir();
             }
         }
         File osmJsonFile = new File("terraplusplus" + File.separator + "config" + File.separator + "osm.json5");
-        if(!osmJsonFile.exists()) {
+        if (!osmJsonFile.exists()) {
             this.copyFileFromResource("assets/terraplusminus/data/osm.json5", osmJsonFile);
         }
         // --------------------------
 
         // Registering events
         Bukkit.getPluginManager().registerEvents(this, this);
-        if (Terraplusminus.config.getBoolean("height_in_actionbar")){
+        if (Terraplusminus.config.getBoolean("height_in_actionbar")) {
             Bukkit.getPluginManager().registerEvents(new PlayerMoveEvent(this), this);
         }
         // --------------------------
@@ -72,7 +64,9 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         // Registering commands
         getCommand("tpll").setExecutor(new TpllCommand());
         getCommand("where").setExecutor(new WhereCommand());
+        getCommand("offset").setExecutor(new OffsetCommand());
         // --------------------------
+
 
         Bukkit.getLogger().log(Level.INFO, "[T+-] Terraplusminus successfully enabled");
     }
@@ -83,12 +77,12 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
     }
 
     @EventHandler
-    public void onWorldInit(WorldInitEvent event)  {
+    public void onWorldInit(WorldInitEvent event) {
         String datapackName = "world-height-datapack.zip";
         File datapackPath = new File(event.getWorld().getWorldFolder() + File.separator + "datapacks" + File.separator + datapackName);
-        if(Terraplusminus.config.getBoolean("height_datapack")) {
-            if (!event.getWorld().getName().contains("_nether") && !event.getWorld().getName().contains("_the_end") ) { //event.getWorld().getGenerator() is null here
-                if(!datapackPath.exists()) {
+        if (Terraplusminus.config.getBoolean("height_datapack")) {
+            if (!event.getWorld().getName().contains("_nether") && !event.getWorld().getName().contains("_the_end")) { //event.getWorld().getGenerator() is null here
+                if (!datapackPath.exists()) {
                     copyFileFromResource(datapackName, datapackPath);
                 }
             }
@@ -96,15 +90,13 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
     }
 
 
-
-
     @Override
-    public ChunkGenerator getDefaultWorldGenerator(String worldName, String id){
+    public ChunkGenerator getDefaultWorldGenerator(String worldName, String id) {
         return new RealWorldGenerator();
     }
 
 
-    private void copyFileFromResource(String resourcePath, File destination){
+    private void copyFileFromResource(String resourcePath, File destination) {
         InputStream in = getResource(resourcePath);
         OutputStream out;
         try {
@@ -124,7 +116,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         } finally {
             try {
                 out.close();
-                if(resourcePath.equals("world-height-datapack.zip")) {
+                if (resourcePath.equals("world-height-datapack.zip")) {
                     Bukkit.getLogger().log(Level.CONFIG, "[T+-] Copied datapack to world folder");
                     Bukkit.getLogger().log(Level.INFO, "[T+-] Stopping server to start again with datapack");
                     Bukkit.getServer().shutdown();
@@ -132,6 +124,38 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private void updateConfig() {
+        FileBuilder fileBuilder = new FileBuilder(this);
+
+        Double configVersion = null;
+        try {
+            configVersion = this.config.getDouble("config_version");
+        } catch (Exception e) {
+            e.printStackTrace();
+            Bukkit.getLogger().log(Level.SEVERE, "[T+-] Old config detected. Please delete and restart/reload.");
+        }
+        if (configVersion == 1.0) {
+            String passthroughTpll = Terraplusminus.config.getString("passthrough_tpll");
+            if (passthroughTpll == null) {
+                passthroughTpll = "";
+            }
+            int y = (int) this.config.getDouble("terrain_offset");
+            this.config.set("terrain_offset.x", 0);
+            this.config.set("terrain_offset.y", y);
+            this.config.set("terrain_offset.z", 0);
+            this.config.set("config_version", 1.1);
+            this.saveConfig();
+            FileBuilder.addLineAbove("terrain_offset", "\n" +
+                    "# Generation -------------------------------------------\n" +
+                    "# Offset your section which fits into the world.");
+            FileBuilder.deleteLine("# Passthrough tpll");
+            FileBuilder.deleteLine("passthrough_tpll");
+            FileBuilder.addLineAbove("# Generation", "# Passthrough tpll to other bukkit plugins. It will not passthrough when it's empty. Type in the name of your plugin. E.g. Your plugin name is vanillatpll you set passthrough_tpll: 'vanillatpll'\n" +
+                    "passthrough_tpll: '" + passthroughTpll + "'\n\n\n"); //Fixes empty config entry from passthrough_tpll
+
         }
     }
 

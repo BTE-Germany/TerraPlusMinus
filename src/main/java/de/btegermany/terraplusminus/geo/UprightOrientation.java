@@ -20,7 +20,7 @@ package de.btegermany.terraplusminus.geo;
 
 public class UprightOrientation extends ProjectionTransform {
 
-    public UprightOrientation (GeographicProjection input) {
+    public UprightOrientation(GeographicProjection input) {
         super(input);
     }
 
@@ -40,6 +40,6 @@ public class UprightOrientation extends ProjectionTransform {
 
     public double[] bounds() {
         double[] b = input.bounds();
-        return new double[] {b[0],-b[3],b[2],-b[1]};
+        return new double[]{b[0], -b[3], b[2], -b[1]};
     }
 }

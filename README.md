@@ -29,10 +29,10 @@ Recommended Minecraft Version for BuildTheEarth: **Paper 1.18.2**
 
 TerraPlusMinus is a plugin which generates the real world terrain and outlines in the projection of [BuildTheEarth](https://en.wikipedia.org/wiki/Build_the_Earth).
 
-- choose your own blocks for outlines
-- choose the height section you want to fit between -64 and 320 (or more)
-- choose if you want to use different biomes or just plains
-- choose if you want to generate trees
+- customize your surface blocks
+- offset x,y and/or z world generation and commands
+- option to disable different biomes
+- option to disable tree generation
 - lidar is supported in the same way as in [Terra++](https://github.com/BuildTheEarth/terraplusplus)
 - automatic datapack installation
 - set coordinate bounds to prevent players from teleporting to areas, which are being worked on by other build teams
@@ -93,7 +93,7 @@ exec java -jar --add-exports=java.desktop/sun.awt.image=ALL-UNNAMED server-execu
 
 *Now your world is from -64 to 320, if you need more height, go to step 6.*
 
-5. (Optional) If you only plan to use Minecraft Vanilla heights from -64 to 320, but e.g. your city is on height 500 you can set `moveTerrain: -300` in the config.yml to offset your section which fits into the world and restart your server.
+5. (Optional) If you only plan to use Minecraft Vanilla heights from -64 to 320, but e.g. your city is on height 500 you can set `y: -300` in the `terrain_offset` category in the config.yml to offset your section which fits into the world and restart your server.
 
 6. (Optional) Use a datapack to expand your world height. You can set `height_datapack` in config.yml to`true` and restart your server. It will automaticly copy a datapack (with maximum world height possibly with a datapack) into your world folder.
 
@@ -121,14 +121,17 @@ max_latitude: 0.0               #          55.337721930180116
 min_longitude: 0.0              #          1.9049932813372725
 max_longitude: 0.0              #          15.665992332846406
 
-# Passthrough tpll to other bukkit plugins. It will not passthrough when it's empty. Type in the name of your plugin. E.g. Your plugin name is vanillatpll you set passthrough_tpll: vanillatpll 
-passthrough_tpll:
+# Passthrough tpll to other bukkit plugins. It will not passthrough when it's empty. Type in the name of your plugin. E.g. Your plugin name is vanillatpll you set passthrough_tpll: 'vanillatpll'
+passthrough_tpll: ''
 
 
 
 # Generation -------------------------------------------
 # Offset your section which fits into the world.
-terrain_offset: 0
+terrain_offset:
+  x: 0
+  y: 0
+  z: 0
 
 # If disabled, tree generation is turned off.
 generate_trees: true
@@ -145,7 +148,7 @@ path_material: MOSS_BLOCK
 # -----------------------------------------------------
 
 # NOTE: Do not change
-config_version: 1.0
+config_version: 1.1
 ```
   
 # Dependencies

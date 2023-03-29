@@ -33,7 +33,7 @@ public class ScaleProjection extends ProjectionTransform {
     }
 
     public double[] toGeo(double x, double y) {
-        return input.toGeo(x/scaleX, y/scaleY);
+        return input.toGeo(x / scaleX, y / scaleY);
     }
 
     public double[] fromGeo(double lon, double lat) {
@@ -44,7 +44,7 @@ public class ScaleProjection extends ProjectionTransform {
     }
 
     public boolean upright() {
-        return (scaleY<0)^input.upright();
+        return (scaleY < 0) ^ input.upright();
     }
 
     public double[] bounds() {
@@ -57,6 +57,6 @@ public class ScaleProjection extends ProjectionTransform {
     }
 
     public double metersPerUnit() {
-        return input.metersPerUnit()/Math.sqrt((scaleX*scaleX + scaleY*scaleY)/2); //TODO: better transform
+        return input.metersPerUnit() / Math.sqrt((scaleX * scaleX + scaleY * scaleY) / 2); //TODO: better transform
     }
 }

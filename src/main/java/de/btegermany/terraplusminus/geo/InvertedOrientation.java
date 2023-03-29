@@ -25,7 +25,7 @@ public class InvertedOrientation extends ProjectionTransform {
     }
 
     public double[] toGeo(double x, double y) {
-        return input.toGeo(y,x);
+        return input.toGeo(y, x);
     }
 
     public double[] fromGeo(double lon, double lat) {
@@ -38,6 +38,6 @@ public class InvertedOrientation extends ProjectionTransform {
 
     public double[] bounds() {
         double[] b = input.bounds();
-        return new double[] {b[1],b[0],b[3],b[2]};
+        return new double[]{b[1], b[0], b[3], b[2]};
     }
 }

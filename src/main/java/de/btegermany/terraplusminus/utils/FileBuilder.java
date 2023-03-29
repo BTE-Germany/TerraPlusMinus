@@ -4,19 +4,24 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.Plugin;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.List;
 import java.util.Set;
 
 public class FileBuilder {
-    private final File file;
-    private final FileConfiguration cfg;
+    private File file = null;
+    private FileConfiguration cfg = null;
+    private static Plugin plugin;
 
     public FileBuilder(String path, String file) {
         this.file = new File(path, file);
         this.cfg = YamlConfiguration.loadConfiguration(this.file);
+    }
+
+    public FileBuilder(Plugin plugin) {
+        this.plugin = plugin;
     }
 
     public FileBuilder addDefault(String path, Object value) {
@@ -109,6 +114,85 @@ public class FileBuilder {
 
     public ConfigurationSection getConfigurationSection(String section) {
         return this.cfg.getConfigurationSection(section);
+    }
+
+    public static void deleteLine(String path) {
+        try {
+            File inputFile = new File(plugin.getDataFolder() + File.separator + "config.yml");
+            File tempFile = new File(plugin.getDataFolder() + File.separator + "temp.yml");
+
+            BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
+
+            String currentLine;
+
+            while ((currentLine = reader.readLine()) != null) {
+                if (currentLine.contains(path)) {
+                    writer.write("");
+                } else {
+                    writer.write(currentLine + "\n");
+                }
+            }
+
+            writer.close();
+            reader.close();
+            inputFile.delete();
+            tempFile.renameTo(inputFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void addLineAbove(String path, String comment) {
+        try {
+            File inputFile = new File(plugin.getDataFolder() + File.separator + "config.yml");
+            File tempFile = new File(plugin.getDataFolder() + File.separator + "temp.yml");
+
+            BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
+
+            String currentLine;
+
+            while ((currentLine = reader.readLine()) != null) {
+                if (currentLine.contains(path)) {
+                    writer.write(comment + "\n");
+                }
+                writer.write(currentLine + "\n");
+            }
+
+            writer.close();
+            reader.close();
+            inputFile.delete();
+            tempFile.renameTo(inputFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void editPathValue(String path, String value) {
+        try {
+            File inputFile = new File(plugin.getDataFolder() + File.separator + "config.yml");
+            File tempFile = new File(plugin.getDataFolder() + File.separator + "temp.yml");
+
+            BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
+
+            String currentLine;
+
+            while ((currentLine = reader.readLine()) != null) {
+                if (currentLine.contains(path)) {
+                    writer.write(path + ": " + value + "\n");
+                } else {
+                    writer.write(currentLine + "\n");
+                }
+            }
+            writer.close();
+            reader.close();
+            inputFile.delete();
+            tempFile.renameTo(inputFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void delete() {

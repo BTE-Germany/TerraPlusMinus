@@ -28,7 +28,7 @@ public class TpllCommand implements CommandExecutor {
 
             //Option to passthrough tpll to other bukkit plugins.
             String passthroughTpll = Terraplusminus.config.getString("passthrough_tpll");
-            if (passthroughTpll != null) {
+            if (!passthroughTpll.isEmpty()) {
                 //Check if any args are parsed.
                 if (args.length == 0) {
                     player.chat("/" + passthroughTpll + ":tpll");
@@ -42,7 +42,9 @@ public class TpllCommand implements CommandExecutor {
             if (args.length >= 2) {
                 if (player.hasPermission("t+-.tpll")) {
 
-                    int move = Terraplusminus.config.getInt("terrain_offset");
+                    int xOffset = Terraplusminus.config.getInt("terrain_offset.x");
+                    int yOffset = Terraplusminus.config.getInt("terrain_offset.y");
+                    int zOffset = Terraplusminus.config.getInt("terrain_offset.z");
                     Double minLat = Terraplusminus.config.getDouble("min_latitude");
                     Double maxLat = Terraplusminus.config.getDouble("max_latitude");
                     Double minLon = Terraplusminus.config.getDouble("min_longitude");
@@ -70,33 +72,33 @@ public class TpllCommand implements CommandExecutor {
 
                     double height;
                     if (args.length >= 3) {
-                        height = Double.parseDouble(args[2]) + move;
+                        height = Double.parseDouble(args[2]) + yOffset;
                     } else {
-                        height = terraConnector.getHeight((int) mcCoordinates[0], (int) mcCoordinates[1]).join() + move;
+                        height = terraConnector.getHeight((int) mcCoordinates[0], (int) mcCoordinates[1]).join() + yOffset;
                     }
 
                     if (height > player.getWorld().getMaxHeight()) {
                         player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because the world is not high enough at the moment.");
                         return true;
                     }
-
-                    Location location = new Location(player.getWorld(), mcCoordinates[0], height, mcCoordinates[1], player.getLocation().getYaw(), player.getLocation().getPitch());
-                    player.sendMessage(String.valueOf(location.getY()));
+                    Location location = new Location(player.getWorld(), mcCoordinates[0] + xOffset, height, mcCoordinates[1] + zOffset, player.getLocation().getYaw(), player.getLocation().getPitch());
 
                     if (PaperLib.isChunkGenerated(location)) {
                         if (args.length >= 3) {
-                            location = new Location(player.getWorld(), mcCoordinates[0], height, mcCoordinates[1], player.getLocation().getYaw(), player.getLocation().getPitch());
+                            location = new Location(player.getWorld(), mcCoordinates[0] + xOffset, height, mcCoordinates[1] + zOffset, player.getLocation().getYaw(), player.getLocation().getPitch());
                         } else {
-                            location = new Location(player.getWorld(), mcCoordinates[0], player.getWorld().getHighestBlockYAt((int) mcCoordinates[0], (int) mcCoordinates[1]) + 1, mcCoordinates[1], player.getLocation().getYaw(), player.getLocation().getPitch());
+                            location = new Location(player.getWorld(), mcCoordinates[0] + xOffset, player.getWorld().getHighestBlockYAt((int) mcCoordinates[0] + xOffset, (int) mcCoordinates[1] + zOffset) + 1, mcCoordinates[1] + zOffset, player.getLocation().getYaw(), player.getLocation().getPitch());
                         }
                     } else {
                         player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Location is generating. Please wait a moment...");
                     }
                     PaperLib.teleportAsync(player, location);
-                    player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleported to " + coordinates[1] + ", " + coordinates[0] + ".");
+
 
                     if (args.length >= 3) {
-                        player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Using custom height " + height);
+                        player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleported to " + coordinates[1] + ", " + coordinates[0] + ", " + height + ".");
+                    } else {
+                        player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleported to " + coordinates[1] + ", " + coordinates[0] + ".");
                     }
 
                     return true;

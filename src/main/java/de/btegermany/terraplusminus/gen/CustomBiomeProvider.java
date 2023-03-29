@@ -16,7 +16,7 @@ import java.util.concurrent.ExecutionException;
 
 public class CustomBiomeProvider extends BiomeProvider {
 
-   private final KoppenClimateData climateData = new KoppenClimateData();
+    private final KoppenClimateData climateData = new KoppenClimateData();
     double biomeData;
 
     public static List<Biome> biomeList = new ArrayList<>(Arrays.asList(Biome.OCEAN, Biome.JUNGLE, Biome.BAMBOO_JUNGLE, Biome.SPARSE_JUNGLE, Biome.SAVANNA, Biome.DESERT, Biome.PLAINS, Biome.SUNFLOWER_PLAINS, Biome.BEACH, Biome.WINDSWEPT_GRAVELLY_HILLS,
@@ -26,7 +26,7 @@ public class CustomBiomeProvider extends BiomeProvider {
     @NotNull
     @Override
     public Biome getBiome(@NotNull WorldInfo worldInfo, int x, int y, int z) {
-        if(Terraplusminus.config.getBoolean("different_biomes")) {
+        if (Terraplusminus.config.getBoolean("different_biomes")) {
             double[] coords = TerraConnector.toGeo(x, z);
             try {
                 biomeData = this.climateData.getAsync(coords[0], coords[1]).get();
@@ -35,11 +35,11 @@ public class CustomBiomeProvider extends BiomeProvider {
                 e.printStackTrace();
 
             }
-        }else biomeData = 8;
+        } else biomeData = 8;
         return Biome.PLAINS;
     }
 
-    public double getBiome(){
+    public double getBiome() {
         return biomeData;
     }
 
@@ -49,8 +49,8 @@ public class CustomBiomeProvider extends BiomeProvider {
         return biomeList;
     }
 
-    public static Biome koppenDataToBukkitBiome(double koppenData){
-          switch ((int)koppenData){
+    public static Biome koppenDataToBukkitBiome(double koppenData) {
+        switch ((int) koppenData) {
             case 0:
                 return Biome.OCEAN;
             case 1:
