@@ -59,9 +59,11 @@ Extended Render Distance with [Distant Horizons](https://www.curseforge.com/mine
 
 # Commands and Permissions
 
-`/tpll <latitudes> <longitudes>` - Permission node: `t+-.tpll`
+`/tpll <latitudes> <longitudes> [height]` - Permission node: `t+-.tpll`
 
 `/where` - Permission node: `t+-.where`
+
+`/offset` - Permission node: `t+-.offset`
 
 # Installation 
 
