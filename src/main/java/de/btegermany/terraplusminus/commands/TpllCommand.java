@@ -81,7 +81,6 @@ public class TpllCommand implements CommandExecutor {
                     }
 
                     Location location = new Location(player.getWorld(), mcCoordinates[0], height, mcCoordinates[1], player.getLocation().getYaw(), player.getLocation().getPitch());
-                    player.sendMessage(String.valueOf(location.getY()));
 
                     if (PaperLib.isChunkGenerated(location)) {
                         if (args.length >= 3) {
