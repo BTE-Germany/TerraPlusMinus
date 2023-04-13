@@ -70,20 +70,32 @@ public class TreePopulator extends BlockPopulator {
         // Load Trees from customTrees.json
         JsonObject treeTypes = getJSONObject();
         final int[] treeCount = {0};
-        treeTypes.asMap().forEach((treeType, treeSizes) -> {
-            trees.put(treeType, new ArrayList<>());
-            Bukkit.getLogger().log(Level.INFO, "[T+-] Loading Tree Type " + treeType);
-            treeSizes.getAsJsonObject().asMap().forEach((treeSize, treeNames) -> {
-                treeNames.getAsJsonObject().asMap().forEach((treeName, tree) -> {
+        treeTypes.entrySet().forEach(treeSizes -> {
+
+            trees.put(treeSizes.getKey(), new ArrayList<>());
+
+            Bukkit.getLogger().log(Level.INFO, "[T+-] Loading Tree Type " + treeSizes.getKey());
+
+            treeSizes.getValue().getAsJsonObject().entrySet().forEach(treeNames -> {
+
+                treeNames.getValue().getAsJsonObject().entrySet().forEach(tree -> {
+
                     treeCount[0]++;
                     ArrayList<TreeBlock> treeBlocks = new ArrayList<>();
-                    tree.getAsJsonObject().get("blocks").getAsJsonArray().forEach(treeBlockElement -> {
+
+                    tree.getValue().getAsJsonObject().get("blocks").getAsJsonArray().forEach(treeBlockElement -> {
+
                         JsonObject treeBlock = treeBlockElement.getAsJsonObject();
                         treeBlocks.add(new TreeBlock(treeBlock.get("x").getAsInt(), treeBlock.get("y").getAsInt(), treeBlock.get("z").getAsInt(), Material.getMaterial(treeBlock.get("material").getAsString())));
+
                     });
-                    trees.get(treeType).add(treeBlocks);
+
+                    trees.get(treeSizes.getKey()).add(treeBlocks);
+
                 });
+
             });
+
         });
         Bukkit.getLogger().log(Level.INFO, "[T+-] Finished loading " + treeCount[0] + " custom trees");
 
@@ -122,7 +134,7 @@ public class TreePopulator extends BlockPopulator {
                             }
 
                             Location loc = new Location(world, valueX + x * 16, groundY + 1 + yOffset, valueZ + z * 16); // is offset missing?
-                            if (!(groundY < waterY) && groundY + yOffset < world.getMaxHeight() - 12 && groundY + yOffset > world.getMinHeight() && state == null) {
+                            if (!(groundY < waterY) && groundY + yOffset < world.getMaxHeight() - 35 && groundY + yOffset > world.getMinHeight() && state == null) {
                                 switch ((int) customBiomeProvider.getBiome()) {
                                     case 4, 6, 17: // desert and savanna
                                         generateCustomTree(limitedRegion, loc, "savanna");
