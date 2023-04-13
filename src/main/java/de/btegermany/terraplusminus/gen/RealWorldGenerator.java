@@ -3,6 +3,7 @@ package de.btegermany.terraplusminus.gen;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import de.btegermany.terraplusminus.Terraplusminus;
+import de.btegermany.terraplusminus.gen.tree.TreePopulator;
 import net.buildtheearth.terraminusminus.generator.CachedChunkData;
 import net.buildtheearth.terraminusminus.generator.ChunkDataLoader;
 import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
@@ -163,11 +164,11 @@ public class RealWorldGenerator extends ChunkGenerator {
                             if (blockData != null) {
                                 //System.out.println(state.getBlock().toString());
                                 switch (state.getBlock().toString()) {
-                                    case "minecraft:dirt_path":
-                                        chunkData.setBlock(x, groundY + yOffset, z, Material.getMaterial(paths));
-                                        break;
                                     case "minecraft:gray_concrete":
                                         chunkData.setBlock(x, groundY + yOffset, z, Material.getMaterial(streets));
+                                        break;
+                                    case "minecraft:dirt_path":
+                                        chunkData.setBlock(x, groundY + yOffset, z, Material.getMaterial(paths));
                                         break;
                                     case "minecraft:bricks":
                                         chunkData.setBlock(x, groundY + yOffset, z, Material.getMaterial(houses));
@@ -241,7 +242,7 @@ public class RealWorldGenerator extends ChunkGenerator {
 
     @NotNull
     public List<BlockPopulator> getDefaultPopulators(@NotNull World world) {
-        return Arrays.asList(new TreePopulator());
+        return Arrays.asList(new TreePopulator(customBiomeProvider));
     }
 
     @Nullable
@@ -307,4 +308,6 @@ public class RealWorldGenerator extends ChunkGenerator {
 
     }*/
     // Paper
+
+
 }
