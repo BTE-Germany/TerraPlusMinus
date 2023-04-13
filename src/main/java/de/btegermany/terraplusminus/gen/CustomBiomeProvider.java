@@ -115,6 +115,5 @@ public class CustomBiomeProvider extends BiomeProvider {
                 return Biome.ICE_SPIKES;
         }
 
-        return Biome.PLAINS;
     }
 }
