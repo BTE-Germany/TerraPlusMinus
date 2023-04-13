@@ -8,7 +8,7 @@
 
 Tested Minecraft-Versions: **Paper 1.18 - 1.19**
 
-Recommended Minecraft Version for BuildTheEarth: **Paper 1.18.2** 
+Recommended Minecraft Version for BuildTheEarth: **Paper 1.18.2**
 
 <!-- TABLE OF CONTENTS -->
 # Table of Contents
@@ -36,10 +36,9 @@ TerraPlusMinus is a plugin which generates the real world terrain and outlines i
 - lidar is supported in the same way as in [Terra++](https://github.com/BuildTheEarth/terraplusplus)
 - automatic datapack installation
 - set coordinate bounds to prevent players from teleporting to areas, which are being worked on by other build teams
+- custom tree generation
 
 # Images
-
-![](https://media.discordapp.net/attachments/795327112767602738/950790467908431982/2022-03-08_17.19.31.png?width=1329&height=702)
 
 World generation up to 1960 meters above sea level:
 
@@ -47,15 +46,17 @@ World generation up to 1960 meters above sea level:
 
 Biome generation (including sand in deserts):
 
-![](https://images-ext-2.discordapp.net/external/7sN83KI6YZM39ovU1RS5XUScVhjOIqqUiiftCLfO3Kc/https/i.imgur.com/OxNGJ8w.jpg?width=1329&height=702)
-
-Customization:
-
-![](https://cdn.discordapp.com/attachments/784314470712344626/981183662269808650/2022-05-31_15.13.05.png)
+![](https://cdn.discordapp.com/attachments/1023664488735576165/1096055054248718447/2023-04-13_14.48.58.png?width=1329&height=702)
 
 Extended Render Distance with [Distant Horizons](https://www.curseforge.com/minecraft/mc-mods/distant-horizons):
 
 ![](https://media.discordapp.net/attachments/795314415816933427/950796277971554324/2022-03-08_17.42.16.png?width=1329&height=702)
+
+Custom Tree Generation:
+
+![](https://media.discordapp.net/attachments/1023664488735576165/1096052591185625139/2023-04-13_14.37.00.png?width=1329&height=702)
+![](https://media.discordapp.net/attachments/1023664488735576165/1096052591877701732/2023-04-13_14.38.31.png?width=1329&height=702)
+![](https://media.discordapp.net/attachments/1023664488735576165/1096052592997564466/2023-04-13_14.41.07.png?width=1330&height=702)
 
 # Commands and Permissions
 
@@ -65,7 +66,7 @@ Extended Render Distance with [Distant Horizons](https://www.curseforge.com/mine
 
 `/offset` - Permission node: `t+-.offset`
 
-# Installation 
+# Installation
 
 1. Download the latest build of [Terra+- here](https://github.com/Build-the-Earth-Germany/terraplusminus/actions/workflows/maven.yml) and add it to your plugin folder
 2. Add these lines at the end of your `bukkit.yml` and replace "world" with the name of the server's main world name
@@ -76,15 +77,19 @@ worlds:
     generator: TerraPlusMinus
 ```
 
-3. Add `--add-exports=java.desktop/sun.awt.image=ALL-UNNAMED` to your jvm arguments in the start file. It should look like this:
+3. Add `--add-exports=java.desktop/sun.awt.image=ALL-UNNAMED` to your jvm arguments in the start file. It should look
+   like this:
 
 Windows `start.bat` with:
+
 ```
 @ECHO OFF
 java -jar --add-exports=java.desktop/sun.awt.image=ALL-UNNAMED server-executable-name.jar
 pause
 ```
-Or Linux/Mac `start.sh` with: 
+
+Or Linux/Mac `start.sh` with:
+
 ```
 #!/bin/sh
 cd "$(dirname "$0")"
@@ -152,7 +157,7 @@ path_material: MOSS_BLOCK
 # NOTE: Do not change
 config_version: 1.1
 ```
-  
+
 # Dependencies
 
 TerraMinusMinus - [Terra--](https://github.com/SmylerMC/terraminusminus) developed by [@SmylerMC](https://github.com/SmylerMC)
