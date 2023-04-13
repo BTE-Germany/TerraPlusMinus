@@ -51,69 +51,81 @@ public class CustomBiomeProvider extends BiomeProvider {
 
     public static Biome koppenDataToBukkitBiome(double koppenData) {
         switch ((int) koppenData) {
-            case 0:
+            case 0 -> {
                 return Biome.OCEAN;
-            case 1:
+            }
+            case 1, 12 -> {
                 return Biome.JUNGLE;
-            case 2:
+            }
+            case 2 -> {
                 return Biome.BAMBOO_JUNGLE;
-            case 3:
+            }
+            case 3, 11 -> {
                 return Biome.SPARSE_JUNGLE;
-            case 4:
+            }
+            case 4, 7, 5 -> {
                 return Biome.DESERT;
-            case 5:
-                return Biome.DESERT;
-            case 6:
+            }
+            case 6 -> {
                 return Biome.SAVANNA;
-            case 7:
-                return Biome.DESERT;
-            case 8:
+            }
+            case 8 -> {
                 return Biome.PLAINS;
-            case 9:
+            }
+            case 9 -> {
                 return Biome.SUNFLOWER_PLAINS;
-            case 10:
+            }
+            case 10 -> {
                 return Biome.BEACH;
-            case 11:
-                return Biome.SPARSE_JUNGLE;
-            case 12:
-                return Biome.JUNGLE;
-            case 13:
+            }
+            case 13 -> {
                 return Biome.WINDSWEPT_GRAVELLY_HILLS;
-            case 14:
+            }
+            case 14, 15 -> {
                 return Biome.FLOWER_FOREST;
-            case 15:
-                return Biome.FLOWER_FOREST;
-            case 16:
+            }
+            case 16 -> {
                 return Biome.WINDSWEPT_HILLS;
-            case 17:
+            }
+            case 17 -> {
                 return Biome.SAVANNA_PLATEAU;
-            case 18:
+            }
+            case 18 -> {
                 return Biome.WOODED_BADLANDS;
-            case 19:
+            }
+            case 19 -> {
                 return Biome.SNOWY_TAIGA;
-            case 20:
+            }
+            case 20 -> {
                 return Biome.OLD_GROWTH_PINE_TAIGA;
-            case 21:
+            }
+            case 21, 22 -> {
                 return Biome.SWAMP;
-            case 22:
-                return Biome.SWAMP;
-            case 23:
+            }
+            case 23, 24 -> {
                 return Biome.OLD_GROWTH_SPRUCE_TAIGA;
-            case 24:
-                return Biome.OLD_GROWTH_SPRUCE_TAIGA;
-            case 25:
+            }
+            case 25 -> {
                 return Biome.FOREST;
-            case 26:
+            }
+            case 26 -> {
                 return Biome.DARK_FOREST;
-            case 27:
+            }
+            case 27 -> {
                 return Biome.TAIGA;
-            case 28:
+            }
+            case 28 -> {
                 return Biome.SNOWY_SLOPES;
-            case 29:
+            }
+            case 29 -> {
                 return Biome.SNOWY_PLAINS;
-            case 30:
+            }
+            case 30 -> {
                 return Biome.ICE_SPIKES;
+            }
+            default -> {
+                return Biome.PLAINS;
+            }
         }
-
     }
 }
