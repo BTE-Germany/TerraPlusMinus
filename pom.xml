@@ -6,7 +6,7 @@
 
     <groupId>de.btegermany</groupId>
     <artifactId>terraplusminus</artifactId>
-    <version>1.1.1</version>
+    <version>1.2.0</version>
     <packaging>jar</packaging>
 
     <name>Terraplusminus</name>
@@ -110,6 +110,11 @@
     </repositories>
 
     <dependencies>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>

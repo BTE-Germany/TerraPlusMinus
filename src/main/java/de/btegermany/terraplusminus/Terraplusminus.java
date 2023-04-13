@@ -21,9 +21,11 @@ import java.util.logging.Level;
 
 public final class Terraplusminus extends JavaPlugin implements Listener {
     public static FileConfiguration config;
+    public static Terraplusminus instance;
 
     @Override
     public void onEnable() {
+        instance = this;
         PluginDescriptionFile pdf = this.getDescription();
         String pluginVersion = pdf.getVersion();
 
@@ -96,7 +98,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
     }
 
 
-    private void copyFileFromResource(String resourcePath, File destination) {
+    public void copyFileFromResource(String resourcePath, File destination) {
         InputStream in = getResource(resourcePath);
         OutputStream out;
         try {
@@ -118,7 +120,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
                 out.close();
                 if (resourcePath.equals("world-height-datapack.zip")) {
                     Bukkit.getLogger().log(Level.CONFIG, "[T+-] Copied datapack to world folder");
-                    Bukkit.getLogger().log(Level.INFO, "[T+-] Stopping server to start again with datapack");
+                    Bukkit.getLogger().log(Level.SEVERE, "[T+-] Stopping server to start again with datapack");
                     Bukkit.getServer().shutdown();
                 }
             } catch (IOException e) {
