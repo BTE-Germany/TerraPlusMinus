@@ -185,8 +185,9 @@ public class RealWorldGenerator extends ChunkGenerator {
                         }
 
                     }
-                    for (int y = groundY + yOffset + 1; y < Math.min(maxY, waterY + yOffset); y++)
+                    for (int y = groundY + yOffset + 1; y <= Math.min(maxY, waterY + yOffset); y++) {
                         chunkData.setBlock(x, y, z, Material.WATER);
+                    }
                 }
             }
         } catch (Exception e) {
