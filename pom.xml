@@ -6,7 +6,7 @@
 
     <groupId>de.btegermany</groupId>
     <artifactId>terraplusminus</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.1</version>
     <packaging>jar</packaging>
 
     <name>Terraplusminus</name>
@@ -46,29 +46,29 @@
                 </executions>
             </plugin>
             <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-resources-plugin</artifactId>
-            <version>3.1.0</version>
-            <executions>
-                <execution>
-                    <id>copy-files-on-build</id>
-                    <phase>package</phase>
-                    <goals>
-                        <goal>copy-resources</goal>
-                    </goals>
-                    <configuration>
-                        <outputDirectory>C:\Users\Leander\Desktop\Plugins\Server 1.18.1\plugins</outputDirectory>
-                        <resources>
-                            <resource>
-                                <directory>${basedir}/target</directory>
-                                <include>${project.build.finalName}.jar</include>
-                                <filtering>false</filtering>
-                            </resource>
-                        </resources>
-                    </configuration>
-                </execution>
-            </executions>
-        </plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-files-on-build</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>C:\Users\Leander\Desktop\Plugins\Server 1.18.1\plugins</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/target</directory>
+                                    <include>${project.build.finalName}.jar</include>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
         <resources>
             <resource>
