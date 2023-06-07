@@ -7,9 +7,8 @@
 [![Discord](https://img.shields.io/discord/692825222373703772.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/GkSxGTYaAJ)
 ![https://github.com/buildtheearth](https://go.buildtheearth.net/community-shield)
 
-Tested Minecraft-Versions: **Paper 1.18 - 1.19**
+Tested Minecraft-Versions: **Paper 1.18 - 1.20**
 
-Recommended Minecraft Version for BuildTheEarth: **Paper 1.18.2**
 
 <!-- TABLE OF CONTENTS -->
 # Table of Contents
@@ -75,7 +74,7 @@ Custom Tree Generation:
 ```
 worlds:
   world:
-    generator: TerraPlusMinus
+    generator: Terraplusminus
 ```
 
 3. Add `--add-exports=java.desktop/sun.awt.image=ALL-UNNAMED` to your jvm arguments in the start file. It should look
