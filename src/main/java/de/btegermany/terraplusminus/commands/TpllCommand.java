@@ -51,8 +51,8 @@ public class TpllCommand implements CommandExecutor {
                     Double maxLon = Terraplusminus.config.getDouble("max_longitude");
 
                     double[] coordinates = new double[2];
-                    coordinates[1] = Double.parseDouble(args[0].replace(",", ""));
-                    coordinates[0] = Double.parseDouble(args[1]);
+                    coordinates[1] = Double.parseDouble(args[0].replace(",", "").replace("°", ""));
+                    coordinates[0] = Double.parseDouble(args[1].replace("°", ""));
 
                     double[] mcCoordinates = new double[0];
                     try {
