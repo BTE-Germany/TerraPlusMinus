@@ -23,7 +23,6 @@ import org.bukkit.generator.WorldInfo;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -37,7 +36,7 @@ public class RealWorldGenerator extends ChunkGenerator {
 
     EarthGeneratorSettings settings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
     ChunkDataLoader loader;
-    public LoadingCache<ChunkPos, CompletableFuture<CachedChunkData>> cache = null;
+    public LoadingCache<ChunkPos, CompletableFuture<CachedChunkData>> cache;
     private final CustomBiomeProvider customBiomeProvider;
 
     int xOffset;
