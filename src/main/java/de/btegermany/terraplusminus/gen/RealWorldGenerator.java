@@ -152,7 +152,7 @@ public class RealWorldGenerator extends ChunkGenerator {
                     };
 
                     //Generates stone under all surfaces
-                    //Get the surface height minus 1.
+                    //Get the surface height.
                     int sY = Math.min(maxY, groundY + yOffset);
                     //If the surface height is at or below the minimum height, then there is no reason to run this.
                     if (minY < sY) {
