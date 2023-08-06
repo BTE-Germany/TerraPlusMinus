@@ -28,39 +28,37 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 
 public class RealWorldGenerator extends ChunkGenerator {
     private Location spawnLocation = null;
 
     EarthGeneratorSettings settings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
-    ChunkDataLoader loader;
     public LoadingCache<ChunkPos, CompletableFuture<CachedChunkData>> cache;
     private final CustomBiomeProvider customBiomeProvider;
 
-    int xOffset;
-    int yOffset;
-    int zOffset;
+    int xOffset, yOffset, zOffset;
 
     private final Material houses, streets, paths, surface;
 
     public RealWorldGenerator() {
-        this.loader = new ChunkDataLoader(settings);
         this.customBiomeProvider = new CustomBiomeProvider();
         this.cache = CacheBuilder.newBuilder()
                 .expireAfterAccess(5L, TimeUnit.MINUTES)
                 .softValues()
-                .build(new ChunkDataLoader(this.settings));
+                .build(new ChunkDataLoader(settings));
 
         houses = Material.getMaterial(Objects.requireNonNullElse(Terraplusminus.config.getString("building_outlines_material"), "BRICKS"));
         streets = Material.getMaterial(Objects.requireNonNullElse(Terraplusminus.config.getString("road_material"), "GRAY_CONCRETE_POWDER"));
         paths = Material.getMaterial(Objects.requireNonNullElse(Terraplusminus.config.getString("path_material"), "MOSS_BLOCK"));
         surface = Material.getMaterial(Objects.requireNonNullElse(Terraplusminus.config.getString("surface_material"), "GRASS_BLOCK"));
 
-        this.xOffset = Terraplusminus.config.getInt("terrain_offset.x");
-        this.yOffset = Terraplusminus.config.getInt("terrain_offset.y");
-        this.zOffset = Terraplusminus.config.getInt("terrain_offset.z");
+        xOffset = Terraplusminus.config.getInt("terrain_offset.x");
+        yOffset = Terraplusminus.config.getInt("terrain_offset.y");
+        zOffset = Terraplusminus.config.getInt("terrain_offset.z");
     }
 
 
@@ -76,51 +74,8 @@ public class RealWorldGenerator extends ChunkGenerator {
 
     public void generateSurface(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunkZ, @NotNull ChunkData chunkData) {
         CompletableFuture<CachedChunkData> future = this.cache.getUnchecked(new ChunkPos(chunkX - (xOffset / 16), chunkZ - (zOffset / 16)));
-        //pollAsyncCubePopulator(chunkX,chunkZ);
         generateSurface(worldInfo, future, chunkData, yOffset);
-                /* TRY TO INCREASE GENERATING PERFORMANCE
-
-                int minChunkSurface = chunkData.getMinHeight();
-                chunkData.setRegion(0, minY,0,16,minChunkSurface,16, Material.STONE);
-                for (int x = 0; x < 16; x++) {
-                    for (int z = 0; z < 16; z++) {
-                        for (int y = minChunkSurface; y < Math.min(maxY, groundY+move); y++) chunkData.setBlock(x, y, z, Material.STONE);
-                    }
-                }
-
-                 */
-
-/*
-                for (int x = 0; x < 16; x++) {
-                    for (int z = 0; z < 16; z++) {
-                    int move = Terraplusminus.config.getInt("terrain_offset");
-                        int groundY = 200;
-                        chunkData.setBlock(x, groundY, z, Material.GRASS_BLOCK);
-                        for (int y = minY; y < Math.min(maxY, groundY+move); y++) chunkData.setBlock(x, y, z, Material.STONE);
-                    }
-                }
-
- */
-
-        //   });
     }
-/*
-    public CompletableFuture<Void> getChunkAsync(World world, int x, int z) {
-        return CompletableFuture.allOf(PaperLib.getChunkAtAsync(world, x, z));
-    }
-
-    private ChunkPos getChunkPos(World world,int chunkX, int chunkZ) throws ExecutionException, InterruptedException {
-        CompletableFuture<Chunk> chunk = PaperLib.getChunkAtAsync(world, chunkX, chunkZ);
-        chunk.thenAccept(marked -> {Bukkit.getServer().getWorld(String.valueOf(world)).setChunkForceLoaded(chunkX, chunkZ, true); });
-
-        ChunkPos pos = new ChunkPos(chunk.get().getX(),chunk.get().getZ());
-        this.cache = CacheBuilder.newBuilder()
-                .expireAfterAccess(5L, TimeUnit.MINUTES)
-                .softValues()
-                .build(new ChunkDataLoader(this.settings));
-        CompletableFuture<CachedChunkData> future = this.cache.get(pos);
-        return pos;
-    }*/
 
     private void generateSurface(@NotNull WorldInfo worldInfo, CompletableFuture<CachedChunkData> future, @NotNull ChunkData chunkData, int yOffset) {
         final int minY = worldInfo.getMinHeight();
@@ -157,7 +112,7 @@ public class RealWorldGenerator extends ChunkGenerator {
                     //If the surface height is at or below the minimum height, then there is no reason to run this.
                     if (minY < sY) {
                         //Set the column to stone.
-                        chunkData.setRegion(x, minY, z, x+1, sY, z+1, Material.STONE);
+                        chunkData.setRegion(x, minY, z, x + 1, sY, z + 1, Material.STONE);
                     }
 
                     //Genrates terrain with block states
@@ -187,18 +142,9 @@ public class RealWorldGenerator extends ChunkGenerator {
                     }
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
-    public void pollAsyncCubePopulator(int chunkX, int chunkZ) {
-        //ensure that all columns required for population are ready to go
-        // checking all neighbors here improves performance when checking if a cube can be generated
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                this.cache.getUnchecked(new ChunkPos(chunkX + dx, chunkZ + dz));
-            }
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -238,12 +184,6 @@ public class RealWorldGenerator extends ChunkGenerator {
         return spawnLocation;
     }
 
-    @Deprecated
-    public boolean isParallelCapable() {
-        return false;
-    }
-
-
     public boolean shouldGenerateNoise() {
         return false;
     }
@@ -276,24 +216,4 @@ public class RealWorldGenerator extends ChunkGenerator {
     public boolean shouldGenerateStructures() {
         return false;
     }
-
-
-    /*@NotNull
-    public ChunkGenerator.ChunkData createVanillaChunkData(@NotNull World world, int x, int z) {
-        var chunk = Bukkit.getServer().createChunkData(world);
-
-        Field maxHeightField = null;
-        try {
-            maxHeightField = chunk.getClass().getDeclaredField("maxHeight");
-            maxHeightField.setAccessible(true);
-            maxHeightField.set(chunk, 2032);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
-        }
-        return chunk;
-
-    }*/
-    // Paper
-
-
 }
