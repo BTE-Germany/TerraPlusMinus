@@ -26,6 +26,62 @@ public class TpllCommand implements CommandExecutor {
             }
             Player player = (Player) commandSender;
 
+            // Entity selector
+
+            // detect if command starts with @ or with a player name
+
+            if ((args[0].startsWith("@") || !isDouble(args[0].replace(",", ""))) && player.hasPermission("t+-.forcetpll")) {
+                if (args[0].equals("@a")) {
+                    StringBuilder playerList = new StringBuilder();
+                    Terraplusminus.instance.getServer().getOnlinePlayers().forEach(p -> {
+                        p.chat("/tpll " + String.join(" ", args).substring(2));
+                        if (Terraplusminus.instance.getServer().getOnlinePlayers().size() > 1) {
+                            playerList.append(p.getName()).append(", ");
+                        } else {
+                            playerList.append(p.getName()).append(" ");
+                        }
+                    });
+                    // delete last comma if no player follows
+                    if (playerList.length() > 0 && playerList.charAt(playerList.length() - 2) == ',') {
+                        playerList.deleteCharAt(playerList.length() - 2);
+                    }
+                    player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleported §9" + playerList + "§7to" + String.join(" ", args).substring(2));
+                    return true;
+                } else if (args[0].equals("@p")) {
+                    // find nearest player but not the player itself
+                    Player nearestPlayer = null;
+                    double nearestDistance = Double.MAX_VALUE;
+                    for (Player p : Terraplusminus.instance.getServer().getOnlinePlayers()) {
+                        if (p.getLocation().distanceSquared(player.getLocation()) < nearestDistance && (!p.equals(player) || Terraplusminus.instance.getServer().getOnlinePlayers().size() == 1)) {
+                            nearestPlayer = p;
+                            nearestDistance = p.getLocation().distanceSquared(player.getLocation());
+                        }
+                    }
+                    if (nearestPlayer != null) {
+                        player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleported §9" + nearestPlayer.getName() + " §7to" + String.join(" ", args).substring(2));
+                        nearestPlayer.chat("/tpll " + String.join(" ", args).substring(2));
+                    }
+                    return true;
+                } else {
+                    Player target = null;
+                    //check if target player is online
+                    for (Player p : Terraplusminus.instance.getServer().getOnlinePlayers()) {
+                        if (p.getName().equals(args[0])) {
+                            target = p;
+                        }
+                    }
+
+                    if (target == null) {
+                        player.sendMessage(Terraplusminus.config.getString("prefix") + "§cNo player found with name §9" + args[0]);
+                        return true;
+                    }
+
+                    player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleported §9" + target.getName() + " §7to " + args[1] + " " + args[2]);
+                    target.chat("/tpll " + String.join(" ", args).replace(target.getName(), ""));
+                    return true;
+                }
+            }
+
             //Option to passthrough tpll to other bukkit plugins.
             String passthroughTpll = Terraplusminus.config.getString("passthrough_tpll");
             if (!passthroughTpll.isEmpty()) {
@@ -112,5 +168,14 @@ public class TpllCommand implements CommandExecutor {
             }
         }
         return true;
+    }
+
+    public boolean isDouble(String str) {
+        try {
+            Double.parseDouble(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 }
