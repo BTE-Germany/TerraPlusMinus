@@ -40,7 +40,7 @@ TerraPlusMinus is a plugin which generates the real world terrain and outlines i
 
 # Images
 
-World generation up to 1960 meters above sea level:
+World generation up to 2032 meters above sea level:
 
 ![](https://i.imgur.com/DE4aAhk.jpg)
 
