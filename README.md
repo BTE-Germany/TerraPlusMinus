@@ -66,9 +66,13 @@ Custom Tree Generation:
 
 `/offset` - Permission node: `t+-.offset`
 
+Permission node: `t+-.admin` - Bypasses the coordinate bounds of tpll
+
 # Installation
 
-1. Download the latest build of [Terra+- here](https://github.com/Build-the-Earth-Germany/terraplusminus/actions/workflows/maven.yml) and add it to your plugin folder
+1. Download the latest build
+   of [Terra+- here](https://github.com/Build-the-Earth-Germany/terraplusminus/actions/workflows/maven.yml) and add it
+   to your plugin folder
 2. Add these lines at the end of your `bukkit.yml` and replace "world" with the name of the server's main world name
 
 ```
