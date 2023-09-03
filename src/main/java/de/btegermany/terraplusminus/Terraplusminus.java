@@ -4,9 +4,12 @@ package de.btegermany.terraplusminus;
 import de.btegermany.terraplusminus.commands.OffsetCommand;
 import de.btegermany.terraplusminus.commands.TpllCommand;
 import de.btegermany.terraplusminus.commands.WhereCommand;
+import de.btegermany.terraplusminus.events.PlayerJoinEvent;
 import de.btegermany.terraplusminus.events.PlayerMoveEvent;
+import de.btegermany.terraplusminus.events.PluginMessageEvent;
 import de.btegermany.terraplusminus.gen.RealWorldGenerator;
 import de.btegermany.terraplusminus.utils.FileBuilder;
+import de.btegermany.terraplusminus.utils.PlayerHashMapManagement;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.EventHandler;
@@ -56,10 +59,19 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         }
         // --------------------------
 
+        // Register plugin messaging channel
+        PlayerHashMapManagement playerHashMapManagement = new PlayerHashMapManagement();
+        this.getServer().getMessenger().registerOutgoingPluginChannel(this, "bungeecord:terraplusminus");
+        this.getServer().getMessenger().registerIncomingPluginChannel(this, "bungeecord:terraplusminus", new PluginMessageEvent(playerHashMapManagement));
+        // --------------------------
+
         // Registering events
         Bukkit.getPluginManager().registerEvents(this, this);
         if (Terraplusminus.config.getBoolean("height_in_actionbar")) {
             Bukkit.getPluginManager().registerEvents(new PlayerMoveEvent(this), this);
+        }
+        if (Terraplusminus.config.getBoolean("linked_servers.enabled")) {
+            Bukkit.getPluginManager().registerEvents(new PlayerJoinEvent(playerHashMapManagement), this);
         }
         // --------------------------
 
@@ -69,12 +81,16 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         getCommand("offset").setExecutor(new OffsetCommand());
         // --------------------------
 
-
         Bukkit.getLogger().log(Level.INFO, "[T+-] Terraplusminus successfully enabled");
     }
 
     @Override
     public void onDisable() {
+        // Unregister plugin messaging channel
+        this.getServer().getMessenger().unregisterOutgoingPluginChannel(this);
+        this.getServer().getMessenger().unregisterIncomingPluginChannel(this);
+        // --------------------------
+
         Bukkit.getLogger().log(Level.INFO, "[T+-] Plugin deactivated");
     }
 
@@ -158,6 +174,19 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
             FileBuilder.addLineAbove("# Generation", "# Passthrough tpll to other bukkit plugins. It will not passthrough when it's empty. Type in the name of your plugin. E.g. Your plugin name is vanillatpll you set passthrough_tpll: 'vanillatpll'\n" +
                     "passthrough_tpll: '" + passthroughTpll + "'\n\n\n"); //Fixes empty config entry from passthrough_tpll
 
+        }
+        if (configVersion == 1.1) {
+            this.config.set("config_version", 1.2);
+            this.saveConfig();
+            FileBuilder.addLineAbove("# If disabled, tree generation is turned off.", "\n" +
+                    "# Linked servers ---------------------------------------\n" +
+                    "# If the height limit on this server is not enough, other servers can be linked to generate higher or lower sections.\n" +
+                    "linked_servers:\n" +
+                    "  enabled: false\n" +
+                    "  servers:\n" +
+                    "    - another_server_with_smaller_height_section          # e.g. this server has a datapack to extend height to 2032. it covers the height section (-2032) - (-1) m a.s.l. it has a y-offset of -2032.\n" +
+                    "    - current_server                                      # e.g. this server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.\n" +
+                    "    - another_server_with_bigger_height_section           # e.g. this server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032\n\n");
         }
     }
 

@@ -1,7 +1,10 @@
 package de.btegermany.terraplusminus.commands;
 
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
 import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.data.TerraConnector;
+import de.btegermany.terraplusminus.utils.PluginMessageUtil;
 import io.papermc.lib.PaperLib;
 import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
 import net.buildtheearth.terraminusminus.projection.OutOfProjectionBoundsException;
@@ -134,8 +137,53 @@ public class TpllCommand implements CommandExecutor {
                     }
 
                     if (height > player.getWorld().getMaxHeight()) {
-                        player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because the world is not high enough at the moment.");
-                        return true;
+                        if (Terraplusminus.config.getBoolean("linked_servers.enabled")) {
+
+                            //send player uuid and coordinates to bungee
+
+                            ByteArrayDataOutput out = ByteStreams.newDataOutput();
+                            out.writeUTF(player.getUniqueId().toString());
+
+                            if (PluginMessageUtil.getNextServerName() != null) {
+                                out.writeUTF(PluginMessageUtil.getNextServerName());
+                            } else {
+                                player.sendMessage(Terraplusminus.config.getString("prefix") + "§cPlease contact server administrator. Your config is not set up correctly.");
+                                return true;
+                            }
+
+                            out.writeUTF(coordinates[1] + ", " + coordinates[0]);
+                            player.sendPluginMessage(Terraplusminus.instance, "bungeecord:terraplusminus", out.toByteArray());
+
+                            player.sendMessage(Terraplusminus.config.getString("prefix") + "§cSending to another server...");
+                            return true;
+                        } else {
+                            player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because the world is not high enough at the moment.");
+                            return true;
+                        }
+                    } else if (height <= player.getWorld().getMaxHeight()) {
+                        if (Terraplusminus.config.getBoolean("linked_servers.enabled")) {
+
+                            //send player uuid and coordinates to bungee
+
+                            ByteArrayDataOutput out = ByteStreams.newDataOutput();
+                            out.writeUTF(player.getUniqueId().toString());
+
+                            if (PluginMessageUtil.getLastServerName() != null) {
+                                out.writeUTF(PluginMessageUtil.getLastServerName());
+                            } else {
+                                player.sendMessage(Terraplusminus.config.getString("prefix") + "§cPlease contact server administrator. Your config is not set up correctly.");
+                                return true;
+                            }
+
+                            out.writeUTF(coordinates[1] + ", " + coordinates[0]);
+                            player.sendPluginMessage(Terraplusminus.instance, "bungeecord:terraplusminus", out.toByteArray());
+
+                            player.sendMessage(Terraplusminus.config.getString("prefix") + "§cSending to another server...");
+                            return true;
+                        } else {
+                            player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because the world is not low enough at the moment.");
+                            return true;
+                        }
                     }
                     Location location = new Location(player.getWorld(), mcCoordinates[0] + xOffset, height, mcCoordinates[1] + zOffset, player.getLocation().getYaw(), player.getLocation().getPitch());
 
