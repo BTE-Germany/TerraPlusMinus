@@ -120,7 +120,7 @@ public class TpllCommand implements CommandExecutor {
                         e.printStackTrace();
                     }
 
-                    if (minLat != 0 && maxLat != 0 && minLon != 0 && maxLon != 0) {
+                    if (minLat != 0 && maxLat != 0 && minLon != 0 && maxLon != 0 && !player.hasPermission("t+-.admin")) {
                         if (coordinates[1] < minLat || coordinates[0] < minLon || coordinates[1] > maxLat || coordinates[0] > maxLon) {
                             player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because this area is being worked on by another build team.");
                             return true;
