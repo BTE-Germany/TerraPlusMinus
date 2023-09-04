@@ -35,9 +35,9 @@ terrain_offset:
 linked_servers:
   enabled: false
   servers:
-    - another_server_with_smaller_height_section          # e.g. this server has a datapack to extend height to 2032. it covers the height section (-2032) - (-1) m a.s.l. it has a y-offset of -2032.
-    - current_server                                      # e.g. this server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.
-    - another_server_with_bigger_height_section           # e.g. this server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032
+    - another_server                 # e.g. this server has a datapack to extend height to 2032. it covers the height section (-2032) - (-1) m a.s.l. it has a y-offset of -2032.
+    - current_server                 # e.g. this server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.
+    - another_server                 # e.g. this server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032
 
 # If disabled, tree generation is turned off.
 generate_trees: true

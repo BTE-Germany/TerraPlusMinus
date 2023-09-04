@@ -14,7 +14,7 @@ public class PluginMessageUtil {
         List<String> servers = getList();
         int index = servers.indexOf("current_server");
         String servername = servers.get(index + 1);
-        if (servername.equals("another_server_with_bigger_height_section ")) {
+        if (servername.equals("another_server")) {
             return null;
         } else {
             return servername;
@@ -25,7 +25,7 @@ public class PluginMessageUtil {
         List<String> servers = getList();
         int index = servers.indexOf("current_server");
         String servername = servers.get(index - 1);
-        if (servername.equals("another_server_with_smaller_height_section")) {
+        if (servername.equals("another_server")) {
             return null;
         } else {
             return servername;

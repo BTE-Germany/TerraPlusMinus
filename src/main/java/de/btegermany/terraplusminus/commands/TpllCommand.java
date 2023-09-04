@@ -135,7 +135,6 @@ public class TpllCommand implements CommandExecutor {
                     } else {
                         height = terraConnector.getHeight((int) mcCoordinates[0], (int) mcCoordinates[1]).join() + yOffset;
                     }
-
                     if (height > player.getWorld().getMaxHeight()) {
                         if (Terraplusminus.config.getBoolean("linked_servers.enabled")) {
 
@@ -160,7 +159,7 @@ public class TpllCommand implements CommandExecutor {
                             player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because the world is not high enough at the moment.");
                             return true;
                         }
-                    } else if (height <= player.getWorld().getMaxHeight()) {
+                    } else if (height <= player.getWorld().getMinHeight()) {
                         if (Terraplusminus.config.getBoolean("linked_servers.enabled")) {
 
                             //send player uuid and coordinates to bungee

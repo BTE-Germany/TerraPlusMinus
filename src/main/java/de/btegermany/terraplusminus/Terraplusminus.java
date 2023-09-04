@@ -178,15 +178,15 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         if (configVersion == 1.1) {
             this.config.set("config_version", 1.2);
             this.saveConfig();
-            FileBuilder.addLineAbove("# If disabled, tree generation is turned off.", "\n" +
+            FileBuilder.addLineAbove("# If disabled, tree generation is turned off.", "" +
                     "# Linked servers ---------------------------------------\n" +
                     "# If the height limit on this server is not enough, other servers can be linked to generate higher or lower sections.\n" +
                     "linked_servers:\n" +
                     "  enabled: false\n" +
                     "  servers:\n" +
-                    "    - another_server_with_smaller_height_section          # e.g. this server has a datapack to extend height to 2032. it covers the height section (-2032) - (-1) m a.s.l. it has a y-offset of -2032.\n" +
-                    "    - current_server                                      # e.g. this server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.\n" +
-                    "    - another_server_with_bigger_height_section           # e.g. this server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032\n\n");
+                    "    - another_server                 # e.g. this server has a datapack to extend height to 2032. it covers the height section (-2032) - (-1) m a.s.l. it has a y-offset of -2032.\n" +
+                    "    - current_server                 # e.g. this server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.\n" +
+                    "    - another_server                 # e.g. this server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032\n");
         }
     }
 
