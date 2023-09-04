@@ -37,6 +37,7 @@ TerraPlusMinus is a plugin which generates the real world terrain and outlines i
 - automatic datapack installation
 - set coordinate bounds to prevent players from teleporting to areas, which are being worked on by other build teams
 - custom tree generation
+- link your servers to generate different height sections ([preview](https://youtu.be/oqROhmaSxgY?si=Hl8zi3lAVEWfAGHy))
 
 # Images
 
