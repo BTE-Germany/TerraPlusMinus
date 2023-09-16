@@ -7,6 +7,8 @@ import de.btegermany.terraplusminus.gen.tree.TreePopulator;
 import net.buildtheearth.terraminusminus.generator.CachedChunkData;
 import net.buildtheearth.terraminusminus.generator.ChunkDataLoader;
 import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
+import net.buildtheearth.terraminusminus.projection.GeographicProjection;
+import net.buildtheearth.terraminusminus.projection.transform.OffsetProjectionTransform;
 import net.buildtheearth.terraminusminus.substitutes.BlockState;
 import net.buildtheearth.terraminusminus.substitutes.BukkitBindings;
 import net.buildtheearth.terraminusminus.substitutes.ChunkPos;
@@ -36,15 +38,26 @@ import java.util.concurrent.TimeoutException;
 public class RealWorldGenerator extends ChunkGenerator {
     private Location spawnLocation = null;
 
-    EarthGeneratorSettings settings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
     public LoadingCache<ChunkPos, CompletableFuture<CachedChunkData>> cache;
     private final CustomBiomeProvider customBiomeProvider;
 
-    int xOffset, yOffset, zOffset;
+    private final int yOffset;
 
     private final Material houses, streets, paths, surface;
 
     public RealWorldGenerator() {
+
+        EarthGeneratorSettings settings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
+
+        GeographicProjection projection = new OffsetProjectionTransform(
+                settings.projection(),
+                Terraplusminus.config.getInt("terrain_offset.x"),
+                Terraplusminus.config.getInt("terrain_offset.z")
+        );
+        this.yOffset = Terraplusminus.config.getInt("terrain_offset.y");
+
+        settings = settings.withProjection(projection);
+
         this.customBiomeProvider = new CustomBiomeProvider();
         this.cache = CacheBuilder.newBuilder()
                 .expireAfterAccess(5L, TimeUnit.MINUTES)
@@ -56,9 +69,6 @@ public class RealWorldGenerator extends ChunkGenerator {
         paths = Material.getMaterial(Objects.requireNonNullElse(Terraplusminus.config.getString("path_material"), "MOSS_BLOCK"));
         surface = Material.getMaterial(Objects.requireNonNullElse(Terraplusminus.config.getString("surface_material"), "GRASS_BLOCK"));
 
-        xOffset = Terraplusminus.config.getInt("terrain_offset.x");
-        yOffset = Terraplusminus.config.getInt("terrain_offset.y");
-        zOffset = Terraplusminus.config.getInt("terrain_offset.z");
     }
 
 
@@ -73,11 +83,11 @@ public class RealWorldGenerator extends ChunkGenerator {
     }
 
     public void generateSurface(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunkZ, @NotNull ChunkData chunkData) {
-        CompletableFuture<CachedChunkData> future = this.cache.getUnchecked(new ChunkPos(chunkX - (xOffset / 16), chunkZ - (zOffset / 16)));
-        generateSurface(worldInfo, future, chunkData, yOffset);
+        CompletableFuture<CachedChunkData> future = this.cache.getUnchecked(new ChunkPos(chunkX, chunkZ));
+        generateSurface(worldInfo, future, chunkData);
     }
 
-    private void generateSurface(@NotNull WorldInfo worldInfo, CompletableFuture<CachedChunkData> future, @NotNull ChunkData chunkData, int yOffset) {
+    private void generateSurface(@NotNull WorldInfo worldInfo, CompletableFuture<CachedChunkData> future, @NotNull ChunkData chunkData) {
         final int minY = worldInfo.getMinHeight();
         final int maxY = worldInfo.getMaxHeight();
         Material material = surface;
@@ -108,7 +118,7 @@ public class RealWorldGenerator extends ChunkGenerator {
 
                     //Generates stone under all surfaces
                     //Get the surface height.
-                    int sY = Math.min(maxY, groundY + yOffset);
+                    int sY = Math.min(maxY, groundY + this.yOffset);
                     //If the surface height is at or below the minimum height, then there is no reason to run this.
                     if (minY < sY) {
                         //Set the column to stone.
