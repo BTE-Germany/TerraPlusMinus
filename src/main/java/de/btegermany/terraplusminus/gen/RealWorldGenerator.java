@@ -47,6 +47,14 @@ public class RealWorldGenerator extends ChunkGenerator {
     private final Material surfaceMaterial;
     private final Map<String, Material> materialMapping;
 
+    private static Set<Material> GRASS_LIKE_MATERIALS = Set.of(
+            GRASS_BLOCK,
+            DIRT_PATH,
+            FARMLAND,
+            MYCELIUM,
+            SNOW
+    );
+
     public RealWorldGenerator() {
 
         EarthGeneratorSettings settings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
@@ -173,6 +181,12 @@ public class RealWorldGenerator extends ChunkGenerator {
                         case SNOWY_SLOPES, SNOWY_PLAINS, FROZEN_PEAKS -> Material.SNOW;
                         default -> this.surfaceMaterial;
                     };
+                }
+
+                // We don't want grass, snow, and all underwater
+                boolean isUnderWater = groundY + 1 >= maxWorldY || chunkData.getBlockData(x, groundY + 1, z).getMaterial().equals(WATER);
+                if (isUnderWater && GRASS_LIKE_MATERIALS.contains(material)) {
+                    material = DIRT;
                 }
 
                 chunkData.setBlock(x, groundY, z, material);
