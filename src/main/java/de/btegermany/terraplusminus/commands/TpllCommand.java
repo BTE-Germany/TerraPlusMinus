@@ -4,20 +4,24 @@ import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.data.TerraConnector;
+import de.btegermany.terraplusminus.gen.RealWorldGenerator;
 import de.btegermany.terraplusminus.utils.PluginMessageUtil;
 import io.papermc.lib.PaperLib;
 import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
+import net.buildtheearth.terraminusminus.projection.GeographicProjection;
 import net.buildtheearth.terraminusminus.projection.OutOfProjectionBoundsException;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.generator.ChunkGenerator;
 import org.jetbrains.annotations.NotNull;
 
-public class TpllCommand implements CommandExecutor {
+import static org.bukkit.ChatColor.RED;
 
-    private final EarthGeneratorSettings bteGeneratorSettings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
+
+public class TpllCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
@@ -101,28 +105,36 @@ public class TpllCommand implements CommandExecutor {
             if (args.length >= 2) {
                 if (player.hasPermission("t+-.tpll")) {
 
-                    int xOffset = Terraplusminus.config.getInt("terrain_offset.x");
-                    int yOffset = Terraplusminus.config.getInt("terrain_offset.y");
-                    int zOffset = Terraplusminus.config.getInt("terrain_offset.z");
-                    Double minLat = Terraplusminus.config.getDouble("min_latitude");
-                    Double maxLat = Terraplusminus.config.getDouble("max_latitude");
-                    Double minLon = Terraplusminus.config.getDouble("min_longitude");
-                    Double maxLon = Terraplusminus.config.getDouble("max_longitude");
+                    double minLat = Terraplusminus.config.getDouble("min_latitude");
+                    double maxLat = Terraplusminus.config.getDouble("max_latitude");
+                    double minLon = Terraplusminus.config.getDouble("min_longitude");
+                    double maxLon = Terraplusminus.config.getDouble("max_longitude");
 
                     double[] coordinates = new double[2];
                     coordinates[1] = Double.parseDouble(args[0].replace(",", "").replace("°", ""));
                     coordinates[0] = Double.parseDouble(args[1].replace("°", ""));
 
-                    double[] mcCoordinates = new double[0];
+                    ChunkGenerator generator = player.getWorld().getGenerator();
+                    if (!(generator instanceof RealWorldGenerator)) {
+                        commandSender.sendMessage(RED + "Must be in a Terra 1 to 1 world!");
+                        return true;
+                    }
+                    RealWorldGenerator terraGenerator = (RealWorldGenerator) generator;
+                    EarthGeneratorSettings generatorSettings = terraGenerator.getSettings();
+                    GeographicProjection projection = generatorSettings.projection();
+                    int yOffset = terraGenerator.getYOffset();
+
+                    double[] mcCoordinates;
                     try {
-                        mcCoordinates = bteGeneratorSettings.projection().fromGeo(coordinates[0], coordinates[1]);
+                        mcCoordinates = projection.fromGeo(coordinates[0], coordinates[1]);
                     } catch (OutOfProjectionBoundsException e) {
-                        e.printStackTrace();
+                        commandSender.sendMessage(RED + "Location is not within projection bounds");
+                        return true;
                     }
 
                     if (minLat != 0 && maxLat != 0 && minLon != 0 && maxLon != 0 && !player.hasPermission("t+-.admin")) {
                         if (coordinates[1] < minLat || coordinates[0] < minLon || coordinates[1] > maxLat || coordinates[0] > maxLon) {
-                            player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because this area is being worked on by another build team.");
+                            player.sendMessage(Terraplusminus.config.getString("prefix") + RED + "You cannot tpll to these coordinates, because this area is being worked on by another build team.");
                             return true;
                         }
                     }
@@ -184,13 +196,13 @@ public class TpllCommand implements CommandExecutor {
                             return true;
                         }
                     }
-                    Location location = new Location(player.getWorld(), mcCoordinates[0] + xOffset, height, mcCoordinates[1] + zOffset, player.getLocation().getYaw(), player.getLocation().getPitch());
+                    Location location = new Location(player.getWorld(), mcCoordinates[0], height, mcCoordinates[1], player.getLocation().getYaw(), player.getLocation().getPitch());
 
                     if (PaperLib.isChunkGenerated(location)) {
                         if (args.length >= 3) {
-                            location = new Location(player.getWorld(), mcCoordinates[0] + xOffset, height, mcCoordinates[1] + zOffset, player.getLocation().getYaw(), player.getLocation().getPitch());
+                            location = new Location(player.getWorld(), mcCoordinates[0], height, mcCoordinates[1], player.getLocation().getYaw(), player.getLocation().getPitch());
                         } else {
-                            location = new Location(player.getWorld(), mcCoordinates[0] + xOffset, player.getWorld().getHighestBlockYAt((int) mcCoordinates[0] + xOffset, (int) mcCoordinates[1] + zOffset) + 1, mcCoordinates[1] + zOffset, player.getLocation().getYaw(), player.getLocation().getPitch());
+                            location = new Location(player.getWorld(), mcCoordinates[0], player.getWorld().getHighestBlockYAt((int) mcCoordinates[0], (int) mcCoordinates[1]) + 1, mcCoordinates[1], player.getLocation().getYaw(), player.getLocation().getPitch());
                         }
                     } else {
                         player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Location is generating. Please wait a moment...");
