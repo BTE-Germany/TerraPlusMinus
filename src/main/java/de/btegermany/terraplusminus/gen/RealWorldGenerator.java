@@ -4,6 +4,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.gen.tree.TreePopulator;
+import de.btegermany.terraplusminus.utils.ConfigurationHelper;
 import net.buildtheearth.terraminusminus.generator.CachedChunkData;
 import net.buildtheearth.terraminusminus.generator.ChunkDataLoader;
 import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
@@ -16,8 +17,8 @@ import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
@@ -25,16 +26,14 @@ import org.bukkit.generator.WorldInfo;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.Math.min;
 import static net.buildtheearth.terraminusminus.substitutes.ChunkPos.*;
+import static org.bukkit.Material.*;
 
 
 public class RealWorldGenerator extends ChunkGenerator {
@@ -45,7 +44,8 @@ public class RealWorldGenerator extends ChunkGenerator {
 
     private final int yOffset;
 
-    private final Material houses, streets, paths, surface;
+    private final Material surfaceMaterial;
+    private final Map<String, Material> materialMapping;
 
     public RealWorldGenerator() {
 
@@ -66,10 +66,12 @@ public class RealWorldGenerator extends ChunkGenerator {
                 .softValues()
                 .build(new ChunkDataLoader(settings));
 
-        houses = Material.getMaterial(Objects.requireNonNullElse(Terraplusminus.config.getString("building_outlines_material"), "BRICKS"));
-        streets = Material.getMaterial(Objects.requireNonNullElse(Terraplusminus.config.getString("road_material"), "GRAY_CONCRETE_POWDER"));
-        paths = Material.getMaterial(Objects.requireNonNullElse(Terraplusminus.config.getString("path_material"), "MOSS_BLOCK"));
-        surface = Material.getMaterial(Objects.requireNonNullElse(Terraplusminus.config.getString("surface_material"), "GRASS_BLOCK"));
+        this.surfaceMaterial = ConfigurationHelper.getMaterial(Terraplusminus.config, "surface_material", GRASS_BLOCK);
+        this.materialMapping = Map.of(
+                "minecraft:bricks", ConfigurationHelper.getMaterial(Terraplusminus.config, "building_outlines_material", BRICKS),
+                "minecraft:gray_concrete", ConfigurationHelper.getMaterial(Terraplusminus.config, "road_material", GRAY_CONCRETE_POWDER),
+                "minecraft:dirt_path", ConfigurationHelper.getMaterial(Terraplusminus.config, "path_material", MOSS_BLOCK)
+        );
 
     }
 
@@ -137,55 +139,44 @@ public class RealWorldGenerator extends ChunkGenerator {
     @Override
     public void generateSurface(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunkZ, @NotNull ChunkData chunkData) {
         CachedChunkData terraData = this.getTerraChunkData(chunkX, chunkZ);
-        final int minY = worldInfo.getMinHeight();
-        final int maxY = worldInfo.getMaxHeight();
+        final int minWorldY = worldInfo.getMinHeight();
+        final int maxWorldY = worldInfo.getMaxHeight();
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
-                Material material = surface;
 
-                int groundY = terraData.groundHeight(x, z);
-                int waterY = terraData.waterHeight(x, z);
+                int groundY = terraData.groundHeight(x, z) + this.yOffset;
+
+                // We do that for each column, so it does not depend on the configuration but only on the seed
+                int startMountainHeight = random.nextInt(1695, 1701);
+
+                if (groundY < minWorldY || groundY >= maxWorldY) {
+                    continue; // We are not within vertical bounds, continue
+                }
+
+                Material material;
+
                 BlockState state = terraData.surfaceBlock(x, z);
-
-                // Sets block on mountains over 1700m to stone
-                int randomizer = (int) Math.floor(Math.random() * (1700 - 1695 + 1) + 1695);
-                if (groundY >= randomizer) {
-                    material = Material.STONE;
-                }
-                //--------------------------------------------------------
-
-                //Generates sand in deserts and snow on mountains
-                material = switch ((int) customBiomeProvider.getBiome()) {
-                    case 4 -> Material.SAND;
-                    case 28, 29, 30 -> Material.SNOW_BLOCK;
-                    default -> material;
-                };
-
-                //Genrates terrain with block states
-                if (groundY + yOffset < maxY) {
-                    if (state != null) {
-                        BlockData blockData = BukkitBindings.getAsBlockData(state);
-                        if (blockData != null) {
-                            //System.out.println(state.getBlock().toString());
-                            switch (state.getBlock().toString()) {
-                                case "minecraft:gray_concrete" ->
-                                        chunkData.setBlock(x, groundY + yOffset, z, streets);
-                                case "minecraft:dirt_path" -> chunkData.setBlock(x, groundY + yOffset, z, paths);
-                                case "minecraft:bricks" -> chunkData.setBlock(x, groundY + yOffset, z, houses);
-                                default ->
-                                        chunkData.setBlock(x, groundY + yOffset, z, BukkitBindings.getAsBlockData(state));
-                            }
-                        } else {
-                            chunkData.setBlock(x, groundY + yOffset, z, material);
-                        }
-                    } else {
-                        chunkData.setBlock(x, groundY + yOffset, z, material);
+                if (state != null) {
+                    // Terra--'s OSM config says a feature should be drawn there, let's transform it to respect our config
+                    material = this.materialMapping.get(state.getBlock().toString());
+                    if (material == null) {
+                        // We don't know what material this is, let's respect what the Terra-- configuration says
+                        material = BukkitBindings.getAsBlockData(state).getMaterial();
                     }
+                } else if (groundY >= startMountainHeight) {
+                    material = STONE; // Mountains stare bare
+                } else {
+                    // Fallback to a generic block that matches the biome
+                    Biome biome = chunkData.getBiome(x, groundY, z);
+                    material = switch (biome) {
+                        case DESERT -> Material.SAND;
+                        case SNOWY_SLOPES, SNOWY_PLAINS, FROZEN_PEAKS -> Material.SNOW;
+                        default -> this.surfaceMaterial;
+                    };
+                }
 
-                }
-                for (int y = groundY + yOffset + 1; y <= min(maxY, waterY + yOffset); y++) {
-                    chunkData.setBlock(x, y, z, Material.WATER);
-                }
+                chunkData.setBlock(x, groundY, z, material);
+
             }
         }
     }
