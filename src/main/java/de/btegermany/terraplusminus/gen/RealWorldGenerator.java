@@ -47,7 +47,7 @@ public class RealWorldGenerator extends ChunkGenerator {
     private final Material surfaceMaterial;
     private final Map<String, Material> materialMapping;
 
-    private static Set<Material> GRASS_LIKE_MATERIALS = Set.of(
+    private static final Set<Material> GRASS_LIKE_MATERIALS = Set.of(
             GRASS_BLOCK,
             DIRT_PATH,
             FARMLAND,
@@ -213,7 +213,19 @@ public class RealWorldGenerator extends ChunkGenerator {
 
 
     public int getBaseHeight(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull HeightMap heightMap) {
-        throw new UnsupportedOperationException("Not implemented");
+        int chunkX = blockToCube(x);
+        int chunkZ = blockToCube(z);
+        x -= cubeToMinBlock(chunkX);
+        z -= cubeToMinBlock(chunkZ);
+        CachedChunkData terraData = this.getTerraChunkData(chunkX, chunkZ);
+        switch (heightMap) {
+            case OCEAN_FLOOR, OCEAN_FLOOR_WG -> {
+                return terraData.groundHeight(x, z) + this.yOffset;
+            }
+            default -> {
+                return terraData.surfaceHeight(x, z) + this.yOffset;
+            }
+        }
     }
 
     public boolean canSpawn(@NotNull World world, int x, int z) {
