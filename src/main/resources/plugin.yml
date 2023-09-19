@@ -18,5 +18,5 @@ commands:
     usage: /where
   offset:
     description: Displays the x,y and z offset of your world
-    usage: /offset
+    usage: /offset [world]
 
