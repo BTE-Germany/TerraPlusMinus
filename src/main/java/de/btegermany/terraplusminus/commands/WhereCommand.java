@@ -55,7 +55,7 @@ public class WhereCommand implements CommandExecutor {
             double[] coordinates = projection.toGeo(location.getX(), location.getZ());
             double longitude = coordinates[0];
             double latitude = coordinates[1];
-            String googleMapsUrl = "https://maps.google.com/maps?t=k&q=loc:" + coordinates[1] + "+" + coordinates[0];
+            String googleMapsUrl = "https://www.google.com/maps/@" + latitude + "," + longitude;
             message.addExtra("§7Your coordinates are:\n§8" + DECIMAL_FORMATTER.format(latitude) + ", " + DECIMAL_FORMATTER.format(longitude) + "§7.");
             message.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, googleMapsUrl));
             message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§7Click here to view in Google Maps.")));
