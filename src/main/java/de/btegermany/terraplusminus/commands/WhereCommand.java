@@ -1,54 +1,68 @@
 package de.btegermany.terraplusminus.commands;
 
 import de.btegermany.terraplusminus.Terraplusminus;
-import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
+import de.btegermany.terraplusminus.gen.RealWorldGenerator;
+import net.buildtheearth.terraminusminus.projection.GeographicProjection;
 import net.buildtheearth.terraminusminus.projection.OutOfProjectionBoundsException;
 import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.hover.content.Text;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.generator.ChunkGenerator;
 import org.jetbrains.annotations.NotNull;
+
+import java.text.DecimalFormat;
+
+import static org.bukkit.ChatColor.RED;
 
 public class WhereCommand implements CommandExecutor {
 
-    private final EarthGeneratorSettings bteGeneratorSettings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
+    private static final DecimalFormat DECIMAL_FORMATTER = new DecimalFormat("##.#####");
 
     @Override
-    public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
-        if (command.getName().equalsIgnoreCase("where")) {
-            if (!(commandSender instanceof Player)) {
-                commandSender.sendMessage("This command can only be used by players!");
-                return true;
-            }
-            Player player = (Player) commandSender;
-            if (player.hasPermission("t+-.where")) {
-                int xOffset = Terraplusminus.config.getInt("terrain_offset.x");
-                int zOffset = Terraplusminus.config.getInt("terrain_offset.z");
-
-                double[] mcCoordinates = new double[2];
-                mcCoordinates[0] = player.getLocation().getX() - xOffset;
-                mcCoordinates[1] = player.getLocation().getZ() - zOffset;
-                System.out.println(mcCoordinates[0] + ", " + mcCoordinates[1]);
-                double[] coordinates = new double[0];
-                try {
-                    coordinates = bteGeneratorSettings.projection().toGeo(mcCoordinates[0], mcCoordinates[1]);
-                } catch (OutOfProjectionBoundsException e) {
-                    e.printStackTrace();
-                }
-                TextComponent message = new TextComponent(Terraplusminus.config.getString("prefix") + "§7Your coordinates are:");
-                message.addExtra("\n§8" + coordinates[1] + ", " + coordinates[0] + "§7.");
-                message.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://maps.google.com/maps?t=k&q=loc:" + coordinates[1] + "+" + coordinates[0]));
-                message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("§7Click here to view in Google Maps.").create()));
-                player.spigot().sendMessage(message);
-            } else {
-                player.sendMessage(Terraplusminus.config.getString("prefix") + "§7No permission for /where");
-                return true;
-            }
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
+        String prefix = Terraplusminus.config.getString("prefix");
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("This command can only be used by players!");
+            return true;
         }
+        if (!sender.hasPermission("t+-.where")) {
+            sender.sendMessage(prefix + "§7No permission for /where");
+            return true;
+        }
+
+        Player player = (Player) sender;
+        World world = player.getWorld();
+        ChunkGenerator chunkGenerator = world.getGenerator();
+
+        if (!(chunkGenerator instanceof RealWorldGenerator)) {
+            sender.sendMessage(prefix + RED + "Not a Terra+- world.");
+            return true;
+        }
+
+        RealWorldGenerator generator = (RealWorldGenerator) chunkGenerator;
+        GeographicProjection projection = generator.getSettings().projection();
+
+        final TextComponent message = new TextComponent(prefix);
+        try {
+            Location location = player.getLocation();
+            double[] coordinates = projection.toGeo(location.getX(), location.getZ());
+            double longitude = coordinates[0];
+            double latitude = coordinates[1];
+            String googleMapsUrl = "https://maps.google.com/maps?t=k&q=loc:" + coordinates[1] + "+" + coordinates[0];
+            message.addExtra("§7Your coordinates are:\n§8" + DECIMAL_FORMATTER.format(latitude) + ", " + DECIMAL_FORMATTER.format(longitude) + "§7.");
+            message.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, googleMapsUrl));
+            message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§7Click here to view in Google Maps.")));
+        } catch (OutOfProjectionBoundsException e) {
+            message.addExtra(RED + "Outside projection bounds.");
+        }
+        player.spigot().sendMessage(message);
         return true;
     }
 }
