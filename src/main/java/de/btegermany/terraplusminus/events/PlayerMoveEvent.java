@@ -4,6 +4,7 @@ import de.btegermany.terraplusminus.Terraplusminus;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -11,6 +12,9 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
+
+import static java.lang.String.valueOf;
+import static org.bukkit.ChatColor.BOLD;
 
 
 public class PlayerMoveEvent implements Listener {
@@ -33,7 +37,7 @@ public class PlayerMoveEvent implements Listener {
                 @Override
                 public void run() {
                     int height = p.getLocation().getBlockY() - yOffset;
-                    p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent("§l" + height + "m"));
+                    p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(BOLD + valueOf(height) + "m"));
                 }
             };
             runnable.runTaskTimer(plugin, 0, 20);
