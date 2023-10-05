@@ -9,12 +9,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.util.Comparator.comparing;
+import static java.util.Objects.requireNonNullElseGet;
 
 /**
  * Utility class to help with commands.
@@ -67,6 +66,24 @@ public final class CommandHelper {
 
         throw new InvalidTargetSelectorException();
 
+    }
+
+    /**
+     * Checks if a collection of entities is comprised solely of a single command sender (which may appear multiple times).
+     * This is useful for permission checks where one might allow a sender to execute a command on themselves,
+     * but not on other entities.
+     *
+     * @param sender    the {@link CommandSender sender} executing the command
+     * @param targets   the {@link Collection collection} of targets
+     *
+     * @return whether a {@link CommandSender sender} is the only entity in a {@link Collection collection} of targets
+     */
+    public static boolean senderIsSoleTarget(CommandSender sender, @NotNull Collection<Entity> targets) {
+        return !targets.stream().allMatch(target -> target == sender);
+    }
+
+    public static String formatTargetName(Entity target) {
+        return requireNonNullElseGet(target.getCustomName(), target::getName);
     }
 
     public static class InvalidTargetSelectorException extends Exception {

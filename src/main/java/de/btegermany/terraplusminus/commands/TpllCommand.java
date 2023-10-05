@@ -25,15 +25,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
-import static de.btegermany.terraplusminus.commands.CommandHelper.InvalidTargetSelectorException;
-import static de.btegermany.terraplusminus.commands.CommandHelper.parseTargetSelector;
+import static de.btegermany.terraplusminus.commands.CommandHelper.*;
 import static io.papermc.lib.PaperLib.isChunkGenerated;
 import static io.papermc.lib.PaperLib.teleportAsync;
 import static java.lang.Double.isNaN;
 import static java.lang.Double.parseDouble;
 import static java.lang.String.join;
 import static java.util.Arrays.copyOfRange;
-import static java.util.Objects.requireNonNullElseGet;
 import static java.util.stream.Collectors.toList;
 import static net.buildtheearth.terraminusminus.util.geo.CoordinateParseUtils.parseVerbatimCoordinates;
 import static org.bukkit.ChatColor.*;
@@ -82,7 +80,7 @@ public class TpllCommand implements CommandExecutor {
             } else {
                 return false; // Invalid command, non player senders must specify a valid target
             }
-        } else if ((targets.size() > 1 || !targets.contains(sender)) && !sender.hasPermission("t+-.forcetpll")){
+        } else if (!sender.hasPermission("t+-.forcetpll") && !senderIsSoleTarget(sender, targets)){
             // Sender specified a target which is not themselves
             sender.sendMessage(
                     prefix
@@ -283,7 +281,7 @@ public class TpllCommand implements CommandExecutor {
         String prefix = Terraplusminus.config.getString("prefix");
         if (!(target instanceof Player)) {
             sender.sendMessage(prefix +
-                    RED + "Cannot teleport " + GRAY + this.formatTargetName(target) +
+                    RED + "Cannot teleport " + GRAY + formatTargetName(target) +
                     RED + ": destination is outside of range and only players may be sent to linked servers."
             );
             return;
@@ -297,7 +295,7 @@ public class TpllCommand implements CommandExecutor {
 
         // Send feedback to command sender and target
         sender.sendMessage(prefix +
-                GRAY + "Sending " + DARK_GRAY + this.formatTargetName(target) +
+                GRAY + "Sending " + DARK_GRAY + formatTargetName(target) +
                 GRAY + " to server " + DARK_GRAY + server + GRAY + "."
         );
         player.sendMessage(prefix +
@@ -306,9 +304,6 @@ public class TpllCommand implements CommandExecutor {
 
     }
 
-    private String formatTargetName(Entity target) {
-        return requireNonNullElseGet(target.getCustomName(), target::getName);
-    }
 
     private String formatTargetList(Collection<Entity> targets) {
         if (targets.isEmpty()) {
@@ -316,7 +311,7 @@ public class TpllCommand implements CommandExecutor {
         }
         List<String> names = new ArrayList<>();
         targets.stream()
-                .map(this::formatTargetName)
+                .map(CommandHelper::formatTargetName)
                 .sorted()
                 .forEach(names::add);
         if (names.size() == 1) {

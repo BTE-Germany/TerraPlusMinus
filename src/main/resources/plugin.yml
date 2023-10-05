@@ -11,11 +11,11 @@ load: STARTUP
 commands:
   tpll:
     description: Teleports you to longitude and latitude
-    usage: /tpll <long> <lat>
+    usage: /tpll [target] <long> <lat>
     aliases: [ tpc ]
   where:
     description: Gives you the longitude and latitude of your minecraft coordinates
-    usage: /where
+    usage: /where [target]
   offset:
     description: Displays the x,y and z offset of your world
     usage: /offset [world]
