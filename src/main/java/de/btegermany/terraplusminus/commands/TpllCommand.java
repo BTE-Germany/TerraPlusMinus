@@ -8,16 +8,15 @@ import de.btegermany.terraplusminus.utils.PluginMessageUtil;
 import net.buildtheearth.terraminusminus.projection.GeographicProjection;
 import net.buildtheearth.terraminusminus.projection.OutOfProjectionBoundsException;
 import net.buildtheearth.terraminusminus.util.geo.LatLng;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandException;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
+import org.bukkit.command.*;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.text.DecimalFormat;
 import java.util.*;
@@ -25,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static de.btegermany.terraplusminus.Terraplusminus.isInTerraWorld;
 import static de.btegermany.terraplusminus.commands.CommandHelper.*;
 import static io.papermc.lib.PaperLib.isChunkGenerated;
 import static io.papermc.lib.PaperLib.teleportAsync;
@@ -32,12 +32,14 @@ import static java.lang.Double.isNaN;
 import static java.lang.Double.parseDouble;
 import static java.lang.String.join;
 import static java.util.Arrays.copyOfRange;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static net.buildtheearth.terraminusminus.util.geo.CoordinateParseUtils.parseVerbatimCoordinates;
 import static org.bukkit.ChatColor.*;
 
 
-public class TpllCommand implements CommandExecutor {
+public class TpllCommand implements TabExecutor {
 
     private static final DecimalFormat DECIMAL_FORMATTER = new DecimalFormat("##.#####");
 
@@ -341,4 +343,27 @@ public class TpllCommand implements CommandExecutor {
         return out.toByteArray();
     }
 
+    @Nullable
+    @Override
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+
+        if (!sender.hasPermission("t+-.tpll")) {
+            return emptyList();
+        }
+
+        // First argument: target
+        if (args.length == 1) {
+            if (sender.hasPermission("t+-.forcetpll")) {
+                return Bukkit.getOnlinePlayers().stream()
+                        .filter(Terraplusminus::isInTerraWorld)
+                        .map(Player::getName)
+                        .collect(toList());
+            } else if (sender instanceof Player && isInTerraWorld((Player) sender)) {
+                return singletonList(sender.getName());
+            }
+        }
+
+        // We can't tab-complete the location or altitude, so we are done here
+        return emptyList();
+    }
 }

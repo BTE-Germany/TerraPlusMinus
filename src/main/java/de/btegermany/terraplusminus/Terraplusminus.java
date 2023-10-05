@@ -14,6 +14,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.*;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldInitEvent;
@@ -212,6 +213,10 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
 
     public static boolean isTerraWorld(World world) {
         return world.getGenerator() instanceof RealWorldGenerator;
+    }
+
+    public static boolean isInTerraWorld(Entity entity) {
+        return isTerraWorld(entity.getWorld());
     }
 
 }
