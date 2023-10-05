@@ -9,25 +9,29 @@ import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.chat.hover.content.Text;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.text.DecimalFormat;
 import java.util.Collection;
+import java.util.List;
 
 import static de.btegermany.terraplusminus.commands.CommandHelper.*;
-import static java.util.Collections.singleton;
+import static java.util.Collections.*;
 import static java.util.Objects.requireNonNullElse;
+import static java.util.stream.Collectors.toList;
 import static org.bukkit.ChatColor.*;
 
-public class WhereCommand implements CommandExecutor {
+public class WhereCommand implements TabExecutor {
 
     private static final DecimalFormat DECIMAL_FORMATTER = new DecimalFormat("##.#####");
 
@@ -91,4 +95,22 @@ public class WhereCommand implements CommandExecutor {
         return new LatLng(coordinates[1], coordinates[0]);
     }
 
+    @Nullable
+    @Override
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+
+        if (args.length > 1 || !sender.hasPermission("t+-.where")) {
+            return emptyList();
+        }
+
+        if (sender.hasPermission("t+-.admin")) {
+            return Bukkit.getOnlinePlayers().stream()
+                    .map(Player::getName)
+                    .collect(toList());
+        } else if (sender instanceof Player) {
+            return singletonList(sender.getName());
+        }
+
+        return emptyList();
+    }
 }
