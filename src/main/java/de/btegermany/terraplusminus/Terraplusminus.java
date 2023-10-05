@@ -11,6 +11,8 @@ import de.btegermany.terraplusminus.gen.RealWorldGenerator;
 import de.btegermany.terraplusminus.utils.FileBuilder;
 import de.btegermany.terraplusminus.utils.PlayerHashMapManagement;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
+import org.bukkit.command.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -21,6 +23,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.*;
 import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static java.lang.String.format;
 
 public final class Terraplusminus extends JavaPlugin implements Listener {
     public static FileConfiguration config;
@@ -76,9 +81,9 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         // --------------------------
 
         // Registering commands
-        getCommand("tpll").setExecutor(new TpllCommand());
-        getCommand("where").setExecutor(new WhereCommand());
-        getCommand("offset").setExecutor(new OffsetCommand());
+        this.registerCommand("tpll", new TpllCommand());
+        this.registerCommand("where", new WhereCommand());
+        this.registerCommand("offset", new OffsetCommand());
         // --------------------------
 
         Bukkit.getLogger().log(Level.INFO, "[T+-] Terraplusminus successfully enabled");
@@ -188,6 +193,25 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
                     "    - current_server                 # e.g. this server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.\n" +
                     "    - another_server                 # e.g. this server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032\n");
         }
+    }
+
+    private void registerCommand(String commandName, CommandExecutor executor) {
+        Logger logger = this.getLogger();
+        PluginCommand command = this.getCommand(commandName);
+        if (command == null) {
+            logger.warning(format("Could not register command %s. Command is unknown to bukkit, has it been properly registered in plugin.yml?", commandName));
+            return;
+        }
+        command.setExecutor(executor);
+        logger.fine(format("Registered command executor for /%s command", commandName));
+        if (executor instanceof TabCompleter) {
+            command.setTabCompleter((TabCompleter) executor);
+            logger.fine(format("Registered tab completer for /%s command", commandName));
+        }
+    }
+
+    public static boolean isTerraWorld(World world) {
+        return world.getGenerator() instanceof RealWorldGenerator;
     }
 
 }
