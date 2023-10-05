@@ -14,8 +14,7 @@ import org.bukkit.generator.ChunkGenerator;
 import org.jetbrains.annotations.NotNull;
 
 import static java.lang.Math.round;
-import static org.bukkit.ChatColor.GRAY;
-import static org.bukkit.ChatColor.RED;
+import static org.bukkit.ChatColor.*;
 
 public class OffsetCommand implements CommandExecutor {
 
@@ -25,7 +24,7 @@ public class OffsetCommand implements CommandExecutor {
         String prefix = Terraplusminus.config.getString("prefix");
 
         if (!sender.hasPermission("t+-.offset")) {
-            sender.sendMessage(Terraplusminus.config.getString("prefix") + "§7No permission for /offset");
+            sender.sendMessage(Terraplusminus.config.getString("prefix") + GRAY + "No permission for /offset");
             return true;
         }
 
@@ -65,10 +64,10 @@ public class OffsetCommand implements CommandExecutor {
             offsetX = offsetZ = 0;
         }
 
-        sender.sendMessage(prefix + "§7Offsets for world" + world.getName() + ":");
-        sender.sendMessage(prefix + "§7 | X: §8" + offsetX);
-        sender.sendMessage(prefix + "§7 | Y: §8" + offsetY);
-        sender.sendMessage(prefix + "§7 | Z: §8" + offsetZ);
+        sender.sendMessage(prefix + GRAY + "Offsets for world" + world.getName() + ":");
+        sender.sendMessage(prefix + GRAY + " | X: " + DARK_GRAY + offsetX);
+        sender.sendMessage(prefix + GRAY + " | Y: " + DARK_GRAY + offsetY);
+        sender.sendMessage(prefix + GRAY + " | Z: " + DARK_GRAY + offsetZ);
         return true;
     }
 }

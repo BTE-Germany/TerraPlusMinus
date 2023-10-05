@@ -25,7 +25,7 @@ import java.util.Collection;
 import static de.btegermany.terraplusminus.commands.CommandHelper.*;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNullElse;
-import static org.bukkit.ChatColor.RED;
+import static org.bukkit.ChatColor.*;
 
 public class WhereCommand implements CommandExecutor {
 
@@ -36,7 +36,7 @@ public class WhereCommand implements CommandExecutor {
         String prefix = Terraplusminus.config.getString("prefix");
 
         if (!sender.hasPermission("t+-.where")) {
-            sender.sendMessage(prefix + "§7No permission for /where");
+            sender.sendMessage(prefix + GRAY + "No permission for /where");
             return true;
         }
 
@@ -66,9 +66,9 @@ public class WhereCommand implements CommandExecutor {
                 LatLng geolocation = this.getGeolocation(target);
                 String googleMapsUrl = "https://www.google.com/maps/@" + geolocation.getLat() + "," + geolocation.getLng();
                 String targetVerb = target == sender ? "Your": formatTargetName(target) + "'s";
-                message.addExtra("§7" + targetVerb + " coordinates are:\n§8" + DECIMAL_FORMATTER.format(geolocation.getLat()) + ", " + DECIMAL_FORMATTER.format(geolocation.getLng()) + "§7.");
+                message.addExtra(GRAY + targetVerb + " coordinates are:\n" + DARK_GRAY + DECIMAL_FORMATTER.format(geolocation.getLat()) + ", " + DECIMAL_FORMATTER.format(geolocation.getLng()) + GRAY + ".");
                 message.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, googleMapsUrl));
-                message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§7Click here to view in Google Maps.")));
+                message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(GRAY + "Click here to view in Google Maps.")));
             } catch (OutOfProjectionBoundsException e) {
                 String targetVerb = target == sender? "You are": formatTargetName(target) + " is";
                 message.addExtra(RED + targetVerb + " not in a Terra+- world or outside projection bounds.");

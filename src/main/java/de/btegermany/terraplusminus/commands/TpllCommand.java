@@ -212,10 +212,10 @@ public class TpllCommand implements CommandExecutor {
                         .map(Map.Entry::getKey)
                         .collect(toList());
                 if (!failures.isEmpty()) {
-                    sender.sendMessage(prefix + RED + "Failed to teleport §9" + this.formatTargetList(success) + RED + " to " + this.formatDestination(geolocation));
+                    sender.sendMessage(prefix + RED + "Failed to teleport " + BLUE + this.formatTargetList(success) + RED + " to " + this.formatDestination(geolocation));
                 }
                 if (!success.isEmpty()) {
-                    sender.sendMessage(prefix + "§7Teleported §9" + this.formatTargetList(success) + " §7to " + this.formatDestination(geolocation));
+                    sender.sendMessage(prefix + GRAY + "Teleported " + BLUE + this.formatTargetList(success) + GRAY + " to " + this.formatDestination(geolocation));
                 }
             });
         }
@@ -299,7 +299,7 @@ public class TpllCommand implements CommandExecutor {
                 GRAY + " to server " + DARK_GRAY + server + GRAY + "."
         );
         player.sendMessage(prefix +
-                "§cSending to another server..."
+                RED + "Sending to another server..."
         );
 
     }
