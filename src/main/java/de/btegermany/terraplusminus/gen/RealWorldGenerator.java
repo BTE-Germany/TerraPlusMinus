@@ -100,7 +100,7 @@ public class RealWorldGenerator extends ChunkGenerator {
         // We start by finding the lowest 16x16x16 cube that's not underground
         //TODO expose the minimum surface Y in Terra-- so we don't have to scan this way
         int minSurfaceCubeY = blockToCube(minWorldY - this.yOffset);
-        int maxWorldCubeY = blockToCube(maxWorldY);
+        int maxWorldCubeY = blockToCube(maxWorldY - this.yOffset);
         if (terraData.aboveSurface(minSurfaceCubeY)) {
             return; // All done, it's all air
         }
