@@ -8,6 +8,7 @@ import de.btegermany.terraplusminus.events.PlayerJoinEvent;
 import de.btegermany.terraplusminus.events.PlayerMoveEvent;
 import de.btegermany.terraplusminus.events.PluginMessageEvent;
 import de.btegermany.terraplusminus.gen.RealWorldGenerator;
+import de.btegermany.terraplusminus.utils.ConfigurationHelper;
 import de.btegermany.terraplusminus.utils.FileBuilder;
 import de.btegermany.terraplusminus.utils.PlayerHashMapManagement;
 import org.bukkit.Bukkit;
@@ -70,7 +71,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         if (Terraplusminus.config.getBoolean("height_in_actionbar")) {
             Bukkit.getPluginManager().registerEvents(new PlayerMoveEvent(this), this);
         }
-        if (Terraplusminus.config.getBoolean("linked_servers.enabled")) {
+        if (Terraplusminus.config.getBoolean("linked_worlds.enabled")) {
             Bukkit.getPluginManager().registerEvents(new PlayerJoinEvent(playerHashMapManagement), this);
         }
         // --------------------------
@@ -110,7 +111,23 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
 
     @Override
     public ChunkGenerator getDefaultWorldGenerator(String worldName, String id) {
-        return new RealWorldGenerator();
+        // Multiverse different y-offset support
+        int yOffset = 0;
+        if (Terraplusminus.config.getBoolean("linked_worlds.enabled") && Terraplusminus.config.getString("linked_worlds.method").equalsIgnoreCase("MULTIVERSE")) {
+
+            String lastServerName = ConfigurationHelper.getLastServerName("world");
+            String nextServerName = ConfigurationHelper.getNextServerName("world");
+            try {
+                if (lastServerName != null && worldName.equalsIgnoreCase(lastServerName.split(",")[0])) {
+                    yOffset = Integer.parseInt(lastServerName.split(",")[1].replace(" ", ""));
+                } else if (nextServerName != null && worldName.equalsIgnoreCase(nextServerName.split(",")[0])) {
+                    yOffset = Integer.parseInt(nextServerName.split(",")[1].replace(" ", ""));
+                }
+            } catch (Exception e) {
+                Bukkit.getLogger().log(Level.SEVERE, "[T+-] Could not parse y-offset from config");
+            }
+        }
+        return new RealWorldGenerator(yOffset);
     }
 
 
@@ -187,6 +204,28 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
                     "    - another_server                 # e.g. this server has a datapack to extend height to 2032. it covers the height section (-2032) - (-1) m a.s.l. it has a y-offset of -2032.\n" +
                     "    - current_server                 # e.g. this server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.\n" +
                     "    - another_server                 # e.g. this server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032\n");
+        }
+        if (configVersion == 1.2) {
+            this.config.set("config_version", 1.3);
+            this.saveConfig();
+            FileBuilder.deleteLine("# Linked servers -------------------------------------");
+            FileBuilder.deleteLine("# If the height limit on this server is not enough, other servers can be linked to generate higher or lower sections");
+            FileBuilder.deleteLine("linked_servers:");
+            FileBuilder.deleteLine("  enabled: false");
+            FileBuilder.deleteLine("  servers:");
+            FileBuilder.deleteLine("- another_server");
+            FileBuilder.deleteLine("- current_server");
+            FileBuilder.addLineAbove("# If disabled, tree generation is turned off.", "" +
+                    "# Linked worlds ---------------------------------------\n" +
+                    "# If the height limit in this world/server is not enough, other worlds/servers can be linked to generate higher or lower sections\n" +
+                    "linked_worlds:\n" +
+                    "  enabled: false\n" +
+                    "  method: 'SERVER'                         # 'SERVER' or 'MULTIVERSE'\n" +
+                    "  # if method = MULTIVERSE -> world_name, y-offset\n" +
+                    "  worlds:\n" +
+                    "    - another_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section (-2032) - (-1) m a.s.l. it has a y-offset of -2032.\n" +
+                    "    - current_world/server                 # do not change! e.g. this world/server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.\n" +
+                    "    - another_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032\n\n");
         }
     }
 

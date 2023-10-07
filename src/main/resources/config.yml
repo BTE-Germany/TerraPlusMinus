@@ -30,14 +30,17 @@ terrain_offset:
   y: 0
   z: 0
 
-# Linked servers ---------------------------------------
-# If the height limit on this server is not enough, other servers can be linked to generate higher or lower sections
-linked_servers:
+# Linked worlds ---------------------------------------
+# If the height limit in this world/server is not enough, other worlds/servers can be linked to generate higher or lower sections
+linked_worlds:
   enabled: false
-  servers:
-    - another_server                 # e.g. this server has a datapack to extend height to 2032. it covers the height section (-2032) - (-1) m a.s.l. it has a y-offset of -2032.
-    - current_server                 # e.g. this server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.
-    - another_server                 # e.g. this server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032
+  method: 'SERVER'                         # 'SERVER' or 'MULTIVERSE'
+  # if method = MULTIVERSE -> world_name, y-offset
+  worlds:
+    - another_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section (-2032) - (-1) m a.s.l. it has a y-offset of -2032.
+    - current_world/server                 # do not change! e.g. this world/server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.
+    - another_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032
+
 
 # If disabled, tree generation is turned off.
 generate_trees: true
@@ -54,4 +57,4 @@ path_material: MOSS_BLOCK
 # -----------------------------------------------------
 
 # NOTE: Do not change
-config_version: 1.2
+config_version: 1.3

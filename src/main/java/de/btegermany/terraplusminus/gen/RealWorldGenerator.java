@@ -32,7 +32,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.Math.min;
-import static net.buildtheearth.terraminusminus.substitutes.ChunkPos.*;
+import static net.buildtheearth.terraminusminus.substitutes.ChunkPos.blockToCube;
+import static net.buildtheearth.terraminusminus.substitutes.ChunkPos.cubeToMinBlock;
 import static org.bukkit.Material.*;
 
 
@@ -55,7 +56,7 @@ public class RealWorldGenerator extends ChunkGenerator {
             SNOW
     );
 
-    public RealWorldGenerator() {
+    public RealWorldGenerator(int yOffset) {
 
         EarthGeneratorSettings settings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
 
@@ -64,7 +65,11 @@ public class RealWorldGenerator extends ChunkGenerator {
                 Terraplusminus.config.getInt("terrain_offset.x"),
                 Terraplusminus.config.getInt("terrain_offset.z")
         );
-        this.yOffset = Terraplusminus.config.getInt("terrain_offset.y");
+        if (yOffset == 0) {
+            this.yOffset = Terraplusminus.config.getInt("terrain_offset.y");
+        } else {
+            this.yOffset = yOffset;
+        }
 
         settings = settings.withProjection(projection);
 
@@ -95,7 +100,7 @@ public class RealWorldGenerator extends ChunkGenerator {
         // We start by finding the lowest 16x16x16 cube that's not underground
         //TODO expose the minimum surface Y in Terra-- so we don't have to scan this way
         int minSurfaceCubeY = blockToCube(minWorldY - this.yOffset);
-        int maxWorldCubeY = blockToCube(maxWorldY);
+        int maxWorldCubeY = blockToCube(maxWorldY - this.yOffset);
         if (terraData.aboveSurface(minSurfaceCubeY)) {
             return; // All done, it's all air
         }
@@ -155,7 +160,7 @@ public class RealWorldGenerator extends ChunkGenerator {
                 int groundY = terraData.groundHeight(x, z) + this.yOffset;
 
                 // We do that for each column, so it does not depend on the configuration but only on the seed
-                int startMountainHeight = random.nextInt(1695, 1701);
+                int startMountainHeight = random.nextInt(7500, 7520);
 
                 if (groundY < minWorldY || groundY >= maxWorldY) {
                     continue; // We are not within vertical bounds, continue
@@ -178,7 +183,7 @@ public class RealWorldGenerator extends ChunkGenerator {
                     Biome biome = chunkData.getBiome(x, groundY, z);
                     material = switch (biome) {
                         case DESERT -> Material.SAND;
-                        case SNOWY_SLOPES, SNOWY_PLAINS, FROZEN_PEAKS -> Material.SNOW;
+                        case SNOWY_SLOPES, SNOWY_PLAINS, FROZEN_PEAKS -> SNOW_BLOCK;
                         default -> this.surfaceMaterial;
                     };
                 }
@@ -241,7 +246,7 @@ public class RealWorldGenerator extends ChunkGenerator {
 
     @NotNull
     public List<BlockPopulator> getDefaultPopulators(@NotNull World world) {
-        return Collections.singletonList(new TreePopulator(customBiomeProvider));
+        return Collections.singletonList(new TreePopulator(customBiomeProvider, yOffset));
     }
 
     @Nullable

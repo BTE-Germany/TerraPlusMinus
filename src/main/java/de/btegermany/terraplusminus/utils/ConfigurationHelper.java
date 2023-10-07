@@ -5,6 +5,8 @@ import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
+
 public final class ConfigurationHelper {
 
     /**
@@ -30,6 +32,42 @@ public final class ConfigurationHelper {
 
     private ConfigurationHelper() {
         throw new IllegalStateException();
+    }
+
+    private static List<String> getList() {
+        return (List<String>) Terraplusminus.config.getList("linked_worlds.worlds");
+    }
+
+    public static String getNextServerName(String currentWorldName) {
+        List<String> servers = getList();
+        int index = servers.indexOf("current_world/server");
+        String servername;
+        if (currentWorldName.equalsIgnoreCase("world")) {
+            servername = servers.get(index + 1);
+        } else {
+            return "world, 0";
+        }
+        if (servername.equals("another_world/server")) {
+            return null;
+        } else {
+            return servername;
+        }
+    }
+
+    public static String getLastServerName(String currentWorldName) {
+        List<String> servers = getList();
+        int index = servers.indexOf("current_world/server");
+        String servername;
+        if (currentWorldName.equalsIgnoreCase("world")) {
+            servername = servers.get(index - 1);
+        } else {
+            return "world, 0";
+        }
+        if (servername.equals("another_world/server")) {
+            return null;
+        } else {
+            return servername;
+        }
     }
 
 }

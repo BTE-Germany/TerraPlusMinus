@@ -116,7 +116,7 @@ Standard-Config:
 # The prefix is written in front of every message that is sent to the chat by the plugin.
 prefix: '§2§lT+- §8» '
 
-# If this option is enabled, the plugin will copy a datapack with the name 'world-height-datapack.zip' to the world directory, which expands the world to the maximum possibly with a datapack 2016 (real 1960).
+# If this option is enabled, the plugin will copy a datapack with the name 'world-height-datapack.zip' to the world directory, which expands the world to the maximum possibly with a datapack 2032.
 height_datapack: false
 
 # If enabled, it will show the height of the player in the actionbar.
@@ -145,6 +145,18 @@ terrain_offset:
   y: 0
   z: 0
 
+# Linked worlds ---------------------------------------
+# If the height limit in this world/server is not enough, other worlds/servers can be linked to generate higher or lower sections
+linked_worlds:
+  enabled: false
+  method: 'SERVER'                         # 'SERVER' or 'MULTIVERSE'
+  # if method = MULTIVERSE -> world_name, y-offset
+  worlds:
+    - another_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section (-2032) - (-1) m a.s.l. it has a y-offset of -2032.
+    - current_world/server                 # do not change! e.g. this world/server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.
+    - another_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032
+
+
 # If disabled, tree generation is turned off.
 generate_trees: true
 
@@ -160,7 +172,7 @@ path_material: MOSS_BLOCK
 # -----------------------------------------------------
 
 # NOTE: Do not change
-config_version: 1.1
+config_version: 1.3
 ```
 
 # Dependencies

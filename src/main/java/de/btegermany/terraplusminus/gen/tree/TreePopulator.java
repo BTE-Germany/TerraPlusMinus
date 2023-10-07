@@ -54,10 +54,10 @@ public class TreePopulator extends BlockPopulator {
     HashMap<String, ArrayList<ArrayList<TreeBlock>>> trees = new HashMap();
 
 
-    public TreePopulator(CustomBiomeProvider customBiomeProvider) {
+    public TreePopulator(CustomBiomeProvider customBiomeProvider, int yOffset) {
         this.customBiomeProvider = customBiomeProvider;
         this.xOffset = Terraplusminus.config.getInt("terrain_offset.x");
-        this.yOffset = Terraplusminus.config.getInt("terrain_offset.y");
+        this.yOffset = yOffset;
         this.zOffset = Terraplusminus.config.getInt("terrain_offset.z");
         this.generateTrees = Terraplusminus.config.getBoolean("generate_trees");
         this.surface = Terraplusminus.config.getString("surface_material");
