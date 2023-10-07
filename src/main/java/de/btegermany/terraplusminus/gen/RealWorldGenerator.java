@@ -5,6 +5,7 @@ import com.google.common.cache.LoadingCache;
 import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.gen.tree.TreePopulator;
 import de.btegermany.terraplusminus.utils.ConfigurationHelper;
+import lombok.Getter;
 import net.buildtheearth.terraminusminus.generator.CachedChunkData;
 import net.buildtheearth.terraminusminus.generator.ChunkDataLoader;
 import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
@@ -38,12 +39,16 @@ import static org.bukkit.Material.*;
 
 
 public class RealWorldGenerator extends ChunkGenerator {
+
+    @Getter
+    private final EarthGeneratorSettings settings;
+    @Getter
+    private final int yOffset;
     private Location spawnLocation = null;
 
-    public LoadingCache<ChunkPos, CompletableFuture<CachedChunkData>> cache;
+    private final LoadingCache<ChunkPos, CompletableFuture<CachedChunkData>> cache;
     private final CustomBiomeProvider customBiomeProvider;
 
-    private final int yOffset;
 
     private final Material surfaceMaterial;
     private final Map<String, Material> materialMapping;
@@ -71,13 +76,13 @@ public class RealWorldGenerator extends ChunkGenerator {
             this.yOffset = yOffset;
         }
 
-        settings = settings.withProjection(projection);
+        this.settings = settings.withProjection(projection);
 
         this.customBiomeProvider = new CustomBiomeProvider();
         this.cache = CacheBuilder.newBuilder()
                 .expireAfterAccess(5L, TimeUnit.MINUTES)
                 .softValues()
-                .build(new ChunkDataLoader(settings));
+                .build(new ChunkDataLoader(this.settings));
 
         this.surfaceMaterial = ConfigurationHelper.getMaterial(Terraplusminus.config, "surface_material", GRASS_BLOCK);
         this.materialMapping = Map.of(
