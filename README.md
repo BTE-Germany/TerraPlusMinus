@@ -116,6 +116,9 @@ Standard-Config:
 # The prefix is written in front of every message that is sent to the chat by the plugin.
 prefix: '§2§lT+- §8» '
 
+# If disabled, the plugin will log every fetched data to the console
+reduced_console_messages: true
+
 # If this option is enabled, the plugin will copy a datapack with the name 'world-height-datapack.zip' to the world directory, which expands the world to the maximum possibly with a datapack 2032.
 height_datapack: false
 

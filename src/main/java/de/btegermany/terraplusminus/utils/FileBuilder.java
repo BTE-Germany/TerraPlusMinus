@@ -169,6 +169,32 @@ public class FileBuilder {
         }
     }
 
+    public static void addLineAfter(String path, String line) {
+        try {
+            File inputFile = new File(plugin.getDataFolder() + File.separator + "config.yml");
+            File tempFile = new File(plugin.getDataFolder() + File.separator + "temp.yml");
+
+            BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));
+
+            String currentLine;
+
+            while ((currentLine = reader.readLine()) != null) {
+                writer.write(currentLine + "\n");
+                if (currentLine.contains(path)) {
+                    writer.write(line + "\n");
+                }
+            }
+
+            writer.close();
+            reader.close();
+            inputFile.delete();
+            tempFile.renameTo(inputFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void editPathValue(String path, String value) {
         try {
             File inputFile = new File(plugin.getDataFolder() + File.separator + "config.yml");

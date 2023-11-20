@@ -11,6 +11,7 @@ import de.btegermany.terraplusminus.gen.RealWorldGenerator;
 import de.btegermany.terraplusminus.utils.ConfigurationHelper;
 import de.btegermany.terraplusminus.utils.FileBuilder;
 import de.btegermany.terraplusminus.utils.PlayerHashMapManagement;
+import net.buildtheearth.terraminusminus.TerraConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.EventHandler;
@@ -75,6 +76,12 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
             Bukkit.getPluginManager().registerEvents(new PlayerJoinEvent(playerHashMapManagement), this);
         }
         // --------------------------
+
+        if (Terraplusminus.config.getBoolean("reduced_console_messages")) {
+            TerraConfig.reducedConsoleMessages = true; // Disables console log of fetching data
+        } else {
+            TerraConfig.reducedConsoleMessages = false;
+        }
 
         // Registering commands
         getCommand("tpll").setExecutor(new TpllCommand());
@@ -226,6 +233,14 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
                     "    - another_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section (-2032) - (-1) m a.s.l. it has a y-offset of -2032.\n" +
                     "    - current_world/server                 # do not change! e.g. this world/server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.\n" +
                     "    - another_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032\n\n");
+        }
+        if (configVersion == 1.3) {
+            this.config.set("config_version", 1.4);
+            this.saveConfig();
+            FileBuilder.addLineAfter("prefix:",
+                    "\n# If disabled, the plugin will log every fetched data to the console\n" +
+                            "reduced_console_messages: true");
+
         }
     }
 
