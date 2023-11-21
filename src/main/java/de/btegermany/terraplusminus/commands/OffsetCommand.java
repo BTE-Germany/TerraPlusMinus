@@ -15,7 +15,7 @@ public class OffsetCommand implements CommandExecutor {
             return true;
         }
         Player player = (Player) commandSender;
-        if (player.hasPermission("t+-.offset")) {
+        if (!player.hasPermission("t+-.offset")) {
             player.sendMessage(Terraplusminus.config.getString("prefix") + "§7No permission for /offset");
             return true;
         }

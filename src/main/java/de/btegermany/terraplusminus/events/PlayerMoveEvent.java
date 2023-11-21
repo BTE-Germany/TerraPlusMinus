@@ -19,6 +19,10 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Level;
+
+import static java.lang.String.valueOf;
+import static org.bukkit.ChatColor.BOLD;
 
 
 public class PlayerMoveEvent implements Listener {
@@ -44,23 +48,27 @@ public class PlayerMoveEvent implements Listener {
         this.zOffset = Terraplusminus.config.getInt("terrain_offset.z");
         this.linkedWorldsEnabled = Terraplusminus.config.getBoolean("linked_worlds.enabled");
         this.linkedWorldsMethod = Terraplusminus.config.getString("linked_worlds.method");
-        this.worlds = ConfigurationHelper.getWorlds();
         this.worldHashMap = new HashMap<>();
         if (this.linkedWorldsEnabled && this.linkedWorldsMethod.equalsIgnoreCase("MULTIVERSE")) {
+            this.worlds = ConfigurationHelper.getWorlds();
             for (LinkedWorld world : worlds) {
                 this.worldHashMap.put(world.getWorldName(), world.getOffset());
             }
-        } else {
-            for (World world : Bukkit.getWorlds()) {
+            Bukkit.getLogger().log(Level.INFO, "[T+-] Linked worlds enabled, using Multiverse method.");
+        } /*
+        else {
+            for (World world : Bukkit.getServer().getWorlds()) { // plugin loaded before worlds initialized, so that does not work
                 this.worldHashMap.put(world.getName(), yOffsetConfigEntry);
             }
         }
+        */
         this.startKeepActionBarAlive();
     }
 
     @EventHandler
     void onPlayerMove(org.bukkit.event.player.PlayerMoveEvent event) {
-        setHeightInActionBar(event.getPlayer());
+        Player player = event.getPlayer();
+        setHeightInActionBar(player);
     }
 
     private void startKeepActionBarAlive() {
@@ -72,9 +80,10 @@ public class PlayerMoveEvent implements Listener {
     }
 
     private void setHeightInActionBar(Player p) {
+        worldHashMap.putIfAbsent(p.getWorld().getName(), yOffsetConfigEntry);
         if (p.getInventory().getItemInMainHand().getType() != Material.DEBUG_STICK) {
             int height = p.getLocation().getBlockY() - worldHashMap.get(p.getWorld().getName());
-            p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent("§l" + height + "m"));
+            p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(BOLD + valueOf(height) + "m"));
         }
     }
 
