@@ -155,9 +155,12 @@ linked_worlds:
   method: 'SERVER'                         # 'SERVER' or 'MULTIVERSE'
   # if method = MULTIVERSE -> world_name, y-offset
   worlds:
-    - another_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section (-2032) - (-1) m a.s.l. it has a y-offset of -2032.
-    - current_world/server                 # do not change! e.g. this world/server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.
-    - another_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032
+    - name: another_world/server          # e.g. this world/server has a datapack to extend height to 2032. it covers the height section (-2032) - (-1) m a.s.l. it has a y-offset of -2032.
+      offset: 2032
+    - name: current_world/server                 # do not change! e.g. this world/server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.
+      offset: 0
+    - name: another_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032
+      offset: -2032
 
 
 # If disabled, tree generation is turned off.
@@ -175,7 +178,7 @@ path_material: MOSS_BLOCK
 # -----------------------------------------------------
 
 # NOTE: Do not change
-config_version: 1.3
+config_version: 1.4
 ```
 
 # Dependencies

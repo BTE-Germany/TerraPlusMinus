@@ -10,6 +10,7 @@ import de.btegermany.terraplusminus.events.PluginMessageEvent;
 import de.btegermany.terraplusminus.gen.RealWorldGenerator;
 import de.btegermany.terraplusminus.utils.ConfigurationHelper;
 import de.btegermany.terraplusminus.utils.FileBuilder;
+import de.btegermany.terraplusminus.utils.LinkedWorld;
 import de.btegermany.terraplusminus.utils.PlayerHashMapManagement;
 import net.buildtheearth.terraminusminus.TerraConfig;
 import org.bukkit.Bukkit;
@@ -20,6 +21,7 @@ import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.util.logging.Level;
@@ -44,7 +46,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
 
         // Config ------------------
         this.saveDefaultConfig();
-        this.config = getConfig();
+        config = getConfig();
         this.updateConfig();
         // --------------------------
 
@@ -77,11 +79,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         }
         // --------------------------
 
-        if (Terraplusminus.config.getBoolean("reduced_console_messages")) {
-            TerraConfig.reducedConsoleMessages = true; // Disables console log of fetching data
-        } else {
-            TerraConfig.reducedConsoleMessages = false;
-        }
+        TerraConfig.reducedConsoleMessages = Terraplusminus.config.getBoolean("reduced_console_messages"); // Disables console log of fetching data
 
         // Registering commands
         getCommand("tpll").setExecutor(new TpllCommand());
@@ -117,22 +115,17 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
 
 
     @Override
-    public ChunkGenerator getDefaultWorldGenerator(String worldName, String id) {
+    public ChunkGenerator getDefaultWorldGenerator(@NotNull String worldName, String id) {
         // Multiverse different y-offset support
         int yOffset = 0;
         if (Terraplusminus.config.getBoolean("linked_worlds.enabled") && Terraplusminus.config.getString("linked_worlds.method").equalsIgnoreCase("MULTIVERSE")) {
-
-            String lastServerName = ConfigurationHelper.getLastServerName("world");
-            String nextServerName = ConfigurationHelper.getNextServerName("world");
-            try {
-                if (lastServerName != null && worldName.equalsIgnoreCase(lastServerName.split(",")[0])) {
-                    yOffset = Integer.parseInt(lastServerName.split(",")[1].replace(" ", ""));
-                } else if (nextServerName != null && worldName.equalsIgnoreCase(nextServerName.split(",")[0])) {
-                    yOffset = Integer.parseInt(nextServerName.split(",")[1].replace(" ", ""));
+            for (LinkedWorld world : ConfigurationHelper.getWorlds()) {
+                if (world.getWorldName().equalsIgnoreCase(worldName)) {
+                    yOffset = world.getOffset();
                 }
-            } catch (Exception e) {
-                Bukkit.getLogger().log(Level.SEVERE, "[T+-] Could not parse y-offset from config");
             }
+        } else {
+            yOffset = Terraplusminus.config.getInt("y_offset");
         }
         return new RealWorldGenerator(yOffset);
     }
@@ -240,7 +233,15 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
             FileBuilder.addLineAfter("prefix:",
                     "\n# If disabled, the plugin will log every fetched data to the console\n" +
                             "reduced_console_messages: true");
-
+            FileBuilder.deleteLine("- another_world/server");
+            FileBuilder.deleteLine("- current_world/server");
+            FileBuilder.addLineAbove("# If disabled, tree generation is turned off.",
+                    "    - name: another_world/server          # e.g. this world/server has a datapack to extend height to 2032. it covers the height section (-2032) - (-1) m a.s.l. it has a y-offset of -2032.\n" +
+                            "      offset: 2032\n" +
+                            "    - name: current_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.\n" +
+                            "      offset: 0\n" +
+                            "    - name: another_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032\n" +
+                            "      offset: -2032\n\n");
         }
     }
 

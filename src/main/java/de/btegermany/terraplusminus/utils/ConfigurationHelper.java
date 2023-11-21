@@ -6,8 +6,11 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public final class ConfigurationHelper {
+    private static final List<LinkedWorld> worlds = convertList(Terraplusminus.config.getMapList("linked_worlds.worlds"));
 
     /**
      * Returns a material from the configuration,
@@ -34,40 +37,59 @@ public final class ConfigurationHelper {
         throw new IllegalStateException();
     }
 
-    private static List<String> getList() {
-        return (List<String>) Terraplusminus.config.getList("linked_worlds.worlds");
+    public static List<LinkedWorld> convertList(List<Map<?, ?>> originalList) {
+        return originalList.stream()
+                .map(ConfigurationHelper::convertMapToLinkedWorld)
+                .filter(world -> !world.getWorldName().equalsIgnoreCase("another_world/server") || !world.getWorldName().equalsIgnoreCase("current_world/server"))
+                .collect(Collectors.toList());
     }
 
-    public static String getNextServerName(String currentWorldName) {
-        List<String> servers = getList();
-        int index = servers.indexOf("current_world/server");
-        String servername;
-        if (currentWorldName.equalsIgnoreCase("world")) {
-            servername = servers.get(index + 1);
-        } else {
-            return "world, 0";
+    private static LinkedWorld convertMapToLinkedWorld(Map<?, ?> originalMap) {
+        String worldName = originalMap.get("name").toString();
+        int offset = (Integer) originalMap.get("offset");
+        return new LinkedWorld(worldName, offset);
+    }
+
+    public static LinkedWorld getNextServerName(String currentWorldName) {
+        int currentIndex = -1;
+
+        for (int i = 0; i < worlds.size(); i++) {
+            LinkedWorld world = worlds.get(i);
+            if (world.getWorldName().equalsIgnoreCase(currentWorldName)) {
+                currentIndex = i;
+                break;
+            }
         }
-        if (servername.equals("another_world/server")) {
-            return null;
+
+        if (currentIndex >= 0 && currentIndex < worlds.size() - 1) {
+            return worlds.get(currentIndex + 1);
         } else {
-            return servername;
+            // Entweder wurde die Welt nicht gefunden oder sie ist die letzte Welt in der Liste
+            return null;
         }
     }
 
-    public static String getLastServerName(String currentWorldName) {
-        List<String> servers = getList();
-        int index = servers.indexOf("current_world/server");
-        String servername;
-        if (currentWorldName.equalsIgnoreCase("world")) {
-            servername = servers.get(index - 1);
-        } else {
-            return "world, 0";
+    public static LinkedWorld getPreviousServerName(String currentWorldName) {
+        int currentIndex = -1;
+
+        for (int i = 0; i < worlds.size(); i++) {
+            LinkedWorld world = worlds.get(i);
+            if (world.getWorldName().equalsIgnoreCase(currentWorldName)) {
+                currentIndex = i;
+                break;
+            }
         }
-        if (servername.equals("another_world/server")) {
+
+        if (currentIndex > 0) {
+            return worlds.get(currentIndex - 1);
+        } else {
+            // Entweder wurde die Welt nicht gefunden oder sie ist die erste Welt in der Liste
             return null;
-        } else {
-            return servername;
         }
+    }
+
+    public static List<LinkedWorld> getWorlds() {
+        return worlds;
     }
 
 }

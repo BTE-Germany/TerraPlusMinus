@@ -2,6 +2,7 @@ package de.btegermany.terraplusminus.events;
 
 import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.utils.ConfigurationHelper;
+import de.btegermany.terraplusminus.utils.LinkedWorld;
 import io.papermc.lib.PaperLib;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -16,23 +17,25 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 
 public class PlayerMoveEvent implements Listener {
 
-    BukkitRunnable runnable;
-    ArrayList<Integer> taskIDs = new ArrayList<>();
-    int yOffset;
+    private BukkitRunnable runnable;
+    private ArrayList<Integer> taskIDs = new ArrayList<>();
+    private int yOffset;
     final int yOffsetConfigEntry;
 
-    final int xOffset;
-    final int zOffset;
-    final boolean linkedWorldsEnabled;
+    private final int xOffset;
+    private final int zOffset;
+    private final boolean linkedWorldsEnabled;
 
-    final String linkedWorldsMethod;
-    Plugin plugin;
-    String lastServerName;
-    String nextServerName;
+    private final String linkedWorldsMethod;
+    private Plugin plugin;
+    private List<LinkedWorld> worlds;
+    private HashMap<String, Integer> worldHashMap;
 
     public PlayerMoveEvent(Plugin plugin) {
         this.plugin = plugin;
@@ -41,48 +44,37 @@ public class PlayerMoveEvent implements Listener {
         this.zOffset = Terraplusminus.config.getInt("terrain_offset.z");
         this.linkedWorldsEnabled = Terraplusminus.config.getBoolean("linked_worlds.enabled");
         this.linkedWorldsMethod = Terraplusminus.config.getString("linked_worlds.method");
-        lastServerName = ConfigurationHelper.getLastServerName("world");
-        nextServerName = ConfigurationHelper.getNextServerName("world");
+        this.worlds = ConfigurationHelper.getWorlds();
+        this.worldHashMap = new HashMap<>();
+        if (this.linkedWorldsEnabled && this.linkedWorldsMethod.equalsIgnoreCase("MULTIVERSE")) {
+            for (LinkedWorld world : worlds) {
+                this.worldHashMap.put(world.getWorldName(), world.getOffset());
+            }
+        } else {
+            for (World world : Bukkit.getWorlds()) {
+                this.worldHashMap.put(world.getName(), yOffsetConfigEntry);
+            }
+        }
+        this.startKeepActionBarAlive();
     }
 
     @EventHandler
     void onPlayerMove(org.bukkit.event.player.PlayerMoveEvent event) {
-        Player p = event.getPlayer();
-        // Multiverse support
-        if (this.linkedWorldsEnabled && this.linkedWorldsMethod.equalsIgnoreCase("MULTIVERSE")) {
-            if (lastServerName != null) {
-                if (p.getWorld().getName().equalsIgnoreCase(lastServerName.split(",")[0])) {
-                    yOffset = Integer.parseInt(lastServerName.split(",")[1].replace(" ", ""));
-                }
+        setHeightInActionBar(event.getPlayer());
+    }
+
+    private void startKeepActionBarAlive() {
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                setHeightInActionBar(p);
             }
-            if (nextServerName != null) {
-                if (p.getWorld().getName().equalsIgnoreCase(nextServerName.split(",")[0])) {
-                    yOffset = Integer.parseInt(nextServerName.split(",")[1].replace(" ", ""));
-                }
-            }
-            if (p.getWorld().getName().equalsIgnoreCase("world")) {
-                yOffset = yOffsetConfigEntry;
-            }
-        } else {
-            yOffset = yOffsetConfigEntry;
-        }
+        }, 0, 20);
+    }
+
+    private void setHeightInActionBar(Player p) {
         if (p.getInventory().getItemInMainHand().getType() != Material.DEBUG_STICK) {
-            runnable = new BukkitRunnable() {
-                @Override
-                public void run() {
-                    int height = p.getLocation().getBlockY() - yOffset;
-                    p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent("§l" + height + "m"));
-                }
-            };
-            runnable.runTaskTimer(plugin, 0, 20);
-            if (!taskIDs.contains(runnable.getTaskId())) {
-                taskIDs.add(runnable.getTaskId());
-            }
-        } else {
-            for (int id : taskIDs) {
-                Bukkit.getScheduler().cancelTask(id);
-            }
-            taskIDs.clear();
+            int height = p.getLocation().getBlockY() - worldHashMap.get(p.getWorld().getName());
+            p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent("§l" + height + "m"));
         }
     }
 
@@ -102,23 +94,25 @@ public class PlayerMoveEvent implements Listener {
             public void run() {
                 // Teleport player from world to world
                 if (p.getLocation().getY() < 0) {
-                    String[] lastServerName = ConfigurationHelper.getLastServerName(world.getName()).split(",");
-                    if (lastServerName != null) {
-                        World tpWorld = Bukkit.getWorld(lastServerName[0]);
-                        Location newLocation = new Location(tpWorld, location.getX() + xOffset, tpWorld.getMaxHeight(), location.getZ() + zOffset, location.getYaw(), location.getPitch());
-                        PaperLib.teleportAsync(p, newLocation);
-                        p.sendMessage(Terraplusminus.config.getString("prefix") + "§7You have been teleported to another world.");
+                    LinkedWorld previousServer = ConfigurationHelper.getPreviousServerName(world.getName());
+                    if (previousServer != null) {
+                        teleportPlayer(previousServer, location, p);
                     }
                 } else if (p.getLocation().getY() > world.getMaxHeight()) {
-                    String[] nextServerName = ConfigurationHelper.getNextServerName(world.getName()).split(",");
-                    if (nextServerName != null) {
-                        World tpWorld = Bukkit.getWorld(nextServerName[0]);
-                        Location newLocation = new Location(tpWorld, location.getX() + xOffset, tpWorld.getMinHeight(), location.getZ() + zOffset, location.getYaw(), location.getPitch());
-                        PaperLib.teleportAsync(p, newLocation);
-                        p.sendMessage(Terraplusminus.config.getString("prefix") + "§7You have been teleported to another world.");
+                    LinkedWorld nextServer = ConfigurationHelper.getNextServerName(world.getName());
+                    if (nextServer != null) {
+                        teleportPlayer(nextServer, location, p);
                     }
                 }
             }
         }.runTaskLater(plugin, 60L);
+    }
+
+    private void teleportPlayer(LinkedWorld linkedWorld, Location location, Player p) {
+        World tpWorld = Bukkit.getWorld(linkedWorld.getWorldName());
+        Location newLocation = new Location(tpWorld, location.getX() + xOffset, tpWorld.getMinHeight(), location.getZ() + zOffset, location.getYaw(), location.getPitch());
+        PaperLib.teleportAsync(p, newLocation);
+        p.setFlying(true);
+        p.sendMessage(Terraplusminus.config.getString("prefix") + "§7You have been teleported to another world.");
     }
 }
