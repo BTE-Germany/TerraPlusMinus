@@ -52,7 +52,7 @@ public class TpllCommand implements CommandExecutor {
 
         // detect if command starts with @ or with a player name
 
-        if ((args[0].startsWith("@") || !isDouble(args[0].replace(",", ""))) && player.hasPermission("t+-.forcetpll")) {
+        if ((args[0].startsWith("@") || !isDouble(args[0].replace(",", "").replace("°", ""))) && player.hasPermission("t+-.forcetpll")) {
             if (args[0].equals("@a")) {
                 StringBuilder playerList = new StringBuilder();
                 Terraplusminus.instance.getServer().getOnlinePlayers().forEach(p -> {
