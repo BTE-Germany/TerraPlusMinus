@@ -119,8 +119,6 @@ public class TpllCommand implements CommandExecutor {
 
             World tpWorld = player.getWorld();
 
-            int xOffset = Terraplusminus.config.getInt("terrain_offset.x");
-            int zOffset = Terraplusminus.config.getInt("terrain_offset.z");
             double minLat = Terraplusminus.config.getDouble("min_latitude");
             double maxLat = Terraplusminus.config.getDouble("max_latitude");
             double minLon = Terraplusminus.config.getDouble("min_longitude");
@@ -177,8 +175,8 @@ public class TpllCommand implements CommandExecutor {
                         tpWorld = Bukkit.getWorld(nextServer.getWorldName());
                         height = height - yOffset + nextServer.getOffset();
                         player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleporting to " + coordinates[1] + ", " + coordinates[0] + " in another world. This may take a bit...");
-                        //player.teleport(new Location(tpWorld, mcCoordinates[0] + xOffset, height, mcCoordinates[1] + zOffset, player.getLocation().getYaw(), player.getLocation().getPitch()));
-                        PaperLib.teleportAsync(player, new Location(tpWorld, mcCoordinates[0] + xOffset, height, mcCoordinates[1] + zOffset, player.getLocation().getYaw(), player.getLocation().getPitch()));
+                        //player.teleport(new Location(tpWorld, mcCoordinates[0], height, mcCoordinates[1], player.getLocation().getYaw(), player.getLocation().getPitch()));
+                        PaperLib.teleportAsync(player, new Location(tpWorld, mcCoordinates[0], height, mcCoordinates[1], player.getLocation().getYaw(), player.getLocation().getPitch()));
                         return true;
                     }
                 } else {
@@ -199,7 +197,7 @@ public class TpllCommand implements CommandExecutor {
                         tpWorld = Bukkit.getWorld(previousServer.getWorldName());
                         height = height - yOffset + previousServer.getOffset();
                         player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleporting to " + coordinates[1] + ", " + coordinates[0] + " in another world. This may take a bit...");
-                        PaperLib.teleportAsync(player, new Location(tpWorld, mcCoordinates[0] + xOffset, height, mcCoordinates[1] + zOffset, player.getLocation().getYaw(), player.getLocation().getPitch()));
+                        PaperLib.teleportAsync(player, new Location(tpWorld, mcCoordinates[0], height, mcCoordinates[1], player.getLocation().getYaw(), player.getLocation().getPitch()));
                         return true;
                     }
                 } else {
