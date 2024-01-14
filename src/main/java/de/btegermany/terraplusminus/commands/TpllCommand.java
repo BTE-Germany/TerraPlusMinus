@@ -21,14 +21,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-
 import static org.bukkit.ChatColor.RED;
 
 
 public class TpllCommand implements CommandExecutor {
-
-    private final List<LinkedWorld> linkedWorlds = ConfigurationHelper.getWorlds();
 
     @Override
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {

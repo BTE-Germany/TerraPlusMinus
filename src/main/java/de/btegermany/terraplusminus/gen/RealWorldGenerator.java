@@ -78,7 +78,7 @@ public class RealWorldGenerator extends ChunkGenerator {
 
         this.settings = settings.withProjection(projection);
 
-        this.customBiomeProvider = new CustomBiomeProvider();
+        this.customBiomeProvider = new CustomBiomeProvider(projection);
         this.cache = CacheBuilder.newBuilder()
                 .expireAfterAccess(5L, TimeUnit.MINUTES)
                 .softValues()
