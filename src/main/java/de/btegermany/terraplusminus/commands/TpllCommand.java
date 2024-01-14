@@ -28,11 +28,7 @@ public class TpllCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
-        //If sender is not a player cancel the command.
-        if (!(commandSender instanceof Player)) {
-            commandSender.sendMessage("This command can only be used by players!");
-            return true;
-        }
+
         Player player = (Player) commandSender;
         if (!command.getName().equalsIgnoreCase("tpll")) {
             player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Usage: /tpll <longitudes> <latitudes>");
@@ -109,6 +105,12 @@ public class TpllCommand implements CommandExecutor {
             } else {
                 player.chat("/" + passthroughTpll + ":tpll " + String.join(" ", args));
             }
+            return true;
+        }
+
+        //If sender is not a player cancel the command.
+        if (!(commandSender instanceof Player)) {
+            commandSender.sendMessage("This command can only be used by players!");
             return true;
         }
 
