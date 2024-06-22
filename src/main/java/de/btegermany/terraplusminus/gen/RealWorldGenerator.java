@@ -35,7 +35,18 @@ import java.util.concurrent.TimeUnit;
 import static java.lang.Math.min;
 import static net.buildtheearth.terraminusminus.substitutes.ChunkPos.blockToCube;
 import static net.buildtheearth.terraminusminus.substitutes.ChunkPos.cubeToMinBlock;
-import static org.bukkit.Material.*;
+import static org.bukkit.Material.BRICKS;
+import static org.bukkit.Material.DIRT;
+import static org.bukkit.Material.DIRT_PATH;
+import static org.bukkit.Material.FARMLAND;
+import static org.bukkit.Material.GRASS_BLOCK;
+import static org.bukkit.Material.GRAY_CONCRETE_POWDER;
+import static org.bukkit.Material.MOSS_BLOCK;
+import static org.bukkit.Material.MYCELIUM;
+import static org.bukkit.Material.SNOW;
+import static org.bukkit.Material.SNOW_BLOCK;
+import static org.bukkit.Material.STONE;
+import static org.bukkit.Material.WATER;
 
 
 public class RealWorldGenerator extends ChunkGenerator {
@@ -119,14 +130,14 @@ public class RealWorldGenerator extends ChunkGenerator {
             chunkData.setRegion(
                     0, minWorldY, 0,
                     16, maxWorldY, 16,
-                    Material.STONE
+                    STONE
             );
             return; // All done, everything is underground
         } else {
             chunkData.setRegion(
                     0, minWorldY, 0,
                     0, cubeToMinBlock(minSurfaceCubeY), 0,
-                    Material.STONE
+                    STONE
             );
         }
 
@@ -137,13 +148,13 @@ public class RealWorldGenerator extends ChunkGenerator {
                 int waterHeight = min(terraData.waterHeight(x, z) + this.yOffset, maxWorldY - 1);
                 chunkData.setRegion(
                         x, minWorldY, z,
-                        x + 1, groundHeight + 1, z +1,
-                        Material.STONE
+                        x + 1, groundHeight + 1, z + 1,
+                        STONE
                 );
                 chunkData.setRegion(
                         x, groundHeight + 1, z,
-                        x + 1, waterHeight + 1, z +1,
-                        Material.WATER
+                        x + 1, waterHeight + 1, z + 1,
+                        WATER
                 );
             }
         }
@@ -244,7 +255,7 @@ public class RealWorldGenerator extends ChunkGenerator {
         return switch (world.getEnvironment()) {
             case NETHER -> true;
             case THE_END ->
-                    highest.getType() != Material.AIR && highest.getType() != Material.WATER && highest.getType() != Material.LAVA;
+                    highest.getType() != Material.AIR && highest.getType() != WATER && highest.getType() != Material.LAVA;
             default -> highest.getType() == Material.SAND || highest.getType() == Material.GRAVEL;
         };
     }
