@@ -7,7 +7,7 @@
 [![Discord](https://img.shields.io/discord/692825222373703772.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/GkSxGTYaAJ)
 ![https://github.com/buildtheearth](https://go.buildtheearth.net/community-shield)
 
-* Supported Minecraft-Versions: **Paper 1.20.6 - 1.21**
+* Supported Minecraft-Versions: **Paper 1.20.6 - 1.21**: [Download here](https://github.com/BTE-Germany/TerraPlusMinus/releases)
 
 * *Legacy version (for older Minecraft-Versions Spigot 1.18 - 1.20.4): [Legacy-Version 1.3.3](https://github.com/BTE-Germany/TerraPlusMinus/releases/tag/v1.3.3)*
 
@@ -74,8 +74,8 @@ Permission node: `t+-.admin` - Bypasses the coordinate bounds of tpll
 
 # Installation
 
-1. Download the latest build
-   of [Terra+- here](https://github.com/Build-the-Earth-Germany/terraplusminus/actions/workflows/maven.yml) and add it
+1. Download the latest release
+   of [Terra+- here](https://github.com/BTE-Germany/TerraPlusMinus/releases) and add it
    to your plugin folder
 2. Add these lines at the end of your `bukkit.yml` and replace "world" with the name of the server's main world name
 
