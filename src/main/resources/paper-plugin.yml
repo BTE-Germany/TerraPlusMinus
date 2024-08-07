@@ -7,3 +7,4 @@ prefix: T+-
 authors: [ meysster, Nudlsupp, Nachwahl ]
 website: https://bte-germany.de
 load: STARTUP
+folia-supported: true

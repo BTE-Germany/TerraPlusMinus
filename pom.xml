@@ -6,7 +6,7 @@
 
     <groupId>de.btegermany</groupId>
     <artifactId>terraplusminus</artifactId>
-    <version>1.4.0</version>
+    <version>1.4.0-folia</version>
     <packaging>jar</packaging>
 
     <name>Terraplusminus</name>

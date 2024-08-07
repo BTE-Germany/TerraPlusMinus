@@ -72,11 +72,19 @@ public class PlayerMoveEvent implements Listener {
     }
 
     private void startKeepActionBarAlive() {
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+        Runnable runnable = () -> {
             for (Player p : Bukkit.getOnlinePlayers()) {
                 setHeightInActionBar(p);
             }
-        }, 0, 20);
+        };
+
+        if (!Terraplusminus.isFolia) {
+            Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, runnable, 0, 20);
+        } else {
+            Bukkit.getGlobalRegionScheduler().runAtFixedRate(plugin, consumer -> {
+                runnable.run();
+            }, 1, 20);
+        }
     }
 
     private void setHeightInActionBar(Player p) {
