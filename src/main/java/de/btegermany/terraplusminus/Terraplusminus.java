@@ -1,6 +1,7 @@
 package de.btegermany.terraplusminus;
 
 
+import com.mojang.brigadier.Command;
 import de.btegermany.terraplusminus.commands.OffsetCommand;
 import de.btegermany.terraplusminus.commands.TpllCommand;
 import de.btegermany.terraplusminus.commands.WhereCommand;
@@ -12,18 +13,26 @@ import de.btegermany.terraplusminus.utils.ConfigurationHelper;
 import de.btegermany.terraplusminus.utils.FileBuilder;
 import de.btegermany.terraplusminus.utils.LinkedWorld;
 import de.btegermany.terraplusminus.utils.PlayerHashMapManagement;
+import io.papermc.paper.command.brigadier.Commands;
+import io.papermc.paper.plugin.lifecycle.event.LifecycleEventManager;
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.buildtheearth.terraminusminus.TerraConfig;
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.serialization.ConfigurationSerializable;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.generator.ChunkGenerator;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
+import java.util.List;
 import java.util.logging.Level;
 
 public final class Terraplusminus extends JavaPlugin implements Listener {
@@ -36,7 +45,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         PluginDescriptionFile pdf = this.getDescription();
         String pluginVersion = pdf.getVersion();
 
-        Bukkit.getLogger().log(Level.INFO, "\n╭━━━━╮\n" +
+        getLogger().log(Level.INFO, "\n╭━━━━╮\n" +
                 "┃╭╮╭╮┃\n" +
                 "╰╯┃┃┣┻━┳━┳━┳━━╮╭╮\n" +
                 "╱╱┃┃┃┃━┫╭┫╭┫╭╮┣╯╰┳━━╮\n" +
@@ -44,7 +53,8 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
                 "╱╱╰╯╰━━┻╯╰╯╰╯╰╯╰╯\n" +
                 "Version: " + pluginVersion);
 
-        // Config ------------------
+        // Config ------------------]
+        ConfigurationSerialization.registerClass(ConfigurationSerializable.class);
         this.saveDefaultConfig();
         config = getConfig();
         this.updateConfig();
@@ -81,11 +91,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
 
         TerraConfig.reducedConsoleMessages = Terraplusminus.config.getBoolean("reduced_console_messages"); // Disables console log of fetching data
 
-        // Registering commands
-        getCommand("tpll").setExecutor(new TpllCommand());
-        getCommand("where").setExecutor(new WhereCommand());
-        getCommand("offset").setExecutor(new OffsetCommand());
-        // --------------------------
+        registerCommands();
 
         Bukkit.getLogger().log(Level.INFO, "[T+-] Terraplusminus successfully enabled");
     }
@@ -245,4 +251,13 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         }
     }
 
+    private void registerCommands() {
+        LifecycleEventManager<Plugin> manager = this.getLifecycleManager();
+        manager.registerEventHandler(LifecycleEvents.COMMANDS, event -> {
+            final Commands commands = event.registrar();
+            commands.register("tpll", "Teleports you to longitude and latitude", List.of("tpc"), new TpllCommand());
+            commands.register("where", "Gives you the longitude and latitude of your minecraft coordinates", new WhereCommand());
+            commands.register("offset", "Displays the x,y and z offset of your world", new OffsetCommand());
+        });
+    }
 }
