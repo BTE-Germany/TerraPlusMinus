@@ -20,7 +20,7 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Run BuildTools # i hate copyright
-      run: curl https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar -o BuildTools.jar && java -jar BuildTools.jar --rev 1.18.1 --compile craftbukkit
+      run: curl https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar -o BuildTools.jar && java -jar BuildTools.jar --rev 1.21 --compile craftbukkit
     - name: Build with Maven
       run: mvn -B package --file pom.xml
     - name: Upload a Build Artifact
