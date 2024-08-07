@@ -7,7 +7,10 @@
 [![Discord](https://img.shields.io/discord/692825222373703772.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/GkSxGTYaAJ)
 ![https://github.com/buildtheearth](https://go.buildtheearth.net/community-shield)
 
-Tested Minecraft-Versions: **Paper 1.18 - 1.20**
+* Supported Minecraft-Versions: **Paper 1.20.6 - 1.21**
+
+* *Legacy version (for older Minecraft-Versions Spigot 1.18 - 1.20.4): [Legacy-Version 1.3.3](https://github.com/BTE-Germany/TerraPlusMinus/releases/tag/v1.3.3)*
+
 
 
 <!-- TABLE OF CONTENTS -->
