@@ -123,8 +123,14 @@ public class TpllCommand implements BasicCommand {
             double maxLon = Terraplusminus.config.getDouble("max_longitude");
 
             double[] coordinates = new double[2];
-            coordinates[1] = Double.parseDouble(args[0].replace(",", "").replace("°", ""));
-            coordinates[0] = Double.parseDouble(args[1].replace("°", ""));
+            try {
+                coordinates[1] = Double.parseDouble(args[0].replace(",", "").replace("°", ""));
+                coordinates[0] = Double.parseDouble(args[1].replace("°", ""));
+            } catch (NumberFormatException e) {
+                stack.getSender().sendMessage(RED + "Invalid coordinates or command usage!");
+                stack.getSender().sendMessage(RED + "Proper usage: /tpll <latitude> <longitude> [height (optional]");
+                return;
+            }
 
             ChunkGenerator generator = tpWorld.getGenerator();
             if (!(generator instanceof RealWorldGenerator)) { // after server reload the generator isnt instanceof RealWorldGenerator anymore
