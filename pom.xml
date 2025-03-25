@@ -67,10 +67,10 @@
             <id>OpenCollab Snapshots</id>
             <url>https://repo.opencollab.dev/snapshot/</url>
         </repository>
-            <repository>
-                <id>jitpack.io</id>
-                <url>https://jitpack.io</url>
-            </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
         <repository>
             <id>Daporkchop_</id>
             <url>https://maven.daporkchop.net/</url>
