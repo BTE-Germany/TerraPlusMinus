@@ -85,7 +85,7 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>1.21-R0.1-SNAPSHOT</version>
+            <version>1.21.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -109,9 +109,9 @@
             <version>2.8.9</version>
         </dependency>
         <dependency>
-            <groupId>com.github.BTEUK</groupId>
+            <groupId>com.github.SmylerMC</groupId>
             <artifactId>terraminusminus</artifactId>
-            <version>22449a34bf</version>
+            <version>c6d983e221</version>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
