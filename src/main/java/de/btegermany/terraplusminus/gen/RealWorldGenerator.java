@@ -197,11 +197,15 @@ public class RealWorldGenerator extends ChunkGenerator {
                 } else {
                     // Fallback to a generic block that matches the biome
                     Biome biome = chunkData.getBiome(x, groundY, z);
-                    material = switch (biome) {
-                        case DESERT -> Material.SAND;
-                        case SNOWY_SLOPES, SNOWY_PLAINS, FROZEN_PEAKS -> SNOW_BLOCK;
-                        default -> this.surfaceMaterial;
-                    };
+                    if (biome.name().equals("DESERT")) {
+                        material = Material.SAND;
+                    } else if (biome.name().equals("SNOWY_SLOPES") ||
+                            biome.name().equals("SNOWY_PLAINS") ||
+                            biome.name().equals("FROZEN_PEAKS")) {
+                        material = Material.SNOW_BLOCK;
+                    } else {
+                        material = this.surfaceMaterial;
+                    }
                 }
 
                 // We don't want grass, snow, and all underwater
