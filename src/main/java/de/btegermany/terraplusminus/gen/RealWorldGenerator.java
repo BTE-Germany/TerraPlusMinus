@@ -47,7 +47,7 @@ import static org.bukkit.Material.SNOW;
 import static org.bukkit.Material.SNOW_BLOCK;
 import static org.bukkit.Material.STONE;
 import static org.bukkit.Material.WATER;
-
+import static org.bukkit.block.Biome.*;
 
 public class RealWorldGenerator extends ChunkGenerator {
 
@@ -197,12 +197,12 @@ public class RealWorldGenerator extends ChunkGenerator {
                 } else {
                     // Fallback to a generic block that matches the biome
                     Biome biome = chunkData.getBiome(x, groundY, z);
-                    if (biome.name().equals("DESERT")) {
+                    if (biome == DESERT) {
                         material = Material.SAND;
-                    } else if (biome.name().equals("SNOWY_SLOPES") ||
-                            biome.name().equals("SNOWY_PLAINS") ||
-                            biome.name().equals("FROZEN_PEAKS")) {
-                        material = Material.SNOW_BLOCK;
+
+                    } else if (biome == SNOWY_SLOPES || biome == SNOWY_PLAINS || biome == FROZEN_PEAKS){
+                        material = SNOW_BLOCK;
+
                     } else {
                         material = this.surfaceMaterial;
                     }
