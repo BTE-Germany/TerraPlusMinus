@@ -6,33 +6,33 @@
 
     <groupId>de.btegermany</groupId>
     <artifactId>terraplusminus</artifactId>
-    <version>1.4.0</version>
+    <version>1.5.0</version>
     <packaging>jar</packaging>
 
     <name>Terraplusminus</name>
 
     <description>A plugin which implements the terra-- api in a papermc plugin</description>
     <properties>
-        <java.version>1.8</java.version>
+        <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <url>https://bte-germany.de</url>
 
     <build>
         <plugins>
-            <plugin>
+            <plugin> <!-- https://central.sonatype.com/artifact/org.apache.maven.plugins/maven-compiler-plugin -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>3.14.0</version>
                 <configuration>
                     <source>21</source>
                     <target>21</target>
                 </configuration>
             </plugin>
-            <plugin>
+            <plugin> <!-- https://central.sonatype.com/artifact/org.apache.maven.plugins/maven-shade-plugin -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.4</version>
+                <version>3.6.0</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -82,83 +82,85 @@
     </repositories>
 
     <dependencies>
-        <dependency>
+        <dependency> <!-- https://repo.papermc.io/#browse/browse:maven-snapshots:io%2Fpapermc%2Fpaper%2Fpaper-api -->
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
             <version>1.21.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
+        <dependency> <!-- https://repo.papermc.io/#browse/search/maven=attributes.maven2.artifactId%3Dpaperlib -->
             <groupId>io.papermc</groupId>
             <artifactId>paperlib</artifactId>
-            <version>1.0.7</version>
+            <version>1.0.8</version>
             <scope>compile</scope>
         </dependency>
 
-        <dependency>
+        <dependency> <!-- https://central.sonatype.com/artifact/org.projectlombok/lombok -->
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.32</version>
+            <version>1.18.38</version>
             <scope>provided</scope>
         </dependency>
 
 
-        <dependency>
+        <dependency> <!-- https://central.sonatype.com/artifact/com.google.code.gson/gson -->
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.8.9</version>
+            <version>2.13.0</version>
         </dependency>
-        <dependency>
-            <groupId>com.github.SmylerMC</groupId>
+        <dependency> <!-- https://jitpack.io/#BTEUK/terraminusminus -->
+            <groupId>com.github.BTEUK</groupId>
             <artifactId>terraminusminus</artifactId>
-            <version>c6d983e221</version>
+            <version>41d3843</version>
         </dependency>
-        <dependency>
+        <dependency> <!-- https://central.sonatype.com/artifact/com.google.guava/guava -->
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>33.2.1-jre</version>
+            <version>33.4.8-jre</version>
         </dependency>
-        <dependency>
+        <dependency> <!-- https://central.sonatype.com/artifact/org.apache.commons/commons-lang3 -->
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.12.0</version>
+            <version>3.17.0</version>
         </dependency>
-        <dependency>
+        <dependency> <!-- https://central.sonatype.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.15.2</version>
+            <version>2.18.3</version>
         </dependency>
-        <dependency>
+        <dependency> <!-- https://central.sonatype.com/artifact/io.netty/netty-buffer -->
             <groupId>io.netty</groupId>
             <artifactId>netty-buffer</artifactId>
-            <version>4.1.111.Final</version>
+            <version>4.2.0.Final</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>RELEASE</version>
+            <version>26.0.2</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
+        <dependency> <!-- https://central.sonatype.com/artifact/commons-io/commons-io -->
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.11.0</version>
+            <version>2.19.0</version>
         </dependency>
+        <!-- https://github.com/PorkStudios/PorkLib -->
         <dependency>
             <groupId>net.daporkchop.lib</groupId>
             <artifactId>common</artifactId>
-            <version>0.5.7-SNAPSHOT</version>
+            <version>0.5.9-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>lzma</groupId>
             <artifactId>lzma</artifactId>
             <version>0.0.1</version>
         </dependency>
+        <!-- https://github.com/dmulloy2/ProtocolLib/releases -->
         <dependency>
             <groupId>com.comphenix.protocol</groupId>
             <artifactId>ProtocolLib</artifactId>
-            <version>4.7.0</version>
+            <version>5.3.0</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
