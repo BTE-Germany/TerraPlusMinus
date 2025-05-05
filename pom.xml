@@ -134,7 +134,7 @@
             <version>4.2.0.Final</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
+        <dependency> <!-- https://central.sonatype.com/artifact/org.jetbrains/annotations -->
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
             <version>26.0.2</version>
@@ -145,19 +145,17 @@
             <artifactId>commons-io</artifactId>
             <version>2.19.0</version>
         </dependency>
-        <!-- https://github.com/PorkStudios/PorkLib -->
-        <dependency>
+        <dependency> <!-- https://github.com/PorkStudios/PorkLib - needs to be the same as in TerraMinusMinus-->
             <groupId>net.daporkchop.lib</groupId>
             <artifactId>common</artifactId>
-            <version>0.5.9-SNAPSHOT</version>
+            <version>0.5.7-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>lzma</groupId>
             <artifactId>lzma</artifactId>
             <version>0.0.1</version>
         </dependency>
-        <!-- https://github.com/dmulloy2/ProtocolLib/releases -->
-        <dependency>
+        <dependency> <!-- https://github.com/dmulloy2/ProtocolLib/releases -->
             <groupId>com.comphenix.protocol</groupId>
             <artifactId>ProtocolLib</artifactId>
             <version>5.3.0</version>
