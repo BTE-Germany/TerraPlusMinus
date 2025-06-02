@@ -100,6 +100,8 @@ public class RealWorldGenerator extends ChunkGenerator {
                 "minecraft:bricks", ConfigurationHelper.getMaterial(Terraplusminus.config, "building_outlines_material", BRICKS),
                 "minecraft:gray_concrete", ConfigurationHelper.getMaterial(Terraplusminus.config, "road_material", GRAY_CONCRETE_POWDER),
                 "minecraft:dirt_path", ConfigurationHelper.getMaterial(Terraplusminus.config, "path_material", MOSS_BLOCK)
+                "minecraft:cobblestone", ConfigurationHelper.getMaterial(Terraplusminus.config "trackbed_material", COBBLESTONE)
+                "minecraft:glowstone", ConfigurationHelper.getMaterial(Terraplusminus.config "border_material", GLOWSTONE)
         );
 
     }
@@ -142,6 +144,7 @@ public class RealWorldGenerator extends ChunkGenerator {
         }
 
         // And now, we build the actual terrain shape on top of everything
+        // TODO: Scale Mount Everest logarithmically to 320, sea level to 62 and Mariana Trench to -62 if "MINECRAFT" is in altitude config.
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
                 int groundHeight = min(terraData.groundHeight(x, z) + this.yOffset, maxWorldY - 1);
