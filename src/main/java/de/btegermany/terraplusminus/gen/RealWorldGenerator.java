@@ -14,6 +14,7 @@ import net.buildtheearth.terraminusminus.projection.transform.OffsetProjectionTr
 import net.buildtheearth.terraminusminus.substitutes.BlockState;
 import net.buildtheearth.terraminusminus.substitutes.BukkitBindings;
 import net.buildtheearth.terraminusminus.substitutes.ChunkPos;
+import org.bukkit.Bukkit;
 import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -108,7 +109,12 @@ public class RealWorldGenerator extends ChunkGenerator {
     @Override
     public void generateNoise(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunkZ, @NotNull ChunkData chunkData) {
 
-        CachedChunkData terraData = this.getTerraChunkData(chunkX, chunkZ);
+        CachedChunkData terraData = this.getTerraChunkData(chunkX, chunkZ, worldInfo.getName());
+
+        if (terraData == null) {
+            // If we don't have the data yet, we can't generate the noise
+            return;
+        }
 
         int minWorldY = worldInfo.getMinHeight();
         int maxWorldY = worldInfo.getMaxHeight();
@@ -167,7 +173,13 @@ public class RealWorldGenerator extends ChunkGenerator {
 
     @Override
     public void generateSurface(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunkZ, @NotNull ChunkData chunkData) {
-        CachedChunkData terraData = this.getTerraChunkData(chunkX, chunkZ);
+        CachedChunkData terraData = this.getTerraChunkData(chunkX, chunkZ, worldInfo.getName());
+
+        if (terraData == null) {
+            // If we don't have the data yet, we can't generate the surface
+            return;
+        }
+
         final int minWorldY = worldInfo.getMinHeight();
         final int maxWorldY = worldInfo.getMaxHeight();
         for (int x = 0; x < 16; x++) {
@@ -220,10 +232,37 @@ public class RealWorldGenerator extends ChunkGenerator {
         }
     }
 
-    private CachedChunkData getTerraChunkData(int chunkX, int chunkZ) {
+    private @Nullable CachedChunkData getTerraChunkData(int chunkX, int chunkZ, String world) {
+        try {
+            var future = this.cache.getUnchecked(new ChunkPos(chunkX, chunkZ));
+            if (!future.isDone()) {
+                future.whenComplete((data, ex) -> {
+                    // this lambda may run off the main thread,
+                    // so schedule the actual regeneration back on Bukkit’s thread:
+                    Bukkit.getScheduler().runTask(Terraplusminus.instance,
+                            () -> {
+                                World w = Bukkit.getWorld(world);
+                                if (w != null) {
+                                    w.regenerateChunk(chunkX, chunkZ);
+                                }
+                            });
+                });
+                return null; // We return null here, because the future is not done yet, and we will regenerate the chunk later
+            } else {
+                return future.get();
+            }
+        } catch (InterruptedException | ExecutionException e) {
+            if (e.getCause() instanceof InterruptedException) Thread.currentThread().interrupt();
+            throw new RuntimeException("Unrecoverable exception when generating chunk data asynchronously in Terra--", e);
+        }
+    }
+
+    private @Nullable CachedChunkData getTerraChunkDataForce(int chunkX, int chunkZ) {
         try {
             return this.cache.getUnchecked(new ChunkPos(chunkX, chunkZ)).get();
+
         } catch (InterruptedException | ExecutionException e) {
+            if (e.getCause() instanceof InterruptedException) Thread.currentThread().interrupt();
             throw new RuntimeException("Unrecoverable exception when generating chunk data asynchronously in Terra--", e);
         }
     }
@@ -242,7 +281,7 @@ public class RealWorldGenerator extends ChunkGenerator {
         int chunkZ = blockToCube(z);
         x -= cubeToMinBlock(chunkX);
         z -= cubeToMinBlock(chunkZ);
-        CachedChunkData terraData = this.getTerraChunkData(chunkX, chunkZ);
+        CachedChunkData terraData = this.getTerraChunkDataForce(chunkX, chunkZ);
         switch (heightMap) {
             case OCEAN_FLOOR, OCEAN_FLOOR_WG -> {
                 return terraData.groundHeight(x, z) + this.yOffset;
