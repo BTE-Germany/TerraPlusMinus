@@ -110,8 +110,9 @@ public class TpllCommand implements BasicCommand {
             return;
         }
 
-        // -
-        if (args.length >= 2) {
+        if (args.length < 2) {
+            return; // Not enough arguments, return without doing anything
+        }
 
             World tpWorld = player.getWorld();
 
@@ -157,84 +158,92 @@ public class TpllCommand implements BasicCommand {
                 }
             }
 
-            TerraConnector terraConnector = new TerraConnector();
+        Double height = null;
 
-            double height;
-            if (args.length >= 3) {
-                height = Double.parseDouble(args[2]) + yOffset;
-            } else {
-                height = terraConnector.getHeight((int) mcCoordinates[0], (int) mcCoordinates[1]).join() + yOffset; // 57 + (-2032) = -1975
-            }
-            if (height > player.getWorld().getMaxHeight()) {
-                if (Terraplusminus.config.getBoolean("linked_worlds.enabled")) {
-                    if (Terraplusminus.config.getString("linked_worlds.method").equalsIgnoreCase("SERVER")) {
-                        //send player uuid and coordinates to bungee
-                        sendPluginMessageToBungeeBridge(true, player, coordinates);
-                        return;
-                    } else if (Terraplusminus.config.getString("linked_worlds.method").equalsIgnoreCase("MULTIVERSE")) {
-                        LinkedWorld nextServer = ConfigurationHelper.getNextServerName(player.getWorld().getName());
-                        if (nextServer == null) {
-                            player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because the world is not high enough at the moment.");
-                            return;
-                        }
-                        tpWorld = Bukkit.getWorld(nextServer.getWorldName());
-                        height = height - yOffset + nextServer.getOffset();
-                        player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleporting to " + coordinates[1] + ", " + coordinates[0] + " in another world. This may take a bit...");
-                        //player.teleport(new Location(tpWorld, mcCoordinates[0] + xOffset, height, mcCoordinates[1] + zOffset, player.getLocation().getYaw(), player.getLocation().getPitch()));
-                        PaperLib.teleportAsync(player, new Location(tpWorld, mcCoordinates[0] + xOffset, height, mcCoordinates[1] + zOffset, player.getLocation().getYaw(), player.getLocation().getPitch()));
-                        return;
-                    }
-                } else {
-                    player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because the world is not high enough at the moment.");
-                    return;
-                }
-            } else if (height <= player.getWorld().getMinHeight()) {
-                if (Terraplusminus.config.getBoolean("linked_worlds.enabled")) {
-                    if (Terraplusminus.config.getString("linked_worlds.method").equalsIgnoreCase("SERVER")) {
-                        //send player uuid and coordinates to bungee
-                        sendPluginMessageToBungeeBridge(false, player, coordinates);
-                        return;
-                    } else if (Terraplusminus.config.getString("linked_worlds.method").equalsIgnoreCase("MULTIVERSE")) {
-                        LinkedWorld previousServer = ConfigurationHelper.getPreviousServerName(player.getWorld().getName());
-                        if (previousServer == null) {
-                            player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because the world is not low enough at the moment.");
-                            return;
-                        }
-                        tpWorld = Bukkit.getWorld(previousServer.getWorldName());
-                        height = height - yOffset + previousServer.getOffset();
-                        player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleporting to " + coordinates[1] + ", " + coordinates[0] + " in another world. This may take a bit...");
-                        PaperLib.teleportAsync(player, new Location(tpWorld, mcCoordinates[0] + xOffset, height, mcCoordinates[1] + zOffset, player.getLocation().getYaw(), player.getLocation().getPitch()));
-                        return;
-                    }
-                } else {
-                    player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because the world is not low enough at the moment.");
-                    return;
-                }
-            }
-            Location location = new Location(tpWorld, mcCoordinates[0], height, mcCoordinates[1], player.getLocation().getYaw(), player.getLocation().getPitch());
+        if (args.length >= 3) {
+            height = Double.parseDouble(args[2]) + yOffset;
+        }
 
-            if (PaperLib.isChunkGenerated(location)) {
-                if (args.length >= 3) {
-                    location = new Location(tpWorld, mcCoordinates[0], height, mcCoordinates[1], player.getLocation().getYaw(), player.getLocation().getPitch());
-                } else {
-                    location = new Location(tpWorld, mcCoordinates[0], tpWorld.getHighestBlockYAt((int) mcCoordinates[0], (int) mcCoordinates[1]) + 1, mcCoordinates[1], player.getLocation().getYaw(), player.getLocation().getPitch());
-                }
-            } else {
-                player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Location is generating. Please wait a moment...");
-            }
+        if (!Terraplusminus.config.getBoolean("linked_worlds.enabled")) {
+            Location location = new Location(tpWorld,
+                    mcCoordinates[0] + xOffset,
+                    (height != null) ? height : tpWorld.getHighestBlockYAt((int) mcCoordinates[0],
+                            (int) mcCoordinates[1]),
+                    mcCoordinates[1] + zOffset,
+                    player.getLocation().getYaw(),
+                    player.getLocation().getPitch());
+
             PaperLib.teleportAsync(player, location);
-
 
             if (args.length >= 3) {
                 player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleported to " + coordinates[1] + ", " + coordinates[0] + ", " + height + ".");
             } else {
                 player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleported to " + coordinates[1] + ", " + coordinates[0] + ".");
             }
-
             return;
-
         }
-        return;
+
+        TerraConnector terraConnector = new TerraConnector();
+
+        if (height == null) {
+            height = terraConnector.getHeight((int) mcCoordinates[0],
+                    (int) mcCoordinates[1]).join() + yOffset; // 57 + (-2032) = -1975
+        }
+        if (height > player.getWorld().getMaxHeight()) {
+            if (Terraplusminus.config.getBoolean("linked_worlds.enabled")) {
+                if (Terraplusminus.config.getString("linked_worlds.method").equalsIgnoreCase("SERVER")) {
+                    //send player uuid and coordinates to bungee
+                    sendPluginMessageToBungeeBridge(true,
+                            player,
+                            coordinates);
+                } else if (Terraplusminus.config.getString("linked_worlds.method").equalsIgnoreCase("MULTIVERSE")) {
+                    LinkedWorld nextServer = ConfigurationHelper.getNextServerName(player.getWorld().getName());
+                    if (nextServer == null) {
+                        player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because the world is not high enough at the moment.");
+                        return;
+                    }
+                    tpWorld = Bukkit.getWorld(nextServer.getWorldName());
+                    height = height - yOffset + nextServer.getOffset();
+                    player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleporting to " + coordinates[1] + ", " + coordinates[0] + " in another world. This may take a bit...");
+                    PaperLib.teleportAsync(player,
+                            new Location(tpWorld,
+                                    mcCoordinates[0] + xOffset,
+                                    height,
+                                    mcCoordinates[1] + zOffset,
+                                    player.getLocation().getYaw(),
+                                    player.getLocation().getPitch()));
+                }
+            } else {
+                player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because the world is not high enough at the moment.");
+            }
+        } else if (height <= player.getWorld().getMinHeight()) {
+            if (Terraplusminus.config.getBoolean("linked_worlds.enabled")) {
+                if (Terraplusminus.config.getString("linked_worlds.method").equalsIgnoreCase("SERVER")) {
+                    //send player uuid and coordinates to bungee
+                    sendPluginMessageToBungeeBridge(false,
+                            player,
+                            coordinates);
+                } else if (Terraplusminus.config.getString("linked_worlds.method").equalsIgnoreCase("MULTIVERSE")) {
+                    LinkedWorld previousServer = ConfigurationHelper.getPreviousServerName(player.getWorld().getName());
+                    if (previousServer == null) {
+                        player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because the world is not low enough at the moment.");
+                        return;
+                    }
+                    tpWorld = Bukkit.getWorld(previousServer.getWorldName());
+                    height = height - yOffset + previousServer.getOffset();
+                    player.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleporting to " + coordinates[1] + ", " + coordinates[0] + " in another world. This may take a bit...");
+                    PaperLib.teleportAsync(player,
+                            new Location(tpWorld,
+                                    mcCoordinates[0] + xOffset,
+                                    height,
+                                    mcCoordinates[1] + zOffset,
+                                    player.getLocation().getYaw(),
+                                    player.getLocation().getPitch()));
+                }
+            } else {
+                player.sendMessage(Terraplusminus.config.getString("prefix") + "§cYou cannot tpll to these coordinates, because the world is not low enough at the moment.");
+            }
+        }
     }
 
     private static boolean sendPluginMessageToBungeeBridge(boolean isNextServer, Player player, double[] coordinates) {
