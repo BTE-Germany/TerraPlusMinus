@@ -30,8 +30,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.Math.min;
 import static net.buildtheearth.terraminusminus.substitutes.ChunkPos.blockToCube;
@@ -72,6 +74,17 @@ public class RealWorldGenerator extends ChunkGenerator {
             MYCELIUM,
             SNOW
     );
+
+    // Track how many times we’ve retried a given chunk
+    private final Map<ChunkPos, AtomicInteger> retryCounts = new ConcurrentHashMap<>();
+
+    // Define your back-off delays *in ticks* (20 ticks = 1 second)
+    private static final long[] RETRY_DELAYS_TICKS = new long[] {
+            20L,      // attempt #1 → after 1 second
+            600L,     // attempt #2 → after 30 seconds
+            1_200L,   // attempt #3 → after 60 seconds
+            6_000L    // attempt #4 → after 5 minutes
+    };
 
     public RealWorldGenerator(int yOffset) {
 
@@ -237,15 +250,7 @@ public class RealWorldGenerator extends ChunkGenerator {
             var future = this.cache.getUnchecked(new ChunkPos(chunkX, chunkZ));
             if (!future.isDone()) {
                 future.whenComplete((data, ex) -> {
-                    // this lambda may run off the main thread,
-                    // so schedule the actual regeneration back on Bukkit’s thread:
-                    Bukkit.getScheduler().runTask(Terraplusminus.instance,
-                            () -> {
-                                World w = Bukkit.getWorld(world);
-                                if (w != null) {
-                                    w.regenerateChunk(chunkX, chunkZ);
-                                }
-                            });
+                    onFutureComplete(new ChunkPos(chunkX, chunkZ), ex, world, chunkX, chunkZ);
                 });
                 return null; // We return null here, because the future is not done yet, and we will regenerate the chunk later
             } else {
@@ -254,6 +259,59 @@ public class RealWorldGenerator extends ChunkGenerator {
         } catch (InterruptedException | ExecutionException e) {
             if (e.getCause() instanceof InterruptedException) Thread.currentThread().interrupt();
             throw new RuntimeException("Unrecoverable exception when generating chunk data asynchronously in Terra--", e);
+        }
+    }
+
+    private void onFutureComplete(ChunkPos pos,
+                                  Throwable ex,
+                                  String worldName,
+                                  int chunkX,
+                                  int chunkZ) {
+        if (ex != null) {
+            handleFailure(pos, ex, worldName, chunkX, chunkZ);
+        } else {
+            // success on async load → clear counter and re‐generate
+            retryCounts.remove(pos);
+            Bukkit.getScheduler().runTask(Terraplusminus.instance, () -> {
+                World w = Bukkit.getWorld(worldName);
+                if (w != null) w.regenerateChunk(chunkX, chunkZ);
+            });
+        }
+    }
+
+    /**
+     * @return null always → the calling generateNoise/surface will skip this pass.
+     */
+    private void handleFailure(ChunkPos pos,
+                                                    Throwable cause,
+                                                    String worldName,
+                                                    int chunkX,
+                                                    int chunkZ) {
+        // If it was an interrupt, re‐set the flag and bail hard
+        if (cause instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Chunk data load interrupted", cause);
+        }
+
+        int attempts = retryCounts
+                .computeIfAbsent(pos, k -> new AtomicInteger(0))
+                .incrementAndGet();
+
+
+        if (attempts <= RETRY_DELAYS_TICKS.length) {
+            long delay = RETRY_DELAYS_TICKS[attempts - 1];
+            Terraplusminus.instance.getLogger().warning("Failed to load chunk " + pos + " (attempt " + attempts + " of " + RETRY_DELAYS_TICKS.length + "), retrying in " + (delay / 20) + "s: " + cause.getMessage());
+
+            // schedule a delayed retry on the main server thread
+            Bukkit.getScheduler().runTaskLater(Terraplusminus.instance,
+                    () -> {
+                        World w = Bukkit.getWorld(worldName);
+                        if (w != null) {
+                            w.regenerateChunk(chunkX,
+                                    chunkZ);
+                        }
+                    },
+                    delay);
         }
     }
 
