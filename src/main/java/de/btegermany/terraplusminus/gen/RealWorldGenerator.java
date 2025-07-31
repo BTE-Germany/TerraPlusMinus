@@ -1,7 +1,9 @@
 package de.btegermany.terraplusminus.gen;
 
+import com.fastasyncworldedit.core.FaweAPI;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.gen.tree.TreePopulator;
 import de.btegermany.terraplusminus.utils.ConfigurationHelper;
@@ -250,7 +252,11 @@ public class RealWorldGenerator extends ChunkGenerator {
             var future = this.cache.getUnchecked(new ChunkPos(chunkX, chunkZ));
             if (!future.isDone()) {
                 future.whenComplete((data, ex) -> {
-                    onFutureComplete(new ChunkPos(chunkX, chunkZ), ex, world, chunkX, chunkZ);
+                    try {
+                        onFutureComplete(new ChunkPos(chunkX, chunkZ), ex, world, chunkX, chunkZ);
+                    } catch (Throwable e) {
+                        throw new RuntimeException(e);
+                    }
                 });
                 return null; // We return null here, because the future is not done yet, and we will regenerate the chunk later
             } else {
@@ -266,27 +272,27 @@ public class RealWorldGenerator extends ChunkGenerator {
                                   Throwable ex,
                                   String worldName,
                                   int chunkX,
-                                  int chunkZ) {
+                                  int chunkZ) throws Throwable {
         if (ex != null) {
             handleFailure(pos, ex, worldName, chunkX, chunkZ);
         } else {
             // success on async load → clear counter and re‐generate
             retryCounts.remove(pos);
-            Bukkit.getScheduler().runTask(Terraplusminus.instance, () -> {
-                World w = Bukkit.getWorld(worldName);
-                if (w != null) w.regenerateChunk(chunkX, chunkZ);
+            Bukkit.getScheduler().runTaskAsynchronously(Terraplusminus.instance, () -> {
+                var queue = FaweAPI.createQueue(BukkitAdapter.adapt(Bukkit.getWorld(worldName)), true);
+                queue.regenerateChunk(chunkX, chunkZ,
+                        BukkitAdapter.adapt(PLAINS),
+                        0L);
+                queue.flush();
             });
         }
     }
 
-    /**
-     * @return null always → the calling generateNoise/surface will skip this pass.
-     */
     private void handleFailure(ChunkPos pos,
                                                     Throwable cause,
                                                     String worldName,
                                                     int chunkX,
-                                                    int chunkZ) {
+                                                    int chunkZ) throws Throwable {
         // If it was an interrupt, re‐set the flag and bail hard
         if (cause instanceof InterruptedException) {
             Thread.currentThread().interrupt();
@@ -303,15 +309,19 @@ public class RealWorldGenerator extends ChunkGenerator {
             Terraplusminus.instance.getLogger().warning("Failed to load chunk " + pos + " (attempt " + attempts + " of " + RETRY_DELAYS_TICKS.length + "), retrying in " + (delay / 20) + "s: " + cause.getMessage());
 
             // schedule a delayed retry on the main server thread
-            Bukkit.getScheduler().runTaskLater(Terraplusminus.instance,
+            Bukkit.getScheduler().runTaskLaterAsynchronously(Terraplusminus.instance,
                     () -> {
-                        World w = Bukkit.getWorld(worldName);
-                        if (w != null) {
-                            w.regenerateChunk(chunkX,
-                                    chunkZ);
-                        }
+                        var queue = FaweAPI.createQueue(BukkitAdapter.adapt(Bukkit.getWorld(worldName)), true);
+                        queue.regenerateChunk(chunkX, chunkZ,
+                                BukkitAdapter.adapt(PLAINS),
+                                0L);
+                        queue.flush();
                     },
                     delay);
+        } else {
+            // If we have exhausted all attempts, log an error and return null
+            Terraplusminus.instance.getLogger().severe("Failed to load chunk " + pos + " after " + attempts + " attempts: " + cause.getMessage());
+            throw cause;
         }
     }
 
