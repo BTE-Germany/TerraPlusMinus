@@ -349,15 +349,18 @@ public class RealWorldGenerator extends ChunkGenerator {
         }
     }
 
+    @Override
     public void generateBedrock(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull ChunkGenerator.ChunkData chunkData) {
         // no bedrock, because bedrock bad
     }
 
+    @Override
     public void generateCaves(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull ChunkGenerator.ChunkData chunkData) {
         // no caves, because caves scary
     }
 
 
+    @Override
     public int getBaseHeight(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull HeightMap heightMap) {
         int chunkX = blockToCube(x);
         int chunkZ = blockToCube(z);
@@ -374,6 +377,7 @@ public class RealWorldGenerator extends ChunkGenerator {
         }
     }
 
+    @Override
     public boolean canSpawn(@NotNull World world, int x, int z) {
         Block highest = world.getBlockAt(x, world.getHighestBlockYAt(x, z), z);
 
@@ -385,11 +389,13 @@ public class RealWorldGenerator extends ChunkGenerator {
         };
     }
 
+    @Override
     @NotNull
     public List<BlockPopulator> getDefaultPopulators(@NotNull World world) {
         return Collections.singletonList(new TreePopulator(customBiomeProvider, yOffset));
     }
 
+    @Override
     @Nullable
     public Location getFixedSpawnLocation(@NotNull World world, @NotNull Random random) {
         if (spawnLocation == null)
@@ -397,35 +403,42 @@ public class RealWorldGenerator extends ChunkGenerator {
         return spawnLocation;
     }
 
+    @Override
     public boolean shouldGenerateNoise() {
         return false;
     }
 
 
+    @Override
     public boolean shouldGenerateSurface() {
         return false;
     }
 
 
+    @Override
     public boolean shouldGenerateBedrock() {
         return false;
     }
 
 
+    @Override
     public boolean shouldGenerateCaves() {
         return false;
     }
 
 
+    @Override
     public boolean shouldGenerateDecorations() {
         return false;
     }
 
 
+    @Override
     public boolean shouldGenerateMobs() {
         return false;
     }
 
+    @Override
     public boolean shouldGenerateStructures() {
         return false;
     }
