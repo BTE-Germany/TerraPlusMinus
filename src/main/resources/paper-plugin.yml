@@ -7,9 +7,3 @@ prefix: T+-
 authors: [ meysster, Nudlsupp, Nachwahl ]
 website: https://bte-germany.de
 load: STARTUP
-dependencies:
-  server:
-    FastAsyncWorldEdit:
-      load: BEFORE
-      join-classpath: true
-      required: true
