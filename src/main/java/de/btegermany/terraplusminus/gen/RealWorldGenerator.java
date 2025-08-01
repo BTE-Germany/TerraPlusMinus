@@ -88,8 +88,11 @@ public class RealWorldGenerator extends ChunkGenerator {
             6_000L    // attempt #4 → after 5 minutes
     };
 
-    public RealWorldGenerator(int yOffset) {
+    private final boolean useFAWEWorkaround;
 
+    public RealWorldGenerator(int yOffset) {
+        useFAWEWorkaround = Bukkit.getPluginManager().isPluginEnabled("FastAsyncWorldEdit");
+        Terraplusminus.instance.getComponentLogger().info("FastAsyncWorldEdit enabled: " + useFAWEWorkaround);
         EarthGeneratorSettings settings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
 
         GeographicProjection projection = new OffsetProjectionTransform(
@@ -248,6 +251,16 @@ public class RealWorldGenerator extends ChunkGenerator {
     }
 
     private @Nullable CachedChunkData getTerraChunkData(int chunkX, int chunkZ, String world) {
+        if (useFAWEWorkaround) {
+            // If we are using FAWE, we need to use a different method to get the chunk data
+            return getTerraChunkDataFawe(chunkX, chunkZ, world);
+        } else {
+            // Otherwise, we can use the normal method
+            return getTerraChunkDataForce(chunkX, chunkZ);
+        }
+    }
+
+        private @Nullable CachedChunkData getTerraChunkDataFawe(int chunkX, int chunkZ, String world) {
         try {
             var future = this.cache.getUnchecked(new ChunkPos(chunkX, chunkZ));
             if (!future.isDone()) {
@@ -255,7 +268,8 @@ public class RealWorldGenerator extends ChunkGenerator {
                     try {
                         onFutureComplete(new ChunkPos(chunkX, chunkZ), ex, world, chunkX, chunkZ);
                     } catch (Throwable e) {
-                        throw new RuntimeException(e);
+                        Terraplusminus.instance.getComponentLogger().error("FAWE Gen have't worked for chunk " + chunkX + ", " + chunkZ, e);
+                        throw new RuntimeException(e); // TODO handle this more gracefully + save to json
                     }
                 });
                 return null; // We return null here, because the future is not done yet, and we will regenerate the chunk later
