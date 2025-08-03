@@ -1,20 +1,15 @@
 package de.btegermany.terraplusminus.gen;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.LoadingCache;
 import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.gen.tree.TreePopulator;
 import de.btegermany.terraplusminus.utils.ConfigurationHelper;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import net.buildtheearth.terraminusminus.generator.CachedChunkData;
-import net.buildtheearth.terraminusminus.generator.ChunkDataLoader;
-import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
-import net.buildtheearth.terraminusminus.projection.GeographicProjection;
-import net.buildtheearth.terraminusminus.projection.transform.OffsetProjectionTransform;
 import net.buildtheearth.terraminusminus.substitutes.BlockState;
 import net.buildtheearth.terraminusminus.substitutes.BukkitBindings;
 import net.buildtheearth.terraminusminus.substitutes.ChunkPos;
-import org.bukkit.Bukkit;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -30,10 +25,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.Math.min;
 import static net.buildtheearth.terraminusminus.substitutes.ChunkPos.blockToCube;
@@ -52,7 +43,6 @@ import static org.bukkit.Material.STONE;
 import static org.bukkit.Material.WATER;
 import static org.bukkit.block.Biome.*;
 
-// TODO add json save of empty chunks so we can catchup when server crashed etc
 
 /**
  * Main {@link ChunkGenerator} for TerraPlusMinus.
@@ -60,43 +50,20 @@ import static org.bukkit.block.Biome.*;
  */
 public class RealWorldGenerator extends ChunkGenerator {
 
-    /**
-     * A functional interface to abstract block setting operations.
-     * This allows the same terrain application logic to be used for both
-     * initial chunk generation (writing to {@link ChunkData}) and asynchronous
-     * generation (writing directly to the {@link World}).
-     */
-    @FunctionalInterface
-    private interface BlockSetter {
-        void setBlock(int x, int y, int z, Material material);
-
-        default void setRegion(int x, int y, int z, int endX, int endY, int endZ, Material material) {
-            for (int i = x; i < endX; i++) {
-                for (int j = y; j < endY; j++) {
-                    for (int k = z; k < endZ; k++) {
-                        setBlock(i, j, k, material);
-                    }
-                }
-            }
-        }
-
-        default Biome getBiome(int x, int y, int z) {
-            return PLAINS; // Default biome
-        }
-    }
-
-    @Getter
-    private final EarthGeneratorSettings settings;
     @Getter
     private final int yOffset;
     private Location spawnLocation = null;
 
-    private final LoadingCache<ChunkPos, CompletableFuture<CachedChunkData>> cache;
     private final CustomBiomeProvider customBiomeProvider;
 
 
-    private final Material surfaceMaterial;
-    private final Map<String, Material> materialMapping;
+    private static final Material surfaceMaterial = ConfigurationHelper.getMaterial(Terraplusminus.config,
+            "surface_material", GRASS_BLOCK);
+    private static final Map<String, Material> materialMapping = Map.of(
+            "minecraft:bricks", ConfigurationHelper.getMaterial(Terraplusminus.config, "building_outlines_material", BRICKS),
+            "minecraft:gray_concrete", ConfigurationHelper.getMaterial(Terraplusminus.config, "road_material", GRAY_CONCRETE_POWDER),
+            "minecraft:dirt_path", ConfigurationHelper.getMaterial(Terraplusminus.config, "path_material", MOSS_BLOCK)
+    );
 
     private static final Set<Material> GRASS_LIKE_MATERIALS = Set.of(
             GRASS_BLOCK,
@@ -106,61 +73,29 @@ public class RealWorldGenerator extends ChunkGenerator {
             SNOW
     );
 
-    // Track how many times we’ve retried a given chunk
-    private final Map<ChunkPos, AtomicInteger> retryCounts = new ConcurrentHashMap<>();
-
-    // Define your back-off delays *in ticks* (20 ticks = 1 second)
-    private static final long[] RETRY_DELAYS_TICKS = new long[]{
-            20L,      // attempt #1 → after 1 second
-            600L,     // attempt #2 → after 30 seconds
-            1_200L,   // attempt #3 → after 60 seconds
-            6_000L    // attempt #4 → after 5 minutes
-    };
-
     /**
      * Constructor for the RealWorldGenerator.
      *
      * @param yOffset vertical offset to apply to the terrain.
      */
     public RealWorldGenerator(int yOffset) {
-        EarthGeneratorSettings settingsWithoutProj = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
-
-        GeographicProjection projection = new OffsetProjectionTransform(
-                settingsWithoutProj.projection(),
-                Terraplusminus.config.getInt("terrain_offset.x"),
-                Terraplusminus.config.getInt("terrain_offset.z")
-        );
         if (yOffset == 0) {
             this.yOffset = Terraplusminus.config.getInt("terrain_offset.y");
         } else {
             this.yOffset = yOffset;
         }
 
-        this.settings = settingsWithoutProj.withProjection(projection);
-
-        this.customBiomeProvider = new CustomBiomeProvider(projection);
-        this.cache = CacheBuilder.newBuilder()
-                .expireAfterAccess(5L, TimeUnit.MINUTES)
-                .softValues()
-                .build(new ChunkDataLoader(this.settings));
-
-        this.surfaceMaterial = ConfigurationHelper.getMaterial(Terraplusminus.config, "surface_material", GRASS_BLOCK);
-        this.materialMapping = Map.of(
-                "minecraft:bricks", ConfigurationHelper.getMaterial(Terraplusminus.config, "building_outlines_material", BRICKS),
-                "minecraft:gray_concrete", ConfigurationHelper.getMaterial(Terraplusminus.config, "road_material", GRAY_CONCRETE_POWDER),
-                "minecraft:dirt_path", ConfigurationHelper.getMaterial(Terraplusminus.config, "path_material", MOSS_BLOCK)
-        );
-
+        this.customBiomeProvider = new CustomBiomeProvider(Terraplusminus.instance.getGenerator().getSettings().projection());
     }
 
     @Override
     public void generateNoise(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunkZ, @NotNull ChunkData chunkData) {
-        CachedChunkData terraData = this.getTerraChunkDataAsync(chunkX, chunkZ, worldInfo.getName());
-        if (terraData == null) {
+        var data = getTerraChunkDataAsync(new ChunkInfo(chunkX, chunkZ, yOffset, worldInfo.getName()));
+        if (data == null || data.left == null) {
             // If we don't have the data yet, we can't generate the noise.
             return;
         }
-        applyNoise(worldInfo, chunkData, terraData);
+        applyNoise(worldInfo, createBlockSetter(chunkData), data.left, yOffset);
     }
 
     @Override
@@ -170,166 +105,49 @@ public class RealWorldGenerator extends ChunkGenerator {
 
     @Override
     public void generateSurface(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunkZ, @NotNull ChunkData chunkData) {
-        CachedChunkData terraData = this.getTerraChunkDataAsync(chunkX, chunkZ, worldInfo.getName());
-        if (terraData == null) {
+        var terraData = getTerraChunkDataAsync(new ChunkInfo(chunkX, chunkZ, yOffset, worldInfo.getName()));
+        if (terraData == null || terraData.left == null) {
             // If we don't have the data yet, we can't generate the surface.
             return;
         }
-        applySurface(worldInfo, random, chunkData, terraData);
+        applySurface(worldInfo, random, createBlockSetter(chunkData), terraData.left, yOffset);
     }
 
     /**
      * Fetches chunk data asynchronously. This is used always except there is no workaround.
      * If the data is not in the cache, it returns null immediately and schedules the terrain application upon future completion.
      *
-     * @param chunkX The chunk's X coordinate.
-     * @param chunkZ The chunk's Z coordinate.
-     * @param worldName The name of the world.
      * @return {@link CachedChunkData} if already cached, otherwise null.
      */
-    private @Nullable CachedChunkData getTerraChunkDataAsync(int chunkX, int chunkZ, String worldName) {
-        try {
-            CompletableFuture<CachedChunkData> future = this.cache.getUnchecked(new ChunkPos(chunkX, chunkZ));
-            // TODO kill this task when server shutdown
-            if (!future.isDone()) {
-                // Data is not ready yet. Return null to generate an empty chunk for now.
-                // The terrain will be applied once the future completes.
-                future.whenComplete((data, ex) -> {
-                    try {
-                        onTerraDataLoaded(new ChunkPos(chunkX, chunkZ), data, ex, worldName, chunkX, chunkZ);
-                    } catch (Exception e) {
-                        Terraplusminus.instance.getComponentLogger().error("Failed to apply async-loaded chunk data for chunk " + chunkX + ", " + chunkZ, e);
-                    }
-                });
+    protected static @Nullable ImmutablePair<CachedChunkData, ChunkInfo> getTerraChunkDataAsync(ChunkInfo chunk) {
+        return getTerraChunkDataAsync(chunk, false);
+    }
+
+    /**
+     * Fetches chunk data asynchronously. This is used always except there is no workaround.
+     * If the data is not in the cache, it returns null immediately and schedules the terrain application upon future completion.
+     *
+     * @return {@link CachedChunkData} if already cached, otherwise null.
+     */
+    protected static @Nullable ImmutablePair<CachedChunkData, ChunkInfo> getTerraChunkDataAsync(ChunkInfo chunk,
+                                                                                                boolean force) {
+        try {var cache = Terraplusminus.instance.getGenerator().getCache();
+            CompletableFuture<CachedChunkData> future = cache.getUnchecked(new ChunkPos(chunk.x, chunk.z));
+
+            AsyncGenerator gen = Terraplusminus.instance.getAsyncGenerator();
+            if (!force && Terraplusminus.instance.getAsyncGenerator().isEnabled() && !future.isDone()) {
+                gen.supply(future, chunk);
                 return null;
             } else {
-                // Data was ready immediately.
-                return future.get();
+                return new ImmutablePair<>(future.get(), chunk);
             }
         } catch (Exception e) {
             if (e.getCause() instanceof InterruptedException) Thread.currentThread().interrupt();
-            Terraplusminus.instance.getComponentLogger().error("Unrecoverable exception when getting chunk data future for chunk " + chunkX + ", " + chunkZ, e);
+            Terraplusminus.instance.getComponentLogger().error("Unrecoverable exception when getting chunk data future for chunk {}",
+                    chunk,
+                    e);
             return null;
         }
-    }
-
-    /**
-     * Callback executed when the asynchronous fetch of {@link CachedChunkData} completes.
-     *
-     * @param pos       The position of the chunk.
-     * @param terraData The loaded chunk data, or null on failure.
-     * @param ex        The exception, if the load failed.
-     * @param worldName The name of the world.
-     * @param chunkX    The chunk's X coordinate.
-     * @param chunkZ    The chunk's Z coordinate.
-     */
-    private void onTerraDataLoaded(ChunkPos pos, CachedChunkData terraData, Throwable ex, String worldName, int chunkX, int chunkZ) {
-        if (ex != null) {
-            handleTerraDataLoadFailure(pos, ex, worldName, chunkX, chunkZ);
-        } else {
-            // Success: clear retry counter and apply terrain to the world directly.
-            retryCounts.remove(pos);
-            World world = Bukkit.getWorld(worldName);
-            if (world == null) {
-                Terraplusminus.instance.getComponentLogger().error("World " + worldName + " not found for applying async terrain for chunk " + chunkX + ", " + chunkZ);
-                return;
-            }
-
-            // We need a ChunkData-like interface to set blocks. Since we are outside the main generation pipeline,
-            // we have to set blocks directly in the world. This is slower but necessary - need to runs on main
-            // thread or we would have to use fawe maybe we should add that as a third option?
-            Bukkit.getScheduler().runTask(Terraplusminus.instance, () -> {
-                try {
-                    Random random = new Random(world.getSeed() + chunkX + chunkZ); // Not a perfect seed, but sufficient for this purpose.
-                    BlockSetter blockSetter = createBlockSetter(world, chunkX, chunkZ);
-                    applyNoise(world, blockSetter, terraData);
-                    applySurface(world, random, blockSetter, terraData);
-                    // Apply trees and other features
-                    //new TreePopulator(customBiomeProvider, yOffset).populate(world, new Random(), chunkX, chunkZ,
-                    //        terraData);
-                    // TODO populator make that actually work or nbypass it
-
-                } catch (Exception e) {
-                    Terraplusminus.instance.getComponentLogger().error("Failed to apply async-loaded chunk data for chunk " + chunkX + ", " + chunkZ, e);
-                }
-            });
-        }
-    }
-
-    /**
-     * Handles failures in asynchronously loading chunk data. Implements a retry mechanism with back-off.
-     *
-     * @param pos       The position of the chunk that failed to load.
-     * @param ex        The exception that occurred.
-     * @param worldName The name of the world.
-     * @param chunkX    The chunk's X coordinate.
-     * @param chunkZ    The chunk's Z coordinate.
-     */
-    private void handleTerraDataLoadFailure(ChunkPos pos, Throwable ex, String worldName, int chunkX, int chunkZ) {
-        if (ex.getCause() instanceof InterruptedException) {
-            Thread.currentThread().interrupt();
-            Terraplusminus.instance.getComponentLogger().error("Chunk data load for " + pos + " was interrupted.", ex);
-            return;
-        }
-
-        int attempts = retryCounts.computeIfAbsent(pos, k -> new AtomicInteger(0)).incrementAndGet();
-
-        if (attempts <= RETRY_DELAYS_TICKS.length) {
-            long delay = RETRY_DELAYS_TICKS[attempts - 1];
-            Terraplusminus.instance.getLogger().warning(String.format(
-                    "Failed to load chunk %s (attempt %d of %d), retrying in %.1fs: %s",
-                    pos, attempts, RETRY_DELAYS_TICKS.length, delay / 20.0, ex.getMessage()
-            ));
-
-            // Schedule a delayed retry. // TODO save and should down this task
-            Bukkit.getScheduler().runTaskLaterAsynchronously(Terraplusminus.instance, () -> {
-                // Retry loading the chunk data
-                CompletableFuture<CachedChunkData> future = this.cache.getUnchecked(pos);
-                future.whenComplete((data, error) -> {
-                    try {
-                        onTerraDataLoaded(pos, data, error, worldName, chunkX, chunkZ);
-                    } catch (Exception e) {
-                        Terraplusminus.instance.getComponentLogger().error("Failed to apply async-loaded chunk data for chunk {}, {}",
-                                chunkX,
-                                chunkZ,
-                                e);
-                    }
-                });
-            }, delay);
-        } else {
-            Terraplusminus.instance.getComponentLogger().error("Failed to load chunk " + pos + " after " + attempts + " " +
-                    "attempts. Giving up" +
-                    ".", ex);
-        }
-    }
-
-    /**
-     * Fetches chunk data synchronously, blocking until the data is available.
-     *
-     * @param chunkX The chunk's X coordinate.
-     * @param chunkZ The chunk's Z coordinate.
-     * @return The {@link CachedChunkData}.
-     * @throws RuntimeException if loading fails.
-     */
-    private @NotNull CachedChunkData getTerraChunkDataSync(int chunkX, int chunkZ) {
-        try {
-            return this.cache.getUnchecked(new ChunkPos(chunkX, chunkZ)).get();
-        } catch (InterruptedException | ExecutionException e) {
-            if (e.getCause() instanceof InterruptedException) Thread.currentThread().interrupt();
-            throw new RuntimeException("Unrecoverable exception when generating chunk data synchronously in Terra-- for chunk " + chunkX + ", " + chunkZ, e);
-        }
-    }
-
-    /**
-     * Applies the base terrain (noise) to a chunk using {@link ChunkData}.
-     * This is used during the main chunk generation phase.
-     *
-     * @param worldInfo The world information.
-     * @param chunkData The chunk data to modify.
-     * @param terraData The real-world terrain data.
-     */
-    private void applyNoise(WorldInfo worldInfo, @NotNull ChunkData chunkData, CachedChunkData terraData) {
-        applyNoise(worldInfo, createBlockSetter(chunkData), terraData);
     }
 
     /**
@@ -340,13 +158,14 @@ public class RealWorldGenerator extends ChunkGenerator {
      * @param blockSetter The block setter to use for setting blocks.
      * @param terraData The real-world terrain data.
      */
-    private void applyNoise(WorldInfo worldInfo, BlockSetter blockSetter, CachedChunkData terraData) {
+    protected static void applyNoise(@NotNull WorldInfo worldInfo, BlockSetter blockSetter,
+                               @NotNull CachedChunkData terraData, int yOffset) {
         int minWorldY = worldInfo.getMinHeight();
         int maxWorldY = worldInfo.getMaxHeight();
 
         // We start by finding the lowest 16x16x16 cube that's not underground
-        int minSurfaceCubeY = blockToCube(minWorldY - this.yOffset);
-        int maxWorldCubeY = blockToCube(maxWorldY - this.yOffset);
+        int minSurfaceCubeY = blockToCube(minWorldY - yOffset);
+        int maxWorldCubeY = blockToCube(maxWorldY - yOffset);
         if (terraData.aboveSurface(minSurfaceCubeY)) {
             return; // All done, it's all air
         }
@@ -365,26 +184,15 @@ public class RealWorldGenerator extends ChunkGenerator {
         // And now, we build the actual terrain shape on top of everything
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
-                int groundHeight = min(terraData.groundHeight(x, z) + this.yOffset, maxWorldY - 1);
-                blockSetter.setRegion(x, minWorldY, z, x + 1, groundHeight + 1, z + 1, STONE);
+                int groundHeight = min(terraData.groundHeight(x, z) + yOffset, maxWorldY - 1);
+                blockSetter.setRegion(x, cubeToMinBlock(minSurfaceCubeY), z, x + 1, groundHeight + 1, z + 1, STONE);
 
-                int waterHeight = min(terraData.waterHeight(x, z) + this.yOffset, maxWorldY - 1);
-                blockSetter.setRegion(x, groundHeight + 1, z, x + 1, waterHeight + 1, z + 1, WATER);
+                int waterHeight = min(terraData.waterHeight(x, z) + yOffset, maxWorldY - 1);
+                if (waterHeight > groundHeight) {
+                    blockSetter.setRegion(x, groundHeight + 1, z, x + 1, waterHeight + 1, z + 1, WATER);
+                }
             }
         }
-    }
-
-    /**
-     * Applies the surface decoration to a chunk using {@link ChunkData}.
-     * This is used during the main chunk generation phase.
-     *
-     * @param worldInfo The world information.
-     * @param random    A random number generator.
-     * @param chunkData The chunk data to modify.
-     * @param terraData The real-world terrain data.
-     */
-    private void applySurface(WorldInfo worldInfo, @NotNull Random random, @NotNull ChunkData chunkData, CachedChunkData terraData) {
-        applySurface(worldInfo, random, createBlockSetter(chunkData), terraData);
     }
 
     /**
@@ -396,13 +204,14 @@ public class RealWorldGenerator extends ChunkGenerator {
      * @param blockSetter The block setter to use for setting blocks.
      * @param terraData The real-world terrain data.
      */
-    private void applySurface(WorldInfo worldInfo, @NotNull Random random, BlockSetter blockSetter, CachedChunkData terraData) {
+    protected static void applySurface(@NotNull WorldInfo worldInfo, @NotNull Random random, BlockSetter blockSetter,
+                        CachedChunkData terraData, int yOffset) {
         final int minWorldY = worldInfo.getMinHeight();
         final int maxWorldY = worldInfo.getMaxHeight();
 
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
-                int groundY = terraData.groundHeight(x, z) + this.yOffset;
+                int groundY = terraData.groundHeight(x, z) + yOffset;
                 if (groundY < minWorldY || groundY >= maxWorldY) {
                     continue;
                 }
@@ -444,30 +253,6 @@ public class RealWorldGenerator extends ChunkGenerator {
     }
 
     /**
-     * Creates a {@link BlockSetter} for writing directly to a {@link World}.
-     *
-     * @param world  The world to write to.
-     * @param chunkX The chunk's X coordinate.
-     * @param chunkZ The chunk's Z coordinate.
-     * @return A new BlockSetter instance.
-     */
-    private BlockSetter createBlockSetter(World world, int chunkX, int chunkZ) {
-        int baseX = chunkX * 16;
-        int baseZ = chunkZ * 16;
-        return new BlockSetter() {
-            @Override
-            public void setBlock(int x, int y, int z, Material material) {
-                world.getBlockAt(baseX + x, y, baseZ + z).setType(material, false);
-            }
-
-            @Override
-            public Biome getBiome(int x, int y, int z) {
-                return world.getBiome(baseX + x, y, baseZ + z);
-            }
-        };
-    }
-
-    /**
      * Determines the appropriate surface material for a given block column.
      *
      * @param terraData The real-world terrain data.
@@ -478,11 +263,12 @@ public class RealWorldGenerator extends ChunkGenerator {
      * @param biome     The biome at this column.
      * @return The {@link Material} for the surface block.
      */
-    private Material determineSurfaceMaterial(@NotNull CachedChunkData terraData, int x, int z, int groundY, Random random, Biome biome) {
+    private static Material determineSurfaceMaterial(@NotNull CachedChunkData terraData, int x, int z, int groundY,
+                                               Random random, Biome biome) {
         BlockState state = terraData.surfaceBlock(x, z);
         if (state != null) {
             // Terra--'s OSM config says a feature should be drawn there.
-            Material material = this.materialMapping.get(state.getBlock().toString());
+            Material material = materialMapping.get(state.getBlock().toString());
             if (material != null) {
                 return material;
             }
@@ -502,7 +288,7 @@ public class RealWorldGenerator extends ChunkGenerator {
         } else if (biome == SNOWY_SLOPES || biome == SNOWY_PLAINS || biome == FROZEN_PEAKS) {
             return SNOW_BLOCK;
         } else {
-            return this.surfaceMaterial;
+            return surfaceMaterial;
         }
     }
 
@@ -517,6 +303,7 @@ public class RealWorldGenerator extends ChunkGenerator {
         // We don't want vanilla caves.
     }
 
+    @SneakyThrows
     @Override
     public int getBaseHeight(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull HeightMap heightMap) {
         int chunkX = blockToCube(x);
@@ -524,7 +311,10 @@ public class RealWorldGenerator extends ChunkGenerator {
         x -= cubeToMinBlock(chunkX);
         z -= cubeToMinBlock(chunkZ);
         // Must be synchronous for this method.
-        CachedChunkData terraData = this.getTerraChunkDataSync(chunkX, chunkZ);
+        CachedChunkData terraData = Objects.requireNonNull(getTerraChunkDataAsync(new ChunkInfo(chunkX,
+                        chunkZ,
+                        yOffset, worldInfo.getName()),
+                true)).left;
         return switch (heightMap) {
             case OCEAN_FLOOR, OCEAN_FLOOR_WG -> terraData.groundHeight(x, z) + this.yOffset;
             default -> terraData.surfaceHeight(x, z) + this.yOffset;
@@ -546,6 +336,7 @@ public class RealWorldGenerator extends ChunkGenerator {
     @NotNull
     public List<BlockPopulator> getDefaultPopulators(@NotNull World world) {
         return Collections.singletonList(new TreePopulator(customBiomeProvider, yOffset));
+        // TODO make this also run async / handle api outage
     }
 
     @Override
@@ -570,13 +361,6 @@ public class RealWorldGenerator extends ChunkGenerator {
         return false;
     }
 
-
-    @Override
-    public boolean shouldGenerateBedrock() {
-        return false;
-    }
-
-
     @Override
     public boolean shouldGenerateCaves() {
         return false;
@@ -598,4 +382,26 @@ public class RealWorldGenerator extends ChunkGenerator {
     public boolean shouldGenerateStructures() {
         return false;
     }
+
+    /**
+     * A functional interface to abstract block setting operations.
+     * This allows the same terrain application logic to be used for both
+     * initial chunk generation (writing to {@link ChunkData}) and asynchronous
+     * generation (writing directly to the {@link World}).
+     */
+    protected interface BlockSetter {
+        void setBlock(int x, int y, int z, Material material);
+
+        void setRegion(int x, int y, int z, int endX, int endY, int endZ, Material material);
+
+        default Biome getBiome(int x, int y, int z) {
+            return PLAINS; // Default biome
+        }
+
+        default void flush() {
+            // Optional method to flush changes, if needed
+        }
+    }
+
+    public record ChunkInfo(int x, int z, int blockYOffset, String worldName) {}
 }

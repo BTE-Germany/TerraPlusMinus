@@ -134,18 +134,18 @@ public class TpllCommand implements BasicCommand {
             }
 
             ChunkGenerator generator = tpWorld.getGenerator();
-            if (!(generator instanceof RealWorldGenerator)) { // after server reload the generator isnt instanceof RealWorldGenerator anymore
+            if (!(generator instanceof RealWorldGenerator gen)) { // after server reload the generator isnt instanceof
+                // RealWorldGenerator anymore
                 stack.getSender().sendMessage(Terraplusminus.config.getString("prefix") + RED + "The world generator must be set to Terraplusminus");
                 return;
             }
-            RealWorldGenerator terraGenerator = (RealWorldGenerator) generator;
-            EarthGeneratorSettings generatorSettings = terraGenerator.getSettings();
-            GeographicProjection projection = generatorSettings.projection();
-            int yOffset = terraGenerator.getYOffset();
+
+            int yOffset = gen.getYOffset();
 
             double[] mcCoordinates;
             try {
-                mcCoordinates = projection.fromGeo(coordinates[0], coordinates[1]);
+                mcCoordinates = Terraplusminus.instance.getGenerator().getSettings().projection().fromGeo(coordinates[0],
+                        coordinates[1]);
             } catch (OutOfProjectionBoundsException e) {
                 stack.getSender().sendMessage(RED + "Location is not within projection bounds");
                 return;
