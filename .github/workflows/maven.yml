@@ -18,19 +18,11 @@ jobs:
       with:
         java-version: '21'
         distribution: 'temurin'
-        cache: maven
-    - name: Build with Maven
-      run: mvn -B package --file pom.xml
+        cache: gradle
+    - name: Build with gradle
+      run: gradle clean build --no-daemon --console=plain
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: artifact-${{ matrix.runs-on }}
-        path: target/terraplusminus*.jar
-    - name: Cache local Maven repository
-      uses: actions/cache@v4
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-        restore-keys: |
-          ${{ runner.os }}-maven-
-
+        name: Staging
+        path: build/libs/terraplusminus*.jar
