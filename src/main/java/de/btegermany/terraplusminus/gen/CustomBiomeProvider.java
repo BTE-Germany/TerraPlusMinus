@@ -2,6 +2,7 @@ package de.btegermany.terraplusminus.gen;
 
 import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.data.KoppenClimateData;
+import lombok.Getter;
 import net.buildtheearth.terraminusminus.projection.GeographicProjection;
 import net.buildtheearth.terraminusminus.projection.OutOfProjectionBoundsException;
 import org.bukkit.block.Biome;

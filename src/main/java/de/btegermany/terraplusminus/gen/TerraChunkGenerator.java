@@ -14,13 +14,17 @@ import net.buildtheearth.terraminusminus.substitutes.ChunkPos;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-public class ChunkGeneratorCache {
+public class TerraChunkGenerator {
     @Getter
     private final LoadingCache<ChunkPos, CompletableFuture<CachedChunkData>> cache;
     @Getter
     private final EarthGeneratorSettings settings;
+    @Getter
+    private final CustomBiomeProvider customBiomeProvider;
+    @Getter
+    private static final TerraChunkGenerator instance = new TerraChunkGenerator();
 
-    public ChunkGeneratorCache() {
+    private TerraChunkGenerator() {
         EarthGeneratorSettings settingsWithoutProj = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
 
         GeographicProjection projection = new OffsetProjectionTransform(
@@ -35,6 +39,7 @@ public class ChunkGeneratorCache {
                 .expireAfterAccess(15L, TimeUnit.MINUTES)
                 .softValues()
                 .build(new ChunkDataLoader(this.settings));
-    }
 
+        this.customBiomeProvider = new CustomBiomeProvider(projection);
+    }
 }

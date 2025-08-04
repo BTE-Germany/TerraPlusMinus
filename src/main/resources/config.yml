@@ -62,5 +62,13 @@ road_material: GRAY_CONCRETE_POWDER
 path_material: MOSS_BLOCK
 # -----------------------------------------------------
 
+enable-async-generation: true
+
+async-generation-chunk-batch-size: 10
+
+async-generation-timer-seconds: 16
+
+dev-mode: false
+
 # NOTE: Do not change
-config_version: 1.4
+config_version: 1.5

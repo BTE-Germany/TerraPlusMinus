@@ -4,18 +4,16 @@ import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.data.TerraConnector;
+import de.btegermany.terraplusminus.gen.TerraChunkGenerator;
 import de.btegermany.terraplusminus.gen.RealWorldGenerator;
 import de.btegermany.terraplusminus.utils.ConfigurationHelper;
 import de.btegermany.terraplusminus.utils.LinkedWorld;
 import io.papermc.lib.PaperLib;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
-import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
-import net.buildtheearth.terraminusminus.projection.GeographicProjection;
 import net.buildtheearth.terraminusminus.projection.OutOfProjectionBoundsException;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
@@ -144,7 +142,8 @@ public class TpllCommand implements BasicCommand {
 
             double[] mcCoordinates;
             try {
-                mcCoordinates = Terraplusminus.instance.getGenerator().getSettings().projection().fromGeo(coordinates[0],
+                mcCoordinates =
+                        TerraChunkGenerator.getInstance().getSettings().projection().fromGeo(coordinates[0],
                         coordinates[1]);
             } catch (OutOfProjectionBoundsException e) {
                 stack.getSender().sendMessage(RED + "Location is not within projection bounds");

@@ -7,13 +7,13 @@ import de.btegermany.terraplusminus.commands.WhereCommand;
 import de.btegermany.terraplusminus.events.PlayerJoinEvent;
 import de.btegermany.terraplusminus.events.PlayerMoveEvent;
 import de.btegermany.terraplusminus.events.PluginMessageEvent;
-import de.btegermany.terraplusminus.gen.AsyncGenerator;
-import de.btegermany.terraplusminus.gen.ChunkGeneratorCache;
+import de.btegermany.terraplusminus.gen.AsyncGeneratorTask;
 import de.btegermany.terraplusminus.gen.RealWorldGenerator;
 import de.btegermany.terraplusminus.utils.ConfigurationHelper;
 import de.btegermany.terraplusminus.utils.FileBuilder;
 import de.btegermany.terraplusminus.utils.LinkedWorld;
 import de.btegermany.terraplusminus.utils.PlayerHashMapManagement;
+import de.btegermany.terraplusminus.utils.TpmConfig;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.LifecycleEventManager;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
@@ -33,17 +33,20 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.logging.Level;
 
 public final class Terraplusminus extends JavaPlugin implements Listener {
-    public static FileConfiguration config;
+    @Deprecated(forRemoval = true, since = "2.6.0")
+    public static FileConfiguration config; // Deprecated, use TpmConfig instead
     public static Terraplusminus instance;
 
     @Getter
-    private AsyncGenerator asyncGenerator;
+    private AsyncGeneratorTask asyncGenerator;
+
     @Getter
-    private ChunkGeneratorCache generator;
+    private TpmConfig tpmConfig;
 
     @Override
     public void onEnable() {
@@ -64,6 +67,8 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         this.saveDefaultConfig();
         config = getConfig();
         this.updateConfig();
+        tpmConfig = new TpmConfig(this);
+        setupDebugLoggerIfDeVmode();
         // --------------------------
 
         // Copies osm.json5 into terraplusplus/config/
@@ -99,8 +104,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
 
         registerCommands();
 
-        generator = new ChunkGeneratorCache();
-        asyncGenerator = new AsyncGenerator(this);
+        asyncGenerator = new AsyncGeneratorTask(this);
 
         Bukkit.getLogger().log(Level.INFO, "[T+-] Terraplusminus successfully enabled");
     }
@@ -271,5 +275,20 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
             commands.register("where", "Gives you the longitude and latitude of your minecraft coordinates", new WhereCommand());
             commands.register("offset", "Displays the x,y and z offset of your world", new OffsetCommand());
         });
+    }
+
+    private void setupDebugLoggerIfDeVmode() {
+        if (getTpmConfig().isDevModeEnabled()) {
+            try {
+                Class levelClass = Class.forName("org.apache.logging.log4j.Level");
+                Method setLevel = Class.forName("org.apache.logging.log4j.core.config.Configurator").getMethod("setLevel", String.class, levelClass);
+
+                setLevel.invoke(null, "plugin-name", levelClass.getField("DEBUG").get(null));
+                getComponentLogger().info("Debug logging enabled");
+                getComponentLogger().debug("Debuggy");
+            } catch (ReflectiveOperationException e) {
+                getComponentLogger().warn("Exception while changing log level", e);
+            }
+        }
     }
 }

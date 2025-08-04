@@ -25,6 +25,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static java.lang.Math.min;
 import static net.buildtheearth.terraminusminus.substitutes.ChunkPos.blockToCube;
@@ -54,9 +55,6 @@ public class RealWorldGenerator extends ChunkGenerator {
     private final int yOffset;
     private Location spawnLocation = null;
 
-    private final CustomBiomeProvider customBiomeProvider;
-
-
     private static final Material surfaceMaterial = ConfigurationHelper.getMaterial(Terraplusminus.config,
             "surface_material", GRASS_BLOCK);
     private static final Map<String, Material> materialMapping = Map.of(
@@ -84,8 +82,6 @@ public class RealWorldGenerator extends ChunkGenerator {
         } else {
             this.yOffset = yOffset;
         }
-
-        this.customBiomeProvider = new CustomBiomeProvider(Terraplusminus.instance.getGenerator().getSettings().projection());
     }
 
     @Override
@@ -93,14 +89,27 @@ public class RealWorldGenerator extends ChunkGenerator {
         var data = getTerraChunkDataAsync(new ChunkInfo(chunkX, chunkZ, yOffset, worldInfo.getName()));
         if (data == null || data.left == null) {
             // If we don't have the data yet, we can't generate the noise.
+            chunkData.setRegion(0, worldInfo.getMinHeight(), 0, 16, worldInfo.getMinHeight(), 16, STONE);
             return;
         }
-        applyNoise(worldInfo, createBlockSetter(chunkData), data.left, yOffset);
+        try {
+            applyNoise(worldInfo, createBlockSetter(chunkData), data.left.get(), yOffset);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            Terraplusminus.instance.getAsyncGenerator().supply(data.left, data.right);
+            Terraplusminus.instance.getComponentLogger().error("Chunk generation interrupted for chunk {}.",
+                    chunkData, e);
+        } catch (ExecutionException e) {
+            Terraplusminus.instance.getAsyncGenerator().supply(data.left, data.right);
+            Terraplusminus.instance.getComponentLogger().error("Unrecoverable exception when generating noise for " +
+                            "chunk {}.",
+                    data.right, e);
+        }
     }
 
     @Override
     public BiomeProvider getDefaultBiomeProvider(@NotNull WorldInfo worldInfo) {
-        return this.customBiomeProvider;
+        return TerraChunkGenerator.getInstance().getCustomBiomeProvider();
     }
 
     @Override
@@ -110,7 +119,20 @@ public class RealWorldGenerator extends ChunkGenerator {
             // If we don't have the data yet, we can't generate the surface.
             return;
         }
-        applySurface(worldInfo, random, createBlockSetter(chunkData), terraData.left, yOffset);
+
+        try {
+            applySurface(worldInfo, random, createBlockSetter(chunkData), terraData.left.get(), yOffset);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            Terraplusminus.instance.getAsyncGenerator().supply(terraData.left, terraData.right);
+            Terraplusminus.instance.getComponentLogger().error("Chunk generation interrupted for chunk {}.",
+                    chunkData, e);
+        } catch (ExecutionException e) {
+            Terraplusminus.instance.getAsyncGenerator().supply(terraData.left, terraData.right);
+            Terraplusminus.instance.getComponentLogger().error("Unrecoverable exception when generating noise for " +
+                            "chunk {}.",
+                    terraData.right, e);
+        }
     }
 
     /**
@@ -119,7 +141,7 @@ public class RealWorldGenerator extends ChunkGenerator {
      *
      * @return {@link CachedChunkData} if already cached, otherwise null.
      */
-    protected static @Nullable ImmutablePair<CachedChunkData, ChunkInfo> getTerraChunkDataAsync(ChunkInfo chunk) {
+    protected static @Nullable ImmutablePair<CompletableFuture<CachedChunkData>, ChunkInfo> getTerraChunkDataAsync(ChunkInfo chunk) {
         return getTerraChunkDataAsync(chunk, false);
     }
 
@@ -129,17 +151,17 @@ public class RealWorldGenerator extends ChunkGenerator {
      *
      * @return {@link CachedChunkData} if already cached, otherwise null.
      */
-    protected static @Nullable ImmutablePair<CachedChunkData, ChunkInfo> getTerraChunkDataAsync(ChunkInfo chunk,
+    protected static @Nullable ImmutablePair<CompletableFuture<CachedChunkData>, ChunkInfo> getTerraChunkDataAsync(ChunkInfo chunk,
                                                                                                 boolean force) {
-        try {var cache = Terraplusminus.instance.getGenerator().getCache();
+        try {var cache = TerraChunkGenerator.getInstance().getCache();
             CompletableFuture<CachedChunkData> future = cache.getUnchecked(new ChunkPos(chunk.x, chunk.z));
 
-            AsyncGenerator gen = Terraplusminus.instance.getAsyncGenerator();
+            AsyncGeneratorTask gen = Terraplusminus.instance.getAsyncGenerator();
             if (!force && Terraplusminus.instance.getAsyncGenerator().isEnabled() && !future.isDone()) {
                 gen.supply(future, chunk);
                 return null;
             } else {
-                return new ImmutablePair<>(future.get(), chunk);
+                return new ImmutablePair<>(future, chunk);
             }
         } catch (Exception e) {
             if (e.getCause() instanceof InterruptedException) Thread.currentThread().interrupt();
@@ -216,9 +238,12 @@ public class RealWorldGenerator extends ChunkGenerator {
                     continue;
                 }
 
-                Material material = determineSurfaceMaterial(terraData, x, z, groundY, random, blockSetter.getBiome(x, groundY, z));
+                Material material = determineSurfaceMaterial(terraData, x, z, groundY, random,
+                        blockSetter.getBiome(worldInfo, x, groundY, z));
 
-                boolean isUnderWater = groundY + 1 >= maxWorldY || blockSetter.getBiome(x, groundY + 1, z).toString().contains("OCEAN"); // A bit of a hack
+                boolean isUnderWater =
+                        groundY + 1 >= maxWorldY || blockSetter.getBiome(worldInfo, x, groundY + 1, z).toString().contains(
+                                "OCEAN"); // A bit of a hack
                 if (isUnderWater && GRASS_LIKE_MATERIALS.contains(material)) {
                     material = DIRT;
                 }
@@ -246,7 +271,7 @@ public class RealWorldGenerator extends ChunkGenerator {
             }
 
             @Override
-            public Biome getBiome(int x, int y, int z) {
+            public Biome getBiome(WorldInfo info, int x, int y, int z) {
                 return chunkData.getBiome(x, y, z);
             }
         };
@@ -314,7 +339,7 @@ public class RealWorldGenerator extends ChunkGenerator {
         CachedChunkData terraData = Objects.requireNonNull(getTerraChunkDataAsync(new ChunkInfo(chunkX,
                         chunkZ,
                         yOffset, worldInfo.getName()),
-                true)).left;
+                true)).left.get();
         return switch (heightMap) {
             case OCEAN_FLOOR, OCEAN_FLOOR_WG -> terraData.groundHeight(x, z) + this.yOffset;
             default -> terraData.surfaceHeight(x, z) + this.yOffset;
@@ -335,7 +360,7 @@ public class RealWorldGenerator extends ChunkGenerator {
     @Override
     @NotNull
     public List<BlockPopulator> getDefaultPopulators(@NotNull World world) {
-        return Collections.singletonList(new TreePopulator(customBiomeProvider, yOffset));
+        return Collections.singletonList(new TreePopulator(TerraChunkGenerator.getInstance().getCustomBiomeProvider(), yOffset));
         // TODO make this also run async / handle api outage
     }
 
@@ -394,13 +419,7 @@ public class RealWorldGenerator extends ChunkGenerator {
 
         void setRegion(int x, int y, int z, int endX, int endY, int endZ, Material material);
 
-        default Biome getBiome(int x, int y, int z) {
-            return PLAINS; // Default biome
-        }
-
-        default void flush() {
-            // Optional method to flush changes, if needed
-        }
+        Biome getBiome(WorldInfo info, int x, int y, int z);
     }
 
     public record ChunkInfo(int x, int z, int blockYOffset, String worldName) {}

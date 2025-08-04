@@ -2,13 +2,16 @@ import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
 import net.minecrell.pluginyml.paper.PaperPluginDescription
 
 plugins {
-    `java`
+    java
     id("de.eldoria.plugin-yml.paper") version "0.7.1"
     id("io.freefair.lombok") version "8.14"
 }
 
 repositories {
-    mavenLocal()
+    // mavenLocal() - Only use this for testing if ever
+
+    maven { url = uri("https://mvn.alps-bte.com/repository/maven-releases/") }
+
     maven {
         url = uri("https://repo.papermc.io/repository/maven-public/")
     }
@@ -61,7 +64,7 @@ dependencies {
 }
 
 group = "de.btegermany"
-version = "1.5.0"
+version = "1.6.0"
 description = "A plugin which implements the terra-- api in a spigot plugin"
 java.sourceCompatibility = JavaVersion.VERSION_21
 

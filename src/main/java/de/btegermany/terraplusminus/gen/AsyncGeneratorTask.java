@@ -1,9 +1,14 @@
 package de.btegermany.terraplusminus.gen;
 
 import com.fastasyncworldedit.core.FaweAPI;
+import com.fastasyncworldedit.core.queue.IQueueChunk;
+import com.fastasyncworldedit.core.queue.IQueueExtent;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.regions.Region;
 import de.btegermany.terraplusminus.Terraplusminus;
 import io.papermc.paper.util.Tick;
 import lombok.Getter;
@@ -12,7 +17,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
+import org.bukkit.generator.WorldInfo;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileReader;
@@ -24,15 +31,16 @@ import java.lang.reflect.Type;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 
-public class AsyncGenerator {
+public class AsyncGeneratorTask implements Runnable {
     // Track how many times we’ve retried a given chunk
     private final Map<RealWorldGenerator.ChunkInfo, AtomicInteger> retryCounts = new ConcurrentHashMap<>();
 
@@ -46,74 +54,80 @@ public class AsyncGenerator {
     };
 
     @Getter
-    private final boolean enabled;
-    private Set<RealWorldGenerator.ChunkInfo> chunksToGenerate = null;
+    private boolean enabled;
     private Gson gson = null;
     private File chunksToGenerateFile = null;
-    private Set<CompletableFuture<CachedChunkData>> futures = null;
+    private Map<RealWorldGenerator.ChunkInfo, CompletableFuture<CachedChunkData>> chunksToProcess = null;
     private boolean haveLoadedEverything = false;
-    private static final ExecutorService executor = Executors.newFixedThreadPool(8);
+    private boolean isRunning = false;
+    private int chunkBatchSize;
 
-    public AsyncGenerator(Terraplusminus i) {
-        enabled = Bukkit.getPluginManager().isPluginEnabled("FastAsyncWorldEdit");
+    public AsyncGeneratorTask(Terraplusminus i) {
+        enabled = Bukkit.getPluginManager().isPluginEnabled("FastAsyncWorldEdit") && i.getTpmConfig().isAsyncGenerationEnabled();
         if (!enabled) {
             i.getComponentLogger().warn("FastAsyncWorldEdit is not enabled, the generator will " +
                     "not run async.");
             return;
         }
 
-        chunksToGenerate = ConcurrentHashMap.newKeySet();
-        this.futures = ConcurrentHashMap.newKeySet();
+        this.chunksToProcess = new ConcurrentHashMap<>();
+        chunkBatchSize = i.getTpmConfig().getChunkBatchSize();
 
         Bukkit.getScheduler().runTaskAsynchronously(i, () -> {
             this.chunksToGenerateFile = new File(i.getDataFolder(), "chunksToGenerate.json");
             this.gson = new Gson();
-            loadChunksToGenerate();
+            var chunksToGenerate = loadChunksToGenerate();
 
-            if (!this.chunksToGenerate.isEmpty()) {
+            if (chunksToGenerate != null) {
                 i.getComponentLogger().info("Queueing generation for {} previously unfinished " +
-                        "chunks...", this.chunksToGenerate.size());
-                for (RealWorldGenerator.ChunkInfo chunk : new HashSet<>(this.chunksToGenerate)) {
+                        "chunks...", chunksToGenerate.size());
+                for (RealWorldGenerator.ChunkInfo chunk : chunksToGenerate) {
+                    if (chunksToProcess.containsKey(chunk)) continue;
                     var data = RealWorldGenerator.getTerraChunkDataAsync(chunk);
                     if (data == null || data.left == null) {
                         // If we don't have the data yet, it will be generated asynchronously.
                         continue;
                     }
-                    onTerraDataLoaded(data.left, null, data.right);
+                    chunksToProcess.put(chunk, data.left);
                 }
             }
         });
+
+        Bukkit.getScheduler().runTaskTimerAsynchronously(i, this, 20L, 20L * i.getTpmConfig().getGenerationTimerSeconds());
     }
 
     public void shutdown() {
+        enabled = false;
         // Stops all ongoing futures and clears the queue.
-        if (futures == null) return;
-        futures.forEach(future -> future.cancel(true));
-        executor.shutdownNow();
+        if (chunksToProcess == null) return;
+        chunksToProcess.values().forEach(future -> future.cancel(true));
+        chunksToProcess.clear();
     }
 
-    private void loadChunksToGenerate() {
+    private @Nullable Set<RealWorldGenerator.ChunkInfo> loadChunksToGenerate() {
         if (chunksToGenerateFile.exists()) {
             try (Reader reader = new FileReader(chunksToGenerateFile)) {
                 Type setType = new TypeToken<Set<RealWorldGenerator.ChunkInfo>>() {}.getType();
                 Set<RealWorldGenerator.ChunkInfo> loaded = gson.fromJson(reader, setType);
                 if (!loaded.isEmpty()) {
                     Terraplusminus.instance.getComponentLogger().info("Found {} chunks to generate from previous runs.", loaded.size());
-                    chunksToGenerate.addAll(loaded);
                     haveLoadedEverything = true; // We have loaded all chunks from the file
+                    return loaded;
                 }
             } catch (IOException e) {
-                Terraplusminus.instance.getLogger().log(java.util.logging.Level.SEVERE, "Could not load chunksToGenerate.json", e);
+                Terraplusminus.instance.getLogger().log(Level.SEVERE, "Could not load chunksToGenerate.json", e);
             }
         }
+        return null;
     }
 
     private void saveChunksToGenerate() {
-        if (chunksToGenerate == null || chunksToGenerate.isEmpty()) {
+        if (chunksToProcess == null || chunksToProcess.isEmpty()) {
             return;
         }
+
         try (Writer writer = new FileWriter(chunksToGenerateFile)) {
-            gson.toJson(chunksToGenerate, writer);
+            gson.toJson(chunksToProcess.keySet(), writer);
         } catch (IOException e) {
             Terraplusminus.instance.getComponentLogger().error("Could not save chunksToGenerate.json.", e);
         }
@@ -122,28 +136,14 @@ public class AsyncGenerator {
     public void supply(CompletableFuture<CachedChunkData> future, RealWorldGenerator.ChunkInfo chunk) {
         if (!enabled) return;
 
-        executor.submit(() -> {
-            if (chunksToGenerate.contains(chunk)) {
-                return;
-            }
-            chunksToGenerate.add(chunk);
-            if (haveLoadedEverything) saveChunksToGenerate();
-            futures.add(future);
+        if (chunksToProcess.containsKey(chunk)) {
+            Terraplusminus.instance.getComponentLogger().debug("Chunk {} is already in the queue, skipping.",
+                    chunk);
+            return;
+        }
 
-            // Data is not ready yet. Return null to generate an empty chunk for now.
-            // The terrain will be applied once the future completes.
-            future.whenComplete((data, ex) -> {
-                try {
-                    onTerraDataLoaded(data, ex, chunk);
-                    futures.remove(future);
-                } catch (Exception e) {
-                    Terraplusminus.instance.getComponentLogger().error("Failed to apply async-loaded chunk data for chunk" +
-                                    " {}.",
-                            chunk,
-                            e);
-                }
-            });
-        });
+        chunksToProcess.put(chunk, future);
+        if (haveLoadedEverything) saveChunksToGenerate();
     }
 
 
@@ -151,13 +151,9 @@ public class AsyncGenerator {
      * Callback executed when the asynchronous fetch of {@link CachedChunkData} completes.
      *
      * @param terraData The loaded chunk data, or null on failure.
-     * @param ex        The exception, if the load failed.
      * @param chunk     The ChunkInfo object containing chunk metadata.
      */
-    private void onTerraDataLoaded(CachedChunkData terraData, Throwable ex, RealWorldGenerator.ChunkInfo chunk) {
-        if (ex != null) {
-            handleTerraDataLoadFailure(ex, chunk);
-        } else {
+    private void onTerraDataLoaded(CachedChunkData terraData, RealWorldGenerator.@NotNull ChunkInfo chunk, IQueueExtent<IQueueChunk> editSession) {
             // Success: apply terrain to the world directly.
             World world = Bukkit.getWorld(chunk.worldName());
             if (world == null) {
@@ -173,19 +169,16 @@ public class AsyncGenerator {
                 // but
                 // sufficient
                 // for this purpose.
-                RealWorldGenerator.BlockSetter blockSetter = createBlockSetter(world, chunk.x(), chunk.z());
+                RealWorldGenerator.BlockSetter blockSetter = createBlockSetter(editSession, chunk.x(), chunk.z());
                 RealWorldGenerator.applyNoise(world, blockSetter, terraData, chunk.blockYOffset());
                 RealWorldGenerator.applySurface(world, random, blockSetter, terraData, chunk.blockYOffset());
-                blockSetter.flush(); // Flush the changes to the world
-                chunksToGenerate.remove(chunk);
-                saveChunksToGenerate();
             } catch (Exception e) {
                 Terraplusminus.instance.getComponentLogger().error("Failed to apply async-loaded chunk data for chunk {}",
                         chunk,
                         e);
             }
             retryCounts.remove(chunk);
-        }
+
     }
 
     /**
@@ -219,8 +212,8 @@ public class AsyncGenerator {
                     // If we don't have the data yet, it will be generated asynchronously.
                     return;
                 }
-                onTerraDataLoaded(data.left, null, chunk);
-            }, delay * 50); // Convert ticks to ms
+                chunksToProcess.put(chunk, data.left);
+            }, delay);
         } else {
             Terraplusminus.instance.getComponentLogger().error("Failed to load chunk {} after {} attempts. Giving up.",
                     chunk,
@@ -232,42 +225,120 @@ public class AsyncGenerator {
     /**
      * Creates a {@link RealWorldGenerator.BlockSetter} for writing directly to a {@link World}.
      *
-     * @param world  The world to write to.
      * @param chunkX The chunk's X coordinate.
      * @param chunkZ The chunk's Z coordinate.
      * @return A new BlockSetter instance.
      */
-    private RealWorldGenerator.@NotNull BlockSetter createBlockSetter(World world, int chunkX, int chunkZ) {
+    private RealWorldGenerator.@NotNull BlockSetter createBlockSetter(IQueueExtent<IQueueChunk> session, int chunkX, int chunkZ) {
         int baseX = chunkX * 16;
         int baseZ = chunkZ * 16;
 
-        var queue = FaweAPI.createQueue(BukkitAdapter.adapt(world), true);
         return new RealWorldGenerator.BlockSetter() {
             @Override
-            public void setBlock(int x, int y, int z, Material material) {
-                queue.setBlock(baseX + x, y, baseZ + z, BukkitAdapter.adapt(material.createBlockData()));
+            public void setBlock(int x, int y, int z, @NotNull Material material) {
+                session.setBlock(baseX + x, y, baseZ + z, BukkitAdapter.adapt(material.createBlockData()));
             }
 
             @Override
             public void setRegion(int x, int y, int z, int endX, int endY, int endZ, Material material) {
-                for (int i = x; i < endX; i++) {
-                    for (int j = y; j < endY; j++) {
-                        for (int k = z; k < endZ; k++) {
-                            setBlock(i, j, k, material);
-                        }
-                    }
-                }
+                CuboidRegion region = new CuboidRegion(BlockVector3.at(x,y,z), BlockVector3.at(endX,endY,endZ));
+                session.setBlocks((Region) region, BukkitAdapter.adapt(material.createBlockData()));
             }
 
             @Override
-            public Biome getBiome(int x, int y, int z) {
-                return world.getBiome(baseX + x, y, baseZ + z);
-            }
-
-            @Override
-            public void flush() {
-                queue.flush();
+            public Biome getBiome(WorldInfo info, int x, int y, int z) {
+                return TerraChunkGenerator.getInstance().getCustomBiomeProvider().getBiome(info, x, y, z);
             }
         };
+    }
+
+    @Override
+    public void run() {
+        if (isRunning) {
+            if (Terraplusminus.instance.getTpmConfig().isDevModeEnabled()) {
+                Terraplusminus.instance.getComponentLogger().debug("Async generator task is already running, skipping this run.");
+            }
+            return;
+        }
+        isRunning = true;
+        saveChunksToGenerate();
+        String worldName = null;
+        IQueueExtent<IQueueChunk> edit = null;
+        int i = 0;
+        if (Terraplusminus.instance.getTpmConfig().isDevModeEnabled()) {
+            Terraplusminus.instance.getComponentLogger().info("Running async generator task with {} chunks to process.",
+                    chunksToProcess.size());
+        }
+
+        var currentChunksToProcess = new HashSet<>(chunksToProcess.entrySet());
+
+        for (var entry : currentChunksToProcess) {
+            if (!enabled) return;
+
+            if (Terraplusminus.instance.getTpmConfig().isDevModeEnabled()) {
+                Terraplusminus.instance.getComponentLogger().info("Processing chunk {} - State: {}.",
+                        entry.getKey(), entry.getValue().state());
+            }
+
+            if (entry.getValue().isCancelled()) {
+                chunksToProcess.remove(entry.getKey());
+                continue;
+            }
+            if (entry.getValue().isCompletedExceptionally()) {
+                try {
+                    entry.getValue().get(); // To trigger the exception
+                } catch (Exception e) {
+                    handleTerraDataLoadFailure(e, entry.getKey());
+                }
+                chunksToProcess.remove(entry.getKey());
+                continue;
+            }
+            if (!entry.getValue().isDone()) {
+                continue; // Skip futures that are not yet completed
+            }
+
+            try {
+                if (!Objects.equals(entry.getKey().worldName(), worldName)) {
+                    if (edit != null) {
+                        edit.flush();
+                    }
+                    worldName = entry.getKey().worldName();
+                    edit = FaweAPI.createQueue(BukkitAdapter.adapt(Bukkit.getWorld(entry.getKey().worldName())), true);
+
+                }
+
+                i++;
+                onTerraDataLoaded(entry.getValue().get(), entry.getKey(), edit);
+                chunksToProcess.remove(entry.getKey());
+
+                if (i % chunkBatchSize == 0) {
+                    if (Terraplusminus.instance.getTpmConfig().isDevModeEnabled()) {
+                        Terraplusminus.instance.getComponentLogger().info("Processed {} of {} chunks in this batch.",
+                                i, chunksToProcess.size());
+
+                    }
+                    // Flush the edit session every chunkBatchSize chunks to avoid memory issues
+                    if (edit != null) {
+                        edit.flush();
+                    }
+                    saveChunksToGenerate();
+                    isRunning = false;
+                    return;
+                }
+            } catch (Exception e) {
+                Terraplusminus.instance.getComponentLogger().error("Failed to apply async-loaded chunk data for chunk" +
+                                " {}.",
+                        entry.getKey(),
+                        e);
+                handleTerraDataLoadFailure(e, entry.getKey());
+            }
+        }
+
+        if (edit != null) {
+            edit.flush();
+        }
+
+        saveChunksToGenerate();
+        isRunning = false;
     }
 }

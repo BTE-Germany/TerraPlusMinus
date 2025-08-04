@@ -6,7 +6,7 @@ com-comphenix-protocol-protocollib = "5.3.0"
 com-fastasyncworldedit-fastasyncworldedit-bukkit = "2.13.1"
 com-fastasyncworldedit-fastasyncworldedit-core = "2.13.1"
 com-fasterxml-jackson-core-jackson-databind = "2.18.3"
-com-github-bteuk-terraminusminus = "41d3843"
+com-github-bteuk-terraminusminus = "0.0.1-feature-paper_1_21-7f7b6b1"
 com-google-code-gson-gson = "2.13.0"
 com-google-guava-guava = "33.4.8-jre"
 commons-io-commons-io = "2.19.0"
@@ -14,7 +14,7 @@ io-netty-netty-buffer = "4.2.0.Final"
 io-papermc-paper-paper-api = "1.21.4-R0.1-SNAPSHOT"
 io-papermc-paperlib = "1.0.8"
 lzma-lzma = "0.0.1"
-net-daporkchop-lib-common = "0.5.7-SNAPSHOT"
+net-daporkchop-lib-common = "0.5.7-ALPHA" # Alps BTE Repo - because there is no official release
 org-apache-commons-commons-lang3 = "3.17.0"
 org-jetbrains-annotations = "26.0.2"
 
@@ -23,7 +23,7 @@ com-comphenix-protocol-protocollib = { module = "com.comphenix.protocol:Protocol
 com-fastasyncworldedit-fastasyncworldedit-bukkit = { module = "com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit", version.ref = "com-fastasyncworldedit-fastasyncworldedit-bukkit" }
 com-fastasyncworldedit-fastasyncworldedit-core = { module = "com.fastasyncworldedit:FastAsyncWorldEdit-Core", version.ref = "com-fastasyncworldedit-fastasyncworldedit-core" }
 com-fasterxml-jackson-core-jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "com-fasterxml-jackson-core-jackson-databind" }
-com-github-bteuk-terraminusminus = { module = "com.github.BTEUK:terraminusminus", version.ref = "com-github-bteuk-terraminusminus" }
+com-github-bteuk-terraminusminus = { module = "net.buildtheearth:terraminusminus", version.ref = "com-github-bteuk-terraminusminus" }
 com-google-code-gson-gson = { module = "com.google.code.gson:gson", version.ref = "com-google-code-gson-gson" }
 com-google-guava-guava = { module = "com.google.guava:guava", version.ref = "com-google-guava-guava" }
 commons-io-commons-io = { module = "commons-io:commons-io", version.ref = "commons-io-commons-io" }
