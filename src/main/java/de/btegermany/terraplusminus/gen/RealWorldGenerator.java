@@ -153,10 +153,14 @@ public class RealWorldGenerator extends ChunkGenerator {
      */
     protected static @Nullable ImmutablePair<CompletableFuture<CachedChunkData>, ChunkInfo> getTerraChunkDataAsync(ChunkInfo chunk,
                                                                                                 boolean force) {
+        AsyncGeneratorTask gen = Terraplusminus.instance.getAsyncGenerator();
+        if (gen.isQueued(chunk)) {
+            return null;
+        }
+
         try {var cache = TerraChunkGenerator.getInstance().getCache();
             CompletableFuture<CachedChunkData> future = cache.getUnchecked(new ChunkPos(chunk.x, chunk.z));
 
-            AsyncGeneratorTask gen = Terraplusminus.instance.getAsyncGenerator();
             if (!force && Terraplusminus.instance.getAsyncGenerator().isEnabled() && !future.isDone()) {
                 gen.supply(future, chunk);
                 return null;

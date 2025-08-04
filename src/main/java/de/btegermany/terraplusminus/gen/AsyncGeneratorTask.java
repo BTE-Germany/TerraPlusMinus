@@ -146,6 +146,10 @@ public class AsyncGeneratorTask implements Runnable {
         if (haveLoadedEverything) saveChunksToGenerate();
     }
 
+    public boolean isQueued(RealWorldGenerator.ChunkInfo chunk) {
+        return chunksToProcess.containsKey(chunk);
+    }
+
 
     /**
      * Callback executed when the asynchronous fetch of {@link CachedChunkData} completes.
@@ -331,6 +335,7 @@ public class AsyncGeneratorTask implements Runnable {
                         entry.getKey(),
                         e);
                 handleTerraDataLoadFailure(e, entry.getKey());
+                chunksToProcess.remove(entry.getKey());
             }
         }
 
