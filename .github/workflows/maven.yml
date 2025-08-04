@@ -20,9 +20,9 @@ jobs:
         distribution: 'temurin'
         cache: gradle
     - name: Build with gradle
-      run: gradle clean build --no-daemon --console=plain
+      run: gradle clean build --console=plain
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4
       with:
         name: Staging
-        path: build/libs/terraplusminus*.jar
+        path: build/libs/TerraPlusMinus*.jar
