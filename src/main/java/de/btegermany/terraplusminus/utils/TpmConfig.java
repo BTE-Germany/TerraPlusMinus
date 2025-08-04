@@ -4,6 +4,8 @@ import de.btegermany.terraplusminus.Terraplusminus;
 import org.bukkit.configuration.Configuration;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Duration;
+
 /**
  * TpmConfig is a utility class that provides access to the configuration settings
  * for the Terraplusminus plugin. It allows retrieval of various configuration options
@@ -17,8 +19,9 @@ public class TpmConfig {
 
     private static final String ASYNC_GEN = "enable-async-generation";
     private static final String CHUNK_BATCH_SIZE = "async-generation-chunk-batch-size";
-    private static final String GENERATION_TIMER_SECONDS = "async-generation-timer-seconds";
+    private static final String GENERATION_TIMER_MILLIS = "async-generation-timer-millis";
     private static final String DEV_MODE = "dev-mode";
+    private static final String DIRECTLY_TIMOUT_MILLIS = "async-generation-directly-timout-millis";
 
 
     public TpmConfig(@NotNull Terraplusminus plugin) {
@@ -30,16 +33,18 @@ public class TpmConfig {
     }
 
     public int getChunkBatchSize() {
-        return config.getInt(CHUNK_BATCH_SIZE, 10);
+        return config.getInt(CHUNK_BATCH_SIZE, 400);
     }
 
     public boolean isDevModeEnabled() {
         return config.getBoolean(DEV_MODE, false);
     }
 
+    public Duration getGenerationTimerDuration() {
+        return Duration.ofMillis(config.getInt(GENERATION_TIMER_MILLIS, 1000));
+    }
 
-
-    public int getGenerationTimerSeconds() {
-        return config.getInt(GENERATION_TIMER_SECONDS, 5);
+    public int getDirectlyTimeoutMillis() {
+        return config.getInt(DIRECTLY_TIMOUT_MILLIS, 400);
     }
 }

@@ -33,7 +33,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -68,7 +67,6 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         config = getConfig();
         this.updateConfig();
         tpmConfig = new TpmConfig(this);
-        setupDebugLoggerIfDeVmode();
         // --------------------------
 
         // Copies osm.json5 into terraplusplus/config/
@@ -275,20 +273,5 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
             commands.register("where", "Gives you the longitude and latitude of your minecraft coordinates", new WhereCommand());
             commands.register("offset", "Displays the x,y and z offset of your world", new OffsetCommand());
         });
-    }
-
-    private void setupDebugLoggerIfDeVmode() {
-        if (getTpmConfig().isDevModeEnabled()) {
-            try {
-                Class levelClass = Class.forName("org.apache.logging.log4j.Level");
-                Method setLevel = Class.forName("org.apache.logging.log4j.core.config.Configurator").getMethod("setLevel", String.class, levelClass);
-
-                setLevel.invoke(null, "plugin-name", levelClass.getField("DEBUG").get(null));
-                getComponentLogger().info("Debug logging enabled");
-                getComponentLogger().debug("Debuggy");
-            } catch (ReflectiveOperationException e) {
-                getComponentLogger().warn("Exception while changing log level", e);
-            }
-        }
     }
 }

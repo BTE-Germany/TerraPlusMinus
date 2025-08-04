@@ -26,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import static java.lang.Math.min;
 import static net.buildtheearth.terraminusminus.substitutes.ChunkPos.blockToCube;
@@ -84,12 +85,13 @@ public class RealWorldGenerator extends ChunkGenerator {
         }
     }
 
+
     @Override
     public void generateNoise(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunkZ, @NotNull ChunkData chunkData) {
         var data = getTerraChunkDataAsync(new ChunkInfo(chunkX, chunkZ, yOffset, worldInfo.getName()));
         if (data == null || data.left == null) {
             // If we don't have the data yet, we can't generate the noise.
-            chunkData.setRegion(0, worldInfo.getMinHeight(), 0, 16, worldInfo.getMinHeight(), 16, STONE);
+            chunkData.setRegion(0, worldInfo.getMinHeight(), 0, 16, worldInfo.getMinHeight() + 1, 16, STONE);
             return;
         }
         try {
@@ -121,7 +123,8 @@ public class RealWorldGenerator extends ChunkGenerator {
         }
 
         try {
-            applySurface(worldInfo, random, createBlockSetter(chunkData), terraData.left.get(), yOffset);
+            applySurface(worldInfo,
+                    createBlockSetter(chunkData), terraData.left.get(), yOffset);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             Terraplusminus.instance.getAsyncGenerator().supply(terraData.left, terraData.right);
@@ -161,7 +164,8 @@ public class RealWorldGenerator extends ChunkGenerator {
         try {var cache = TerraChunkGenerator.getInstance().getCache();
             CompletableFuture<CachedChunkData> future = cache.getUnchecked(new ChunkPos(chunk.x, chunk.z));
 
-            if (!force && Terraplusminus.instance.getAsyncGenerator().isEnabled() && !future.isDone()) {
+            if (!force && Terraplusminus.instance.getAsyncGenerator().isEnabled() && future.get(Terraplusminus.instance.getTpmConfig().getDirectlyTimeoutMillis(),
+                    TimeUnit.MILLISECONDS) == null) {
                 gen.supply(future, chunk);
                 return null;
             } else {
@@ -214,9 +218,7 @@ public class RealWorldGenerator extends ChunkGenerator {
                 blockSetter.setRegion(x, cubeToMinBlock(minSurfaceCubeY), z, x + 1, groundHeight + 1, z + 1, STONE);
 
                 int waterHeight = min(terraData.waterHeight(x, z) + yOffset, maxWorldY - 1);
-                if (waterHeight > groundHeight) {
-                    blockSetter.setRegion(x, groundHeight + 1, z, x + 1, waterHeight + 1, z + 1, WATER);
-                }
+                blockSetter.setRegion(x, groundHeight + 1, z, x + 1, waterHeight + 1, z + 1, WATER);
             }
         }
     }
@@ -226,12 +228,11 @@ public class RealWorldGenerator extends ChunkGenerator {
      * This is the core implementation for surface generation.
      *
      * @param worldInfo The world information.
-     * @param random    A random number generator.
      * @param blockSetter The block setter to use for setting blocks.
      * @param terraData The real-world terrain data.
      */
-    protected static void applySurface(@NotNull WorldInfo worldInfo, @NotNull Random random, BlockSetter blockSetter,
-                        CachedChunkData terraData, int yOffset) {
+    protected static void applySurface(@NotNull WorldInfo worldInfo, BlockSetter blockSetter,
+                                       CachedChunkData terraData, int yOffset) {
         final int minWorldY = worldInfo.getMinHeight();
         final int maxWorldY = worldInfo.getMaxHeight();
 
@@ -242,7 +243,7 @@ public class RealWorldGenerator extends ChunkGenerator {
                     continue;
                 }
 
-                Material material = determineSurfaceMaterial(terraData, x, z, groundY, random,
+                Material material = determineSurfaceMaterial(terraData, x, z, groundY,
                         blockSetter.getBiome(worldInfo, x, groundY, z));
 
                 boolean isUnderWater =
@@ -288,12 +289,10 @@ public class RealWorldGenerator extends ChunkGenerator {
      * @param x         The block's X coordinate within the chunk (0-15).
      * @param z         The block's Z coordinate within the chunk (0-15).
      * @param groundY   The ground height at this column.
-     * @param random    A random number generator.
      * @param biome     The biome at this column.
      * @return The {@link Material} for the surface block.
      */
-    private static Material determineSurfaceMaterial(@NotNull CachedChunkData terraData, int x, int z, int groundY,
-                                               Random random, Biome biome) {
+    private static Material determineSurfaceMaterial(@NotNull CachedChunkData terraData, int x, int z, int groundY, Biome biome) {
         BlockState state = terraData.surfaceBlock(x, z);
         if (state != null) {
             // Terra--'s OSM config says a feature should be drawn there.
@@ -306,8 +305,7 @@ public class RealWorldGenerator extends ChunkGenerator {
         }
 
         // From this point on, we are dealing with natural terrain.
-        int startMountainHeight = random.nextInt(7500, 7520);
-        if (groundY >= startMountainHeight) {
+        if (groundY >= 7500) { // Above 7500 blocks, we assume it's a mountain.
             return STONE; // Mountains are bare stone.
         }
 
