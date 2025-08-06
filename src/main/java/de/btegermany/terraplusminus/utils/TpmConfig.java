@@ -47,4 +47,8 @@ public class TpmConfig {
     public int getDirectlyTimeoutMillis() {
         return config.getInt(DIRECTLY_TIMOUT_MILLIS, 400);
     }
+
+    public boolean getAsyncChunkGenFlag(String flag) {
+        return config.getBoolean("ag-" + flag, false);
+    }
 }
