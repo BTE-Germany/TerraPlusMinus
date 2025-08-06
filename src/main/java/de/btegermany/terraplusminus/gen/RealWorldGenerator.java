@@ -10,23 +10,23 @@ import net.buildtheearth.terraminusminus.substitutes.BlockState;
 import net.buildtheearth.terraminusminus.substitutes.BukkitBindings;
 import net.buildtheearth.terraminusminus.substitutes.ChunkPos;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.bukkit.HeightMap;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.generator.WorldInfo;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static java.lang.Math.min;
 import static net.buildtheearth.terraminusminus.substitutes.ChunkPos.blockToCube;
@@ -43,7 +43,6 @@ import static org.bukkit.Material.SNOW;
 import static org.bukkit.Material.SNOW_BLOCK;
 import static org.bukkit.Material.STONE;
 import static org.bukkit.Material.WATER;
-import static org.bukkit.block.Biome.*;
 
 
 /**
@@ -161,16 +160,36 @@ public class RealWorldGenerator extends ChunkGenerator {
             return null;
         }
 
-        try {var cache = TerraChunkGenerator.getInstance().getCache();
+        try {
+            var cache = TerraChunkGenerator.getInstance().getCache();
             CompletableFuture<CachedChunkData> future = cache.getUnchecked(new ChunkPos(chunk.x, chunk.z));
-
-            if (!force && Terraplusminus.instance.getAsyncGenerator().isEnabled() && future.get(Terraplusminus.instance.getTpmConfig().getDirectlyTimeoutMillis(),
-                    TimeUnit.MILLISECONDS) == null) {
-                gen.supply(future, chunk);
-                return null;
-            } else {
-                return new ImmutablePair<>(future, chunk);
+            if (!force && Terraplusminus.instance.getAsyncGenerator().isEnabled()) {
+                try {
+                    if (Terraplusminus.instance.getTpmConfig().getAsyncChunkGenFlag("sync")) {
+                        gen.supply(future, chunk);
+                        return null;
+                    } else {
+                        if (future.state() != Future.State.SUCCESS && !Terraplusminus.instance.getTpmConfig().getAsyncChunkGenFlag("timeout"))
+                            future.get(Terraplusminus.instance.getTpmConfig().getDirectlyTimeoutMillis(),
+                                    TimeUnit.MILLISECONDS);
+                    }
+                } catch (TimeoutException e) {
+                    if (Terraplusminus.instance.getTpmConfig().isDevModeEnabled()) {
+                        Terraplusminus.instance.getComponentLogger().debug("Chunk {} is not ready yet & timed " +
+                                        "out, scheduling terrain application - State: {}.",
+                                chunk, future.state());
+                    }
+                    gen.supply(future, chunk);
+                    return null; // We return null to indicate that the data is not ready yet.
+                } catch (Exception e) {
+                    if (e.getCause() instanceof InterruptedException) Thread.currentThread().interrupt();
+                    Terraplusminus.instance.getComponentLogger().error("An exception while retriving cache at chunk {}",
+                                chunk,
+                                e);
+                    return null; // We return null to indicate that the data is not there
+                }
             }
+            return new ImmutablePair<>(future, chunk); // we need to return the future to allow theasync generator to handle it
         } catch (Exception e) {
             if (e.getCause() instanceof InterruptedException) Thread.currentThread().interrupt();
             Terraplusminus.instance.getComponentLogger().error("Unrecoverable exception when getting chunk data future for chunk {}",
@@ -263,7 +282,8 @@ public class RealWorldGenerator extends ChunkGenerator {
      * @param chunkData The chunk data to wrap.
      * @return A new BlockSetter instance.
      */
-    private BlockSetter createBlockSetter(ChunkData chunkData) {
+    @Contract(value = "_ -> new", pure = true)
+    private @NotNull BlockSetter createBlockSetter(ChunkData chunkData) {
         return new BlockSetter() {
             @Override
             public void setBlock(int x, int y, int z, Material material) {
@@ -310,9 +330,9 @@ public class RealWorldGenerator extends ChunkGenerator {
         }
 
         // Fallback to a generic block that matches the biome.
-        if (biome == DESERT) {
+        if (biome == Biome.DESERT) {
             return Material.SAND;
-        } else if (biome == SNOWY_SLOPES || biome == SNOWY_PLAINS || biome == FROZEN_PEAKS) {
+        } else if (biome == Biome.SNOWY_SLOPES || biome == Biome.SNOWY_PLAINS || biome == Biome.FROZEN_PEAKS) {
             return SNOW_BLOCK;
         } else {
             return surfaceMaterial;

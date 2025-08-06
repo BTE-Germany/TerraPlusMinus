@@ -73,6 +73,8 @@ async-generation-directly-timout-millis: 400
 # Disables some features if set to true.
 ag-cec: false # Commit each Chunk
 ag-load: false # Load json on startup
+ag-sync: false # Sync generation / normal bucket generation
+ag-timout: false # Timout sync generation - greatly increases performance
 
 dev-mode: false
 
