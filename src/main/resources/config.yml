@@ -62,5 +62,21 @@ road_material: GRAY_CONCRETE_POWDER
 path_material: MOSS_BLOCK
 # -----------------------------------------------------
 
+enable-async-generation: true
+
+async-generation-chunk-batch-size: 400
+
+async-generation-timer-millis: 1000
+
+async-generation-directly-timout-millis: 400
+
+# Disables some features if set to true.
+ag-cec: false # Commit each Chunk
+ag-load: false # Load json on startup
+ag-sync: false # Sync generation / normal bucket generation
+ag-timout: false # Timout sync generation - greatly increases performance
+
+dev-mode: false
+
 # NOTE: Do not change
-config_version: 1.4
+config_version: 1.5

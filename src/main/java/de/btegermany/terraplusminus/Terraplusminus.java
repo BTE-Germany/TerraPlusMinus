@@ -1,24 +1,25 @@
 package de.btegermany.terraplusminus;
 
 
-import com.mojang.brigadier.Command;
 import de.btegermany.terraplusminus.commands.OffsetCommand;
 import de.btegermany.terraplusminus.commands.TpllCommand;
 import de.btegermany.terraplusminus.commands.WhereCommand;
 import de.btegermany.terraplusminus.events.PlayerJoinEvent;
 import de.btegermany.terraplusminus.events.PlayerMoveEvent;
 import de.btegermany.terraplusminus.events.PluginMessageEvent;
+import de.btegermany.terraplusminus.gen.AsyncGeneratorTask;
 import de.btegermany.terraplusminus.gen.RealWorldGenerator;
 import de.btegermany.terraplusminus.utils.ConfigurationHelper;
 import de.btegermany.terraplusminus.utils.FileBuilder;
 import de.btegermany.terraplusminus.utils.LinkedWorld;
 import de.btegermany.terraplusminus.utils.PlayerHashMapManagement;
+import de.btegermany.terraplusminus.utils.TpmConfig;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.LifecycleEventManager;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import lombok.Getter;
 import net.buildtheearth.terraminusminus.TerraConfig;
 import org.bukkit.Bukkit;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
@@ -36,8 +37,15 @@ import java.util.List;
 import java.util.logging.Level;
 
 public final class Terraplusminus extends JavaPlugin implements Listener {
-    public static FileConfiguration config;
+    @Deprecated(forRemoval = true, since = "2.6.0")
+    public static FileConfiguration config; // Deprecated, use TpmConfig instead
     public static Terraplusminus instance;
+
+    @Getter
+    private AsyncGeneratorTask asyncGenerator;
+
+    @Getter
+    private TpmConfig tpmConfig;
 
     @Override
     public void onEnable() {
@@ -58,6 +66,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         this.saveDefaultConfig();
         config = getConfig();
         this.updateConfig();
+        tpmConfig = new TpmConfig(this);
         // --------------------------
 
         // Copies osm.json5 into terraplusplus/config/
@@ -93,6 +102,8 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
 
         registerCommands();
 
+        asyncGenerator = new AsyncGeneratorTask(this);
+
         Bukkit.getLogger().log(Level.INFO, "[T+-] Terraplusminus successfully enabled");
     }
 
@@ -101,9 +112,12 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         // Unregister plugin messaging channel
         this.getServer().getMessenger().unregisterOutgoingPluginChannel(this);
         this.getServer().getMessenger().unregisterIncomingPluginChannel(this);
-        // --------------------------
 
-        Bukkit.getLogger().log(Level.INFO, "[T+-] Plugin deactivated");
+        if (asyncGenerator != null && asyncGenerator.isEnabled()) {
+            asyncGenerator.shutdown();
+        }
+
+        Bukkit.getLogger().log(Level.INFO, "[T+-] Terraplusminus successfully disabled");
     }
 
     @EventHandler
@@ -119,7 +133,6 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         }
     }
 
-
     @Override
     public ChunkGenerator getDefaultWorldGenerator(@NotNull String worldName, String id) {
         // Multiverse different y-offset support
@@ -133,6 +146,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         } else {
             yOffset = Terraplusminus.config.getInt("y_offset");
         }
+
         return new RealWorldGenerator(yOffset);
     }
 
