@@ -4,6 +4,7 @@ package de.btegermany.terraplusminus;
 import de.btegermany.terraplusminus.commands.OffsetCommand;
 import de.btegermany.terraplusminus.commands.TpllCommand;
 import de.btegermany.terraplusminus.commands.WhereCommand;
+import de.btegermany.terraplusminus.events.PlayerCommandPreprocessEvent;
 import de.btegermany.terraplusminus.events.PlayerJoinEvent;
 import de.btegermany.terraplusminus.events.PlayerMoveEvent;
 import de.btegermany.terraplusminus.events.PluginMessageEvent;
@@ -78,6 +79,11 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         }
         if (Terraplusminus.config.getBoolean("linked_worlds.enabled")) {
             Bukkit.getPluginManager().registerEvents(new PlayerJoinEvent(playerHashMapManagement), this);
+        }
+
+        String passthroughTpll = Terraplusminus.config.getString("passthrough_tpll");
+        if (passthroughTpll != null && !passthroughTpll.isEmpty()) {
+            Bukkit.getPluginManager().registerEvents(new PlayerCommandPreprocessEvent(passthroughTpll), this);
         }
         // --------------------------
 
@@ -290,7 +296,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         LifecycleEventManager<Plugin> manager = this.getLifecycleManager();
         manager.registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             final Commands commands = event.registrar();
-            commands.register("tpll", "Teleports you to longitude and latitude", List.of("tpc"), new TpllCommand());
+            commands.register(TpllCommand.create(), "tpll", List.of("tpc"));
             commands.register("where", "Gives you the longitude and latitude of your minecraft coordinates", new WhereCommand());
             commands.register("offset", "Displays the x,y and z offset of your world", new OffsetCommand());
         });
