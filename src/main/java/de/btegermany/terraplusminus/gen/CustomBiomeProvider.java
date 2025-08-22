@@ -12,9 +12,7 @@ import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.WorldInfo;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 public class CustomBiomeProvider extends BiomeProvider {
@@ -49,7 +47,7 @@ public class CustomBiomeProvider extends BiomeProvider {
                 e.printStackTrace();
 
             }
-        } else biomeData = 8;
+        } else biomeData = 8; // Default is plains for tree generation
         return parseDefaultBiome();
     }
 
@@ -143,15 +141,20 @@ public class CustomBiomeProvider extends BiomeProvider {
         }
     }
 
-    public Biome parseDefaultBiome(){
+    public static Biome parseDefaultBiome() {
+        final String FALLBACK_BIOME = "minecraft:plains";
+
         String biomeName = Terraplusminus.config.getString("biomes.default_biome");
-        biomeName = (biomeName != null) ? biomeName.toLowerCase() : "plains";
-        var biomeRegistry = RegistryAccess.registryAccess().getRegistry(RegistryKey.BIOME);
-        var biome = biomeRegistry.get(Key.key(biomeName));
-        if (biome == null) {
-            return Biome.PLAINS;
+        if (biomeName == null || biomeName.isBlank()) {
+            biomeName = FALLBACK_BIOME;
         } else {
-            return biome;
+            biomeName = biomeName.toLowerCase();
+            if (!biomeName.contains(":")) {
+                biomeName = "minecraft:" + biomeName;
+            }
         }
+
+        var biomeRegistry = RegistryAccess.registryAccess().getRegistry(RegistryKey.BIOME);
+        return biomeRegistry.get(Key.key(biomeName));
     }
 }

@@ -51,7 +51,7 @@ public class TreePopulator extends BlockPopulator {
     CustomBiomeProvider customBiomeProvider;
 
     // List of Possible trees by type
-    HashMap<String, ArrayList<ArrayList<TreeBlock>>> trees = new HashMap();
+    HashMap<String, ArrayList<ArrayList<TreeBlock>>> trees = new HashMap<>();
 
 
     public TreePopulator(CustomBiomeProvider customBiomeProvider, int yOffset) {
