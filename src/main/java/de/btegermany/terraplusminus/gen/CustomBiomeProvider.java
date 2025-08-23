@@ -12,7 +12,9 @@ import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.WorldInfo;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class CustomBiomeProvider extends BiomeProvider {
@@ -144,7 +146,7 @@ public class CustomBiomeProvider extends BiomeProvider {
     public static Biome parseDefaultBiome() {
         final String FALLBACK_BIOME = "minecraft:plains";
 
-        String biomeName = Terraplusminus.config.getString("biomes.default_biome");
+        String biomeName = Terraplusminus.config.getString("biomes.biome");
         if (biomeName == null || biomeName.isBlank()) {
             biomeName = FALLBACK_BIOME;
         } else {

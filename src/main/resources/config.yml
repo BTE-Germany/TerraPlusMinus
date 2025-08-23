@@ -51,12 +51,13 @@ linked_worlds:
 # If disabled, tree generation is turned off.
 generate_trees: true
 
-# If use_dataset is enabled, biomes will be generated based on: https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification.
+
 biomes:
+  # If 'use_dataset' is enabled, biomes will be generated based on: https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification.
   use_dataset: true
-  # If 'enabled' is false, this biome will be used everywhere instead (if generate_trees also enabled -> oak and birch).
+  # If 'use_dataset' is disabled, this biome will be used everywhere instead (if 'generate_trees' is also enabled -> oak and birch).
   # Possible values found in "Resource location" on: https://minecraft.wiki/w/Biome#Biome_IDs (use with namespace e.g. minecraft:plains)
-  default_biome: minecraft:plains
+  biome: minecraft:plains
 
 # Customize the material, the blocks will be generated with.
 surface_material: GRASS_BLOCK

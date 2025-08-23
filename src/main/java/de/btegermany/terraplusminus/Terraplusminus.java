@@ -257,12 +257,12 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
             FileBuilder.deleteLine("# If turned off, everything will be plains biome.");
             FileBuilder.deleteLine("different_biomes:");
             FileBuilder.addLineAbove("# Customize the material, the blocks will be generated with.",
-                    "# If use_dataset is enabled, biomes will be generated based on: https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification.\n" +
-                            "biomes:\n" +
-                            "  use_dataset: " + differentBiomes + "\n" +
-                            "  # If 'enabled' is false, this biome will be used everywhere instead (if generate_trees also enabled -> oak and birch).\n" +
-                            "  # Possible values found in \"Resource location\" on: https://minecraft.wiki/w/Biome#Biome_IDs (use with namespace eg: minecraft:plains)\n" +
-                            "  default_biome: minecraft:plains\n\n");
+                    "biomes:\n" +
+                    "  # If 'use_dataset' is enabled, biomes will be generated based on: https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification.\n" +
+                    "  use_dataset: " + differentBiomes + "\n" +
+                    "  # If 'use_dataset' is disabled, this biome will be used everywhere instead (if 'generate_trees' is also enabled -> oak and birch).\n" +
+                    "  # Possible values found in \"Resource location\" on: https://minecraft.wiki/w/Biome#Biome_IDs (use with namespace e.g. minecraft:plains)\n" +
+                    "  biome: minecraft:plains\n\n");
         }
     }
 
