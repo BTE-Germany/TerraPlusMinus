@@ -301,6 +301,55 @@
                     }
                 }
             },
+            //function to draw train tracks and railways
+            "condition": {
+                "match": {
+                    "tag": {
+                        //matches anything tagged as "railway" that didn't match any previous filters
+                        "railway": null
+                    }
+                },
+                "emit": {
+                    "narrow": {
+                        "draw": {
+                            "block": {
+                                "id": "minecraft:cobblestone"
+                            }
+                        },
+                        "layer": {
+                            "tag": {
+                                "key": "layer",
+                                "fallback": 0
+                            }
+                        }
+                    }
+                }
+            },
+            //function to draw borders
+            "condition": {
+                "match": {
+                    "tag": {
+                        //matches anything tagged as "border_type=nation" that didn't match any previous filters
+                        "border_type": "nation"
+                                }
+                            }
+                },
+                "emit": {
+                    "narrow": {
+                        "draw": {
+                            "block": {
+                                "id": "minecraft:glowstone"
+                            }
+                        },
+                        "layer": {
+                            "tag": {
+                                "key": "layer",
+                                "fallback": 0
+                            }
+                        }
+                    }
+                }
+            },
             //functionally equivalent to old BUILDING behavior
             "condition": {
                 "match": {
