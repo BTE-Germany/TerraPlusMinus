@@ -37,9 +37,11 @@ import static java.lang.Math.min;
 import static net.buildtheearth.terraminusminus.substitutes.ChunkPos.blockToCube;
 import static net.buildtheearth.terraminusminus.substitutes.ChunkPos.cubeToMinBlock;
 import static org.bukkit.Material.BRICKS;
+import static org.bukkit.Material.COBBLESTONE;
 import static org.bukkit.Material.DIRT;
 import static org.bukkit.Material.DIRT_PATH;
 import static org.bukkit.Material.FARMLAND;
+import static org.bukkit.Material.GLOWSTONE;
 import static org.bukkit.Material.GRASS_BLOCK;
 import static org.bukkit.Material.GRAY_CONCRETE_POWDER;
 import static org.bukkit.Material.MOSS_BLOCK;
@@ -102,9 +104,9 @@ public class RealWorldGenerator extends ChunkGenerator {
         this.materialMapping = Map.of(
                 "minecraft:bricks", ConfigurationHelper.getMaterial(Terraplusminus.config, "building_outlines_material", BRICKS),
                 "minecraft:gray_concrete", ConfigurationHelper.getMaterial(Terraplusminus.config, "road_material", GRAY_CONCRETE_POWDER),
-                "minecraft:dirt_path", ConfigurationHelper.getMaterial(Terraplusminus.config, "path_material", MOSS_BLOCK)
-                "minecraft:cobblestone", ConfigurationHelper.getMaterial(Terraplusminus.config "trackbed_material", COBBLESTONE)
-                "minecraft:glowstone", ConfigurationHelper.getMaterial(Terraplusminus.config "border_material", GLOWSTONE)
+                "minecraft:dirt_path", ConfigurationHelper.getMaterial(Terraplusminus.config, "path_material", MOSS_BLOCK),
+                "minecraft:cobblestone", ConfigurationHelper.getMaterial(Terraplusminus.config, "trackbed_material", COBBLESTONE),
+                "minecraft:glowstone", ConfigurationHelper.getMaterial(Terraplusminus.config, "border_material", GLOWSTONE)
         );
 
     }
