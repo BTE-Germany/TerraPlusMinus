@@ -12,8 +12,9 @@ import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
 import net.buildtheearth.terraminusminus.projection.GeographicProjection;
 import net.buildtheearth.terraminusminus.projection.transform.OffsetProjectionTransform;
 import net.buildtheearth.terraminusminus.substitutes.BlockState;
-import net.buildtheearth.terraminusminus.substitutes.BukkitBindings;
 import net.buildtheearth.terraminusminus.substitutes.ChunkPos;
+import net.buildtheearth.terraminusminus.substitutes.TerraBukkit;
+import net.buildtheearth.terraminusminus.util.http.Http;
 import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -73,6 +74,8 @@ public class RealWorldGenerator extends ChunkGenerator {
     );
 
     public RealWorldGenerator(int yOffset) {
+
+        Http.configChanged(); // This ensures the T-- default config is loaded regarding the number of concurrent http requests for specific urls.
 
         EarthGeneratorSettings settings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
 
@@ -193,7 +196,7 @@ public class RealWorldGenerator extends ChunkGenerator {
                     material = this.materialMapping.get(state.getBlock().toString());
                     if (material == null) {
                         // We don't know what material this is, let's respect what the Terra-- configuration says
-                        material = BukkitBindings.getAsBlockData(state).getMaterial();
+                        material = TerraBukkit.toBukkitBlockData(state).getMaterial();
                     }
                 } else if (groundY >= startMountainHeight) {
                     material = STONE; // Mountains stare bare

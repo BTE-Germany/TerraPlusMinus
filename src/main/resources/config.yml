@@ -51,9 +51,13 @@ linked_worlds:
 # If disabled, tree generation is turned off.
 generate_trees: true
 
-# The biomes will be generated with https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification.
-# If turned off, everything will be plains biome.
-different_biomes: true
+
+biomes:
+  # If 'use_dataset' is enabled, biomes will be generated based on: https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification.
+  use_dataset: true
+  # If 'use_dataset' is disabled, this biome will be used everywhere instead (if 'generate_trees' is also enabled -> oak and birch).
+  # Possible values found in "Resource location" on: https://minecraft.wiki/w/Biome#Biome_IDs (use with namespace e.g. minecraft:plains)
+  biome: minecraft:plains
 
 # Customize the material, the blocks will be generated with.
 surface_material: GRASS_BLOCK
@@ -63,4 +67,4 @@ path_material: MOSS_BLOCK
 # -----------------------------------------------------
 
 # NOTE: Do not change
-config_version: 1.4
+config_version: 1.5

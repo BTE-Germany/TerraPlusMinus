@@ -1,9 +1,9 @@
 package de.btegermany.terraplusminus.data;
 
-import LZMA.LzmaInputStream;
 import net.buildtheearth.terraminusminus.dataset.builtin.AbstractBuiltinDataset;
 import net.buildtheearth.terraminusminus.util.RLEByteArray;
 import net.daporkchop.lib.common.reference.cache.Cached;
+import org.tukaani.xz.LZMAInputStream;
 
 import java.io.IOException;
 import java.util.function.Supplier;
@@ -20,7 +20,7 @@ public class KoppenClimateData extends AbstractBuiltinDataset {
     private static final Cached<RLEByteArray> CACHE = Cached.global((Supplier<RLEByteArray>) () -> {
         RLEByteArray.Builder builder = RLEByteArray.builder();
 
-        try (LzmaInputStream is = new LzmaInputStream(KoppenClimateData.class.getResourceAsStream("/koppen_map.lzma"))) {
+        try (LZMAInputStream is = new LZMAInputStream(KoppenClimateData.class.getResourceAsStream("/koppen_map.lzma"))) {
 
             byte[] buffer = new byte[4096];
             int readyBytes = 0;

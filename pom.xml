@@ -6,7 +6,7 @@
 
     <groupId>de.btegermany</groupId>
     <artifactId>terraplusminus</artifactId>
-    <version>1.5.0</version>
+    <version>1.5.1</version>
     <packaging>jar</packaging>
 
     <name>Terraplusminus</name>
@@ -68,8 +68,9 @@
             <url>https://repo.opencollab.dev/snapshot/</url>
         </repository>
         <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
+            <id>smyler-releases</id>
+            <name>Smyler's maven repository</name>
+            <url>https://maven.smyler.net/releases</url>
         </repository>
         <repository>
             <id>Daporkchop_</id>
@@ -98,7 +99,7 @@
         <dependency> <!-- https://central.sonatype.com/artifact/org.projectlombok/lombok -->
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.38</version>
+            <version>1.18.42</version>
             <scope>provided</scope>
         </dependency>
 
@@ -106,44 +107,44 @@
         <dependency> <!-- https://central.sonatype.com/artifact/com.google.code.gson/gson -->
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.13.0</version>
+            <version>2.13.2</version>
         </dependency>
-        <dependency> <!-- https://jitpack.io/#BTEUK/terraminusminus -->
-            <groupId>com.github.BTEUK</groupId>
-            <artifactId>terraminusminus</artifactId>
-            <version>41d3843</version>
+        <dependency> <!-- https://maven.smyler.net/#/releases/net/buildtheearth/terraminusminus/terraminusminus-bukkit -->
+            <groupId>net.buildtheearth.terraminusminus</groupId>
+            <artifactId>terraminusminus-bukkit</artifactId>
+            <version>2.0.0rc1-1.21.4</version>
         </dependency>
         <dependency> <!-- https://central.sonatype.com/artifact/com.google.guava/guava -->
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>33.4.8-jre</version>
+            <version>33.5.0-jre</version>
         </dependency>
         <dependency> <!-- https://central.sonatype.com/artifact/org.apache.commons/commons-lang3 -->
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.17.0</version>
+            <version>3.19.0</version>
         </dependency>
         <dependency> <!-- https://central.sonatype.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.18.3</version>
+            <version>2.20.0</version>
         </dependency>
         <dependency> <!-- https://central.sonatype.com/artifact/io.netty/netty-buffer -->
             <groupId>io.netty</groupId>
             <artifactId>netty-buffer</artifactId>
-            <version>4.2.0.Final</version>
+            <version>4.2.6.Final</version>
             <scope>compile</scope>
         </dependency>
         <dependency> <!-- https://central.sonatype.com/artifact/org.jetbrains/annotations -->
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>26.0.2</version>
+            <version>26.0.2-1</version>
             <scope>compile</scope>
         </dependency>
         <dependency> <!-- https://central.sonatype.com/artifact/commons-io/commons-io -->
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.19.0</version>
+            <version>2.20.0</version>
         </dependency>
         <dependency> <!-- https://github.com/PorkStudios/PorkLib - needs to be the same as in TerraMinusMinus-->
             <groupId>net.daporkchop.lib</groupId>
@@ -151,14 +152,14 @@
             <version>0.5.7-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>lzma</groupId>
-            <artifactId>lzma</artifactId>
-            <version>0.0.1</version>
+            <groupId>org.tukaani</groupId>
+            <artifactId>xz</artifactId>
+            <version>1.10</version>
         </dependency>
         <dependency> <!-- https://github.com/dmulloy2/ProtocolLib/releases -->
-            <groupId>com.comphenix.protocol</groupId>
+            <groupId>net.dmulloy2</groupId>
             <artifactId>ProtocolLib</artifactId>
-            <version>5.3.0</version>
+            <version>5.4.0</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

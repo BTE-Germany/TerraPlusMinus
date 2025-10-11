@@ -2,8 +2,11 @@ package de.btegermany.terraplusminus.gen;
 
 import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.data.KoppenClimateData;
+import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import net.buildtheearth.terraminusminus.projection.GeographicProjection;
 import net.buildtheearth.terraminusminus.projection.OutOfProjectionBoundsException;
+import net.kyori.adventure.key.Key;
 import org.bukkit.block.Biome;
 import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.WorldInfo;
@@ -32,7 +35,7 @@ public class CustomBiomeProvider extends BiomeProvider {
     @NotNull
     @Override
     public Biome getBiome(@NotNull WorldInfo worldInfo, int x, int y, int z) {
-        if (Terraplusminus.config.getBoolean("different_biomes")) {
+        if (Terraplusminus.config.getBoolean("biomes.use_dataset")) {
             double[] coords;
             try {
                 coords = this.projection.toGeo(x, z);
@@ -46,8 +49,8 @@ public class CustomBiomeProvider extends BiomeProvider {
                 e.printStackTrace();
 
             }
-        } else biomeData = 8;
-        return Biome.PLAINS;
+        } else biomeData = 8; // Default is plains for tree generation
+        return parseDefaultBiome();
     }
 
     public double getBiome() {
@@ -138,5 +141,22 @@ public class CustomBiomeProvider extends BiomeProvider {
                 return Biome.PLAINS;
             }
         }
+    }
+
+    public static Biome parseDefaultBiome() {
+        final String FALLBACK_BIOME = "minecraft:plains";
+
+        String biomeName = Terraplusminus.config.getString("biomes.biome");
+        if (biomeName == null || biomeName.isBlank()) {
+            biomeName = FALLBACK_BIOME;
+        } else {
+            biomeName = biomeName.toLowerCase();
+            if (!biomeName.contains(":")) {
+                biomeName = "minecraft:" + biomeName;
+            }
+        }
+
+        var biomeRegistry = RegistryAccess.registryAccess().getRegistry(RegistryKey.BIOME);
+        return biomeRegistry.get(Key.key(biomeName));
     }
 }

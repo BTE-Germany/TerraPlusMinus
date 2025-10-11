@@ -249,6 +249,21 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
                             "    - name: another_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032\n" +
                             "      offset: -2032\n\n");
         }
+        if (configVersion == 1.4) {
+            this.config.set("config_version", 1.5);
+            this.saveConfig();
+            boolean differentBiomes = Terraplusminus.config.getBoolean("different_biomes");
+            FileBuilder.deleteLine("# The biomes will be generated with https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification.");
+            FileBuilder.deleteLine("# If turned off, everything will be plains biome.");
+            FileBuilder.deleteLine("different_biomes:");
+            FileBuilder.addLineAbove("# Customize the material, the blocks will be generated with.",
+                    "biomes:\n" +
+                    "  # If 'use_dataset' is enabled, biomes will be generated based on: https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification.\n" +
+                    "  use_dataset: " + differentBiomes + "\n" +
+                    "  # If 'use_dataset' is disabled, this biome will be used everywhere instead (if 'generate_trees' is also enabled -> oak and birch).\n" +
+                    "  # Possible values found in \"Resource location\" on: https://minecraft.wiki/w/Biome#Biome_IDs (use with namespace e.g. minecraft:plains)\n" +
+                    "  biome: minecraft:plains\n\n");
+        }
     }
 
     private void registerCommands() {
