@@ -37,7 +37,6 @@ public class TpllCommand {
 
     private static void execute(CommandSender sender, @NotNull Player target, @NotNull String args) {
         World tpWorld = target.getWorld();
-
         FileConfiguration config = Terraplusminus.config;
         int xOffset = config.getInt("terrain_offset.x");
         int zOffset = config.getInt("terrain_offset.z");
@@ -81,7 +80,7 @@ public class TpllCommand {
 
         double[] mcCoordinates;
         try {
-            mcCoordinates = projection.fromGeo(lat, lon);
+            mcCoordinates = projection.fromGeo(lon, lat); // projection.fromGeo is eccentric and expects lon, lat
         } catch (OutOfProjectionBoundsException e) {
             sender.sendMessage(prefix + "§cLocation is not within projection bounds.");
             return;
@@ -89,30 +88,42 @@ public class TpllCommand {
 
         boolean playerItselfIsTeleporting = sender == target;
 
-        if (playerItselfIsTeleporting && minLat != 0 && maxLat != 0 && minLon != 0 && maxLon != 0 && !sender.hasPermission("t+-.admin") && (lat < minLat || lon < minLon || lat > maxLat || lon > maxLon)) {
+        if (playerItselfIsTeleporting && minLat != 0 && maxLat != 0 && minLon != 0 && maxLon != 0 &&
+                !sender.hasPermission("t+-.admin") &&
+                (lat < minLat || lon < minLon || lat > maxLat || lon > maxLon)) {
                 sender.sendMessage(prefix + "§cYou cannot tpll to these coordinates, because this area is being worked on by another build team.");
                 return;
             }
 
-
         if (!config.getBoolean("linked_worlds.enabled") && height == null) {
-            height = tpWorld.getHighestBlockYAt((int) mcCoordinates[0], (int) mcCoordinates[1]) + 1d;
+            double x = mcCoordinates[0] + xOffset;
+            double z = mcCoordinates[1] + zOffset;
+
+            Location tempLocation = new Location(tpWorld, x, 0, z, target.getLocation().getYaw(), target.getLocation().getPitch());
+
+            if (PaperLib.isChunkGenerated(tempLocation)) {
+                height = tpWorld.getHighestBlockYAt((int) x, (int) z) + 1d;
+            } else {
+                TerraConnector terraConnector = new TerraConnector();
+                height = terraConnector.getHeight((int) x, (int) z).join() + yOffset;
+            }
+
             checkAndTeleportIfCorrectWorld(target,
                     tpWorld,
-                    mcCoordinates[0] + xOffset,
-                    mcCoordinates[1] + zOffset,
+                    x,
+                    z,
                     height,
                     lat,
                     lon);
             return;
         }
 
-        TerraConnector terraConnector = new TerraConnector();
-
         if (height == null) {
+            TerraConnector terraConnector = new TerraConnector();
             height = terraConnector.getHeight((int) mcCoordinates[0],
                     (int) mcCoordinates[1]).join() + yOffset; // 57 + (-2032) = -1975
         }
+
         if (height > target.getWorld().getMaxHeight()) {
                 if (config.getString("linked_worlds.method", "").equalsIgnoreCase("SERVER")) {
                     // send player uuid and coordinates to bungee
@@ -174,8 +185,8 @@ public class TpllCommand {
 
         Location location = new Location(tpWorld,
                 x,
-                z,
                 height,
+                z,
                 target.getLocation().getYaw(),
                 target.getLocation().getPitch());
 
