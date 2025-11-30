@@ -259,8 +259,6 @@ public class TpllCommand {
         final String latLonHeight = ctx.getArgument(LAT_LON_HEIGHT, String.class);
         if (ctx.getSource().getExecutor() instanceof Player player) {
             execute(ctx.getSource().getSender(), player, latLonHeight);
-        } else {
-            ctx.getSource().getSender().sendMessage(Component.text("You have to provide a valid player name or player target as first argument.", NamedTextColor.RED));
         }
 
         return Command.SINGLE_SUCCESS;
