@@ -248,6 +248,7 @@ public class TpllCommand {
         for (final Player target : targets) {
             execute(ctx.getSource().getSender(), target, latLonHeight);
         }
+        ctx.getSource().getSender().sendMessage("Executed tpll for " + targets.size() + " players.");
         return Command.SINGLE_SUCCESS;
     }
 
