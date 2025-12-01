@@ -227,15 +227,15 @@ public class TpllCommand {
         prefix = Terraplusminus.config.getString("prefix");
 
         return Commands.literal("tpll")
-                .then(Commands.argument(LAT_LON_HEIGHT, StringArgumentType.greedyString())
-                        .requires(TpllCommand::isPermittedDirect)
-                        .executes(TpllCommand::executeDirect))
                 .then(Commands.argument("players", ArgumentTypes.players())
                         .then(Commands.argument(LAT_LON_HEIGHT, StringArgumentType.greedyString())
                                 .requires(TpllCommand::isPermittedTarget)
                                 .executes(TpllCommand::executeTarget))
                         .requires(TpllCommand::isPermittedTarget)
                         .executes(TpllCommand::sendUsageMessage))
+                .then(Commands.argument(LAT_LON_HEIGHT, StringArgumentType.greedyString())
+                        .requires(TpllCommand::isPermittedDirect)
+                        .executes(TpllCommand::executeDirect))
                 .requires(TpllCommand::isPermitted)
                 .executes(TpllCommand::sendUsageMessage)
                 .build();
