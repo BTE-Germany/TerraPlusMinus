@@ -34,6 +34,8 @@ import org.bukkit.generator.ChunkGenerator;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -275,24 +277,83 @@ public class TpllCommand {
 
     @Contract("_, _ -> new")
     private static @NotNull LatLongHeight parseArguments(String args, int yOffset) {
-        LatLng latLng = null;
         Double height = null;
-
         args = args.trim();  // I think Brigadier takes care of that, but unsure
+        LatLng latLng = CoordinateParseUtils.parseVerbatimCoordinates(args);
+        String[] argsArray = args.split(" ");
 
-        int indexFirstSpace = args.indexOf(' ');
-        int indexHeight = indexFirstSpace == -1 ? -1 : args.indexOf(' ', indexFirstSpace + 1);
-        int indexThirdSpace = args.indexOf(' ', indexHeight + 1);
-        try {
-            if (indexHeight != -1) {
-                height = Double.parseDouble(args.substring(indexHeight + 1, indexThirdSpace == -1 ? args.length() : indexThirdSpace)) + yOffset;
-                latLng = CoordinateParseUtils.parseVerbatimCoordinates(args.substring(0, indexHeight));
-            } else {
-                latLng = CoordinateParseUtils.parseVerbatimCoordinates(args);
+        if (latLng == null) {
+            LatLng possiblePlayerCoords = CoordinateParseUtils.parseVerbatimCoordinates(getRawArguments(selectArray(argsArray, 1)));
+            if (possiblePlayerCoords != null) {
+                latLng = possiblePlayerCoords;
             }
-        } catch (NumberFormatException ignored) { /* We don't care about this, height is not that important. */}
+        }
 
+        LatLng possibleHeightCoords = CoordinateParseUtils.parseVerbatimCoordinates(getRawArguments(inverseSelectArray(argsArray, argsArray.length - 1)));
+        if (possibleHeightCoords != null) {
+            latLng = possibleHeightCoords;
+            try {
+                height = Double.parseDouble(argsArray[argsArray.length - 1]);
+            } catch (Exception e) { /* Ignored */}
+        }
+
+        LatLng possibleHeightNameCoords = CoordinateParseUtils.parseVerbatimCoordinates(getRawArguments(inverseSelectArray(selectArray(argsArray, 1), selectArray(argsArray, 1).length - 1)));
+        if (possibleHeightNameCoords != null) {
+            latLng = possibleHeightNameCoords;
+            try {
+                height = Double.parseDouble(selectArray(argsArray, 1)[selectArray(argsArray, 1).length - 1]);
+            } catch (Exception e) {/* Ignored */}
+        }
+
+        height += yOffset;
         return new LatLongHeight(latLng, height);
+    }
+
+    /**
+     * Gets all objects in a string array above a given index
+     *
+     * @param args  Initial array
+     * @param fromIndex Starting index
+     * @return Selected array
+     */
+    private static String @NotNull [] selectArray(String @NotNull [] args, int fromIndex) {
+        List<String> array = new ArrayList<>(Arrays.asList(args).subList(fromIndex, args.length));
+        return array.toArray(String[]::new);
+    }
+
+    /**
+     * Gets all objects in a string array under a given index
+     *
+     * @param args  Initial array
+     * @param toIndex Starting index
+     * @return Selected array
+     */
+    private static String @NotNull [] inverseSelectArray(String[] args, int toIndex) {
+        List<String> array = new ArrayList<>(Arrays.asList(args).subList(0, toIndex));
+        return array.toArray(String[]::new);
+    }
+
+    /**
+     * Gets a space seperated string from an array
+     *
+     * @param args A string array
+     * @return The space seperated String
+     */
+    private static String getRawArguments(String[] args) {
+        if (args.length == 0) {
+            return "";
+        }
+        if (args.length == 1) {
+            return args[0];
+        }
+
+        StringBuilder arguments = new StringBuilder(args[0].replace((char) 176, (char) 32).trim());
+
+        for (int x = 1; x < args.length; x++) {
+            arguments.append(" ").append(args[x].replace((char) 176, (char) 32).trim());
+        }
+
+        return arguments.toString();
     }
 
     private record LatLongHeight(LatLng latLng, Double height) { }
