@@ -32,7 +32,6 @@ import org.bukkit.generator.ChunkGenerator;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -57,9 +56,8 @@ public class TpllCommand {
     // <editor-fold desc="Constants and Fields">
     public static final String LAT_LON_HEIGHT = "latLonHeight";
 
-    /** Degree symbol (°) - replaced with space when parsing coordinates. */
+    /** Degree symbol (°) - removed when parsing coordinates. */
     private static final char DEGREE_SYMBOL = (char) 176;
-    private static final char SPACE = ' ';
 
     static String prefix;
     private static final Random dummyRandom = new Random();
@@ -273,8 +271,9 @@ public class TpllCommand {
     }
 
     private static void sendUsageMessage(@NotNull CommandSender sender) {
-        sender.sendMessage(prefix + "§7Invalid " + "coordinates or command usage!\n" +
-                "Proper usage: /tpll [player or @p (optional)] <latitude> " + "<longitude> [height (optional)]");
+        sender.sendMessage(prefix + "§7Invalid coordinates or command usage!\n" +
+                "Usage: /tpll <latitude> <longitude> [height]\n" +
+                "       /tpll -p <player/@selector> <latitude> <longitude> [height]");
     }
 
     /**
@@ -330,15 +329,21 @@ public class TpllCommand {
     public static LiteralCommandNode<CommandSourceStack> create() {
         prefix = Terraplusminus.config.getString("prefix");
 
+        // Structure:
+        // /tpll <coords>                       -> self teleport
+        // /tpll -p <players> <coords>          -> force teleport (uses Brigadier player selector)
+        //
+        // Using a literal "-p" prefix avoids Brigadier trying to parse coordinates as player selectors.
+        // This is the cleanest solution that works reliably with Brigadier.
         return Commands.literal("tpll")
-                .then(Commands.argument("players", ArgumentTypes.players())
-                        .then(Commands.argument(LAT_LON_HEIGHT, StringArgumentType.greedyString())
-                                .requires(TpllCommand::isPermittedTarget)
-                                .executes(TpllCommand::executeTarget))
-                        .requires(TpllCommand::isPermittedTarget)
-                        .executes(TpllCommand::sendUsageMessage))
+                .then(Commands.literal("-p")
+                        .requires(source -> source.getSender().hasPermission("t+-.forcetpll"))
+                        .then(Commands.argument("players", ArgumentTypes.players())
+                                .then(Commands.argument(LAT_LON_HEIGHT, StringArgumentType.greedyString())
+                                        .executes(TpllCommand::executeTarget)
+                                        .requires(TpllCommand::isPermittedTarget))))
                 .then(Commands.argument(LAT_LON_HEIGHT, StringArgumentType.greedyString())
-                        .requires(TpllCommand::isPermittedDirect)
+                        .requires(TpllCommand::isPermitted)
                         .executes(TpllCommand::executeDirect))
                 .requires(TpllCommand::isPermitted)
                 .executes(TpllCommand::sendUsageMessage)
@@ -355,39 +360,45 @@ public class TpllCommand {
      * @throws CommandSyntaxException If player selector resolution fails
      */
     private static int executeTarget(@NotNull CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        Terraplusminus.instance.getComponentLogger().debug("executeTarget called - force teleport branch");
         final PlayerSelectorArgumentResolver targetResolver = ctx.getArgument("players", PlayerSelectorArgumentResolver.class);
         final List<Player> targets = targetResolver.resolve(ctx.getSource());
         final String latLonHeight = ctx.getArgument(LAT_LON_HEIGHT, String.class);
+        Terraplusminus.instance.getComponentLogger().debug("Targets: {}, coords: '{}'", targets.size(), latLonHeight);
+
+        CommandSender sender = ctx.getSource().getSender();
         for (final Player target : targets) {
-            execute(ctx.getSource().getSender(), target, latLonHeight);
+            execute(sender, target, latLonHeight);
         }
-        ctx.getSource().getSender().sendMessage("Executed tpll for " + targets.size() + " players.");
+        sender.sendMessage(prefix + "§7Executed tpll for " + targets.size() + " player(s).");
         return Command.SINGLE_SUCCESS;
+    }
+
+    /**
+     * Executes self-teleport using coordinates only.
+     */
+    private static int executeDirect(@NotNull CommandContext<CommandSourceStack> ctx) {
+        Terraplusminus.instance.getComponentLogger().debug("executeDirect called - self teleport branch");
+        final String latLonHeight = ctx.getArgument(LAT_LON_HEIGHT, String.class);
+        Terraplusminus.instance.getComponentLogger().debug("coords: '{}'", latLonHeight);
+
+        if (ctx.getSource().getExecutor() instanceof Player player) {
+            execute(ctx.getSource().getSender(), player, latLonHeight);
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /**
+     * Checks for {@code t+-.forcetpll} or {@code t+-.tpll} (if self-teleporting).
+     */
+    private static boolean isPermitted(@NotNull CommandSourceStack source) {
+        return source.getSender().hasPermission("t+-.forcetpll") ||
+               (source.getSender() == source.getExecutor() && source.getSender().hasPermission("t+-.tpll"));
     }
 
     /** Checks for {@code t+-.forcetpll} permission. */
     private static boolean isPermittedTarget(@NotNull CommandSourceStack commandSourceStack) {
         return commandSourceStack.getSender().hasPermission("t+-.forcetpll");
-    }
-
-    private static int executeDirect(@NotNull CommandContext<CommandSourceStack> ctx) {
-        final String latLonHeight = ctx.getArgument(LAT_LON_HEIGHT, String.class);
-        if (ctx.getSource().getExecutor() instanceof Player player) {
-            execute(ctx.getSource().getSender(), player, latLonHeight);
-        }
-
-        return Command.SINGLE_SUCCESS;
-    }
-
-    private static boolean isPermittedDirect(@NotNull CommandSourceStack source) {
-        return source.getExecutor() instanceof Player && isPermitted(source);
-    }
-
-    /**
-     * Checks for {@code t+-.forcetpll} or {@code t+.tpll} (if self-teleporting).
-     */
-    private static boolean isPermitted(@NotNull CommandSourceStack source) {
-        return source.getSender().hasPermission("t+-.forcetpll") || (source.getSender() == source.getExecutor() && source.getSender().hasPermission("t+.tpll"));
     }
     // </editor-fold>
 
@@ -408,80 +419,101 @@ public class TpllCommand {
      */
     @Contract("_, _ -> new")
     private static @NotNull LatLongHeight parseArguments(String args, int yOffset) {
-        Double height = null;
-        args = args.trim();  // I think Brigadier takes care of that, but unsure
-        LatLng latLng = CoordinateParseUtils.parseVerbatimCoordinates(args);
-        String[] argsArray = args.split(" ");
+        Terraplusminus.instance.getComponentLogger().debug("parseArguments input: '{}', yOffset: {}", args, yOffset);
 
-        if (latLng == null) {
-            LatLng possiblePlayerCoords = CoordinateParseUtils.parseVerbatimCoordinates(getRawArguments(selectArray(argsArray, 1)));
-            if (possiblePlayerCoords != null) {
-                latLng = possiblePlayerCoords;
+        // Replace degree symbol with nothing to keep "48.186996°N" as "48.186996N"
+        args = args.replace(String.valueOf(DEGREE_SYMBOL), "").trim();
+        Terraplusminus.instance.getComponentLogger().debug("After degree symbol removal: '{}'", args);
+
+        String[] argsArray = args.split("\\s+");
+        Terraplusminus.instance.getComponentLogger().debug("Split into {} parts: {}", argsArray.length, Arrays.toString(argsArray));
+
+        // Try parsing coordinates with height at the end (need at least 3 parts: lat, lon, height)
+        if (argsArray.length >= 3) {
+            String possibleHeight = argsArray[argsArray.length - 1];
+            Terraplusminus.instance.getComponentLogger().debug("Possible height: '{}'", possibleHeight);
+            Double parsedHeight = tryParseDouble(possibleHeight);
+            Terraplusminus.instance.getComponentLogger().debug("Parsed height: {}", parsedHeight);
+            if (parsedHeight != null) {
+                String coordsWithoutHeight = normalizeCoordinates(Arrays.copyOf(argsArray, argsArray.length - 1));
+                Terraplusminus.instance.getComponentLogger().debug("Coords without height: '{}'", coordsWithoutHeight);
+                LatLng latLng = parseCoordinates(coordsWithoutHeight);
+                Terraplusminus.instance.getComponentLogger().debug("Parsed latLng (with height): {}", latLng);
+                if (latLng != null) {
+                    return new LatLongHeight(latLng, parsedHeight + yOffset);
+                }
             }
         }
 
-        LatLng possibleHeightCoords = CoordinateParseUtils.parseVerbatimCoordinates(getRawArguments(inverseSelectArray(argsArray, argsArray.length - 1)));
-        if (possibleHeightCoords != null) {
-            latLng = possibleHeightCoords;
-            try {
-                height = Double.parseDouble(argsArray[argsArray.length - 1]);
-            } catch (Exception e) { /* Ignored */}
+        // Try parsing the full string as coordinates (no height specified)
+        String normalizedArgs = normalizeCoordinates(argsArray);
+        Terraplusminus.instance.getComponentLogger().debug("Normalized args: '{}'", normalizedArgs);
+        LatLng latLng = parseCoordinates(normalizedArgs);
+        Terraplusminus.instance.getComponentLogger().debug("Parsed latLng (full string): {}", latLng);
+        if (latLng != null) {
+            return new LatLongHeight(latLng, null);
         }
 
-        LatLng possibleHeightNameCoords = CoordinateParseUtils.parseVerbatimCoordinates(getRawArguments(inverseSelectArray(selectArray(argsArray, 1), selectArray(argsArray, 1).length - 1)));
-        if (possibleHeightNameCoords != null) {
-            latLng = possibleHeightNameCoords;
-            try {
-                height = Double.parseDouble(selectArray(argsArray, 1)[selectArray(argsArray, 1).length - 1]);
-            } catch (Exception e) {/* Ignored */}
-        }
-
-        if (height != null) height += yOffset;
-        return new LatLongHeight(latLng, height);
+        return new LatLongHeight(null, null);
     }
 
     /**
-     * Gets all objects in a string array above a given index
-     * Example: {@code selectArray(["a", "b", "c"], 1)} → {@code ["b", "c"]}
-     *
-     * @param args  Initial array
-     * @param fromIndex Starting index
-     * @return Selected array
+     * Attempts to parse coordinates using multiple strategies.
      */
-    private static String @NotNull [] selectArray(String @NotNull [] args, @SuppressWarnings("SameParameterValue") int fromIndex) {
-        List<String> array = new ArrayList<>(Arrays.asList(args).subList(fromIndex, args.length));
-        return array.toArray(String[]::new);
+    private static LatLng parseCoordinates(String coords) {
+        // First try the library's parser
+        LatLng result = CoordinateParseUtils.parseVerbatimCoordinates(coords);
+        if (result != null) {
+            return result;
+        }
+
+        // Try parsing as simple "lat lon" or "lat, lon" decimal format
+        return parseSimpleDecimal(coords);
     }
 
     /**
-     * Gets all objects in a string array under a given index
-     * Example: {@code inverseSelectArray(["a", "b", "c"], 2)} → {@code ["a", "b"]}
-     *
-     * @param args  Initial array
-     * @param toIndex Starting index
-     * @return Selected array
+     * Parses simple decimal coordinates like "48.188192 11.511577" or "48.188192, 11.511577"
      */
-    private static String @NotNull [] inverseSelectArray(String[] args, int toIndex) {
-        List<String> array = new ArrayList<>(Arrays.asList(args).subList(0, toIndex));
-        return array.toArray(String[]::new);
+    private static LatLng parseSimpleDecimal(String coords) {
+        // Remove commas and split by whitespace
+        String cleaned = coords.replace(",", " ").trim();
+        String[] parts = cleaned.split("\\s+");
+
+        if (parts.length == 2) {
+            Double lat = tryParseDouble(parts[0]);
+            Double lon = tryParseDouble(parts[1]);
+            if (lat != null && lon != null) {
+                Terraplusminus.instance.getComponentLogger().debug("Parsed as simple decimal: lat={}, lon={}", lat, lon);
+                return new LatLng(lat, lon);
+            }
+        }
+        return null;
     }
 
-    /** Joins array elements with spaces, replacing degree symbols (°) with spaces. */
-    private static String getRawArguments(String @NotNull [] args) {
-        if (args.length == 0) {
-            return "";
+    /**
+     * Normalizes coordinate input by adding comma separator if needed.
+     * Handles formats like "48.188192 11.511577" → "48.188192, 11.511577"
+     */
+    private static String normalizeCoordinates(String[] parts) {
+        // If exactly 2 parts and both are plain numbers (no N/S/E/W), add comma
+        if (parts.length == 2 && isPlainNumber(parts[0]) && isPlainNumber(parts[1])) {
+            return parts[0] + ", " + parts[1];
         }
-        if (args.length == 1) {
-            return args[0];
+        return String.join(" ", parts);
+    }
+
+    /** Checks if a string is a plain decimal number (no direction suffix like N/S/E/W). */
+    private static boolean isPlainNumber(String value) {
+        return value.matches("-?\\d+(\\.\\d+)?");
+    }
+
+    /** Tries to parse a string as a double, returns null if parsing fails. */
+    private static Double tryParseDouble(String value) {
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            return null;
         }
-
-        StringBuilder arguments = new StringBuilder(args[0].replace(DEGREE_SYMBOL, SPACE).trim());
-
-        for (int x = 1; x < args.length; x++) {
-            arguments.append(" ").append(args[x].replace(DEGREE_SYMBOL, SPACE).trim());
-        }
-
-        return arguments.toString();
     }
     // </editor-fold>
 
