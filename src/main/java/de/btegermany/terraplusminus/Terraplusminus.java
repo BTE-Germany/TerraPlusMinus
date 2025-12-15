@@ -8,10 +8,7 @@ import de.btegermany.terraplusminus.events.PlayerJoinEvent;
 import de.btegermany.terraplusminus.events.PlayerMoveEvent;
 import de.btegermany.terraplusminus.events.PluginMessageEvent;
 import de.btegermany.terraplusminus.gen.RealWorldGenerator;
-import de.btegermany.terraplusminus.utils.ConfigurationHelper;
-import de.btegermany.terraplusminus.utils.PluginConfigManipulator;
-import de.btegermany.terraplusminus.utils.LinkedWorld;
-import de.btegermany.terraplusminus.utils.PlayerHashMapManagement;
+import de.btegermany.terraplusminus.utils.*;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.configuration.PluginMeta;
 import io.papermc.paper.plugin.lifecycle.event.LifecycleEventManager;
@@ -294,6 +291,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
     }
 
     private void setupTerraMinusMinus() {
+        FolderMigrator.migrateTerraPlusPlusFolder();
         Disk.setConfigRoot(this.getDataFolder());
         Disk.setCacheRoot(this.getDataPath().resolve("cache").toFile());
 
