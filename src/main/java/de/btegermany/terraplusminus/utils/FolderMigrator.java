@@ -72,7 +72,7 @@ public class FolderMigrator {
                         logger.info("Copied {} -> {} (fallback)", source, dest);
                         return true;
                     } catch (IOException copyEx) {
-                        logger.warn("Failed to migrate {}", source, copyEx);
+                        logger.warn("Failed to migrate {}! Migrate manually!", source, copyEx);
                         return false;
                     }
                 }
@@ -86,6 +86,7 @@ public class FolderMigrator {
 
             // Merge children
             File[] children = source.toFile().listFiles();
+            boolean wasSuccessful = true;
             if (children != null) {
                 for (File child : children) {
                     Path childSource = child.toPath();
@@ -97,7 +98,7 @@ public class FolderMigrator {
                     }
 
                     if (!migrateDirectory(childSource, childDest)) {
-                        return false;
+                        if (wasSuccessful) wasSuccessful = false;
                     }
                 }
             }
