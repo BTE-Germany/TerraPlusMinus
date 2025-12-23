@@ -31,7 +31,9 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.generator.ChunkGenerator;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -55,9 +57,6 @@ public class TpllCommand {
 
     // <editor-fold desc="Constants and Fields">
     public static final String LAT_LON_HEIGHT = "latLonHeight";
-
-    /** Degree symbol (°) - removed when parsing coordinates. */
-    private static final char DEGREE_SYMBOL = (char) 176;
 
     static String prefix;
     private static final Random dummyRandom = new Random();
@@ -421,10 +420,6 @@ public class TpllCommand {
     private static @NotNull LatLongHeight parseArguments(String args, int yOffset) {
         Terraplusminus.instance.getComponentLogger().debug("parseArguments input: '{}', yOffset: {}", args, yOffset);
 
-        // Replace degree symbol with nothing to keep "48.186996°N" as "48.186996N"
-        args = args.replace(String.valueOf(DEGREE_SYMBOL), "").trim();
-        Terraplusminus.instance.getComponentLogger().debug("After degree symbol removal: '{}'", args);
-
         String[] argsArray = args.split("\\s+");
         Terraplusminus.instance.getComponentLogger().debug("Split into {} parts: {}", argsArray.length, Arrays.toString(argsArray));
 
@@ -435,9 +430,7 @@ public class TpllCommand {
             Double parsedHeight = tryParseDouble(possibleHeight);
             Terraplusminus.instance.getComponentLogger().debug("Parsed height: {}", parsedHeight);
             if (parsedHeight != null) {
-                String coordsWithoutHeight = normalizeCoordinates(Arrays.copyOf(argsArray, argsArray.length - 1));
-                Terraplusminus.instance.getComponentLogger().debug("Coords without height: '{}'", coordsWithoutHeight);
-                LatLng latLng = parseCoordinates(coordsWithoutHeight);
+                LatLng latLng = CoordinateParseUtils.parseVerbatimCoordinates(String.join(" ", inverseSelectArray(argsArray, argsArray.length - 1)));
                 Terraplusminus.instance.getComponentLogger().debug("Parsed latLng (with height): {}", latLng);
                 if (latLng != null) {
                     return new LatLongHeight(latLng, parsedHeight + yOffset);
@@ -446,9 +439,7 @@ public class TpllCommand {
         }
 
         // Try parsing the full string as coordinates (no height specified)
-        String normalizedArgs = normalizeCoordinates(argsArray);
-        Terraplusminus.instance.getComponentLogger().debug("Normalized args: '{}'", normalizedArgs);
-        LatLng latLng = parseCoordinates(normalizedArgs);
+        LatLng latLng = CoordinateParseUtils.parseVerbatimCoordinates(args);
         Terraplusminus.instance.getComponentLogger().debug("Parsed latLng (full string): {}", latLng);
         if (latLng != null) {
             return new LatLongHeight(latLng, null);
@@ -457,63 +448,27 @@ public class TpllCommand {
         return new LatLongHeight(null, null);
     }
 
-    /**
-     * Attempts to parse coordinates using multiple strategies.
-     */
-    private static LatLng parseCoordinates(String coords) {
-        // First try the library's parser
-        LatLng result = CoordinateParseUtils.parseVerbatimCoordinates(coords);
-        if (result != null) {
-            return result;
-        }
-
-        // Try parsing as simple "lat lon" or "lat, lon" decimal format
-        return parseSimpleDecimal(coords);
-    }
-
-    /**
-     * Parses simple decimal coordinates like "48.188192 11.511577" or "48.188192, 11.511577"
-     */
-    private static LatLng parseSimpleDecimal(String coords) {
-        // Remove commas and split by whitespace
-        String cleaned = coords.replace(",", " ").trim();
-        String[] parts = cleaned.split("\\s+");
-
-        if (parts.length == 2) {
-            Double lat = tryParseDouble(parts[0]);
-            Double lon = tryParseDouble(parts[1]);
-            if (lat != null && lon != null) {
-                Terraplusminus.instance.getComponentLogger().debug("Parsed as simple decimal: lat={}, lon={}", lat, lon);
-                return new LatLng(lat, lon);
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Normalizes coordinate input by adding comma separator if needed.
-     * Handles formats like "48.188192 11.511577" → "48.188192, 11.511577"
-     */
-    private static String normalizeCoordinates(String[] parts) {
-        // If exactly 2 parts and both are plain numbers (no N/S/E/W), add comma
-        if (parts.length == 2 && isPlainNumber(parts[0]) && isPlainNumber(parts[1])) {
-            return parts[0] + ", " + parts[1];
-        }
-        return String.join(" ", parts);
-    }
-
-    /** Checks if a string is a plain decimal number (no direction suffix like N/S/E/W). */
-    private static boolean isPlainNumber(String value) {
-        return value.matches("-?\\d+(\\.\\d+)?");
-    }
-
     /** Tries to parse a string as a double, returns null if parsing fails. */
-    private static Double tryParseDouble(String value) {
+    @Contract(pure = true)
+    private static @Nullable Double tryParseDouble(String value) {
         try {
             return Double.parseDouble(value);
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    /**
+     * Gets all objects in a string array under a given index
+     * Example: {@code inverseSelectArray(["a", "b", "c"], 2)} → {@code ["a", "b"]}
+     *
+     * @param args  Initial array
+     * @param toIndex Starting index
+     * @return Selected array
+     */
+    private static String @NotNull [] inverseSelectArray(String[] args, int toIndex) {
+        List<String> array = new ArrayList<>(Arrays.asList(args).subList(0, toIndex));
+        return array.toArray(String[]::new);
     }
     // </editor-fold>
 
