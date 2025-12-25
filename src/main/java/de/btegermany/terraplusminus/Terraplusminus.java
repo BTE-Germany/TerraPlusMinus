@@ -9,11 +9,7 @@ import de.btegermany.terraplusminus.events.PlayerJoinEvent;
 import de.btegermany.terraplusminus.events.PlayerMoveEvent;
 import de.btegermany.terraplusminus.events.PluginMessageEvent;
 import de.btegermany.terraplusminus.gen.RealWorldGenerator;
-import de.btegermany.terraplusminus.utils.ConfigurationHelper;
-import de.btegermany.terraplusminus.utils.PluginConfigManipulator;
-import de.btegermany.terraplusminus.utils.LinkedWorld;
-import de.btegermany.terraplusminus.utils.PlayerHashMapManagement;
-import de.btegermany.terraplusminus.utils.FolderMigrator;
+import de.btegermany.terraplusminus.utils.*;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.configuration.PluginMeta;
 import io.papermc.paper.plugin.lifecycle.event.LifecycleEventManager;
@@ -34,6 +30,7 @@ import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -45,7 +42,16 @@ import static java.lang.String.format;
 import static net.daporkchop.lib.common.util.PValidation.checkState;
 
 public final class Terraplusminus extends JavaPlugin implements Listener {
+    /**
+     * @deprecated Static Fields should not be used, because else config reloads won't work properly.
+     * We'll rework the whole config system in a future update to make it more robust. Maybe switching to configurate.
+     */
+    @Deprecated(since = "1.6.0", forRemoval = true)
     public static FileConfiguration config;
+    /**
+     * @deprecated We'll switch to basic dependency injection from now on. Static Fields should not be used.
+     */
+    @Deprecated(since = "1.6.0", forRemoval = true)
     public static Terraplusminus instance;
 
     @Override
@@ -74,20 +80,20 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
 
         // Registering events
         Bukkit.getPluginManager().registerEvents(this, this);
-        if (Terraplusminus.config.getBoolean("height_in_actionbar")) {
+        if (getConfig().getBoolean("height_in_actionbar")) {
             Bukkit.getPluginManager().registerEvents(new PlayerMoveEvent(this), this);
         }
-        if (Terraplusminus.config.getBoolean("linked_worlds.enabled")) {
-            Bukkit.getPluginManager().registerEvents(new PlayerJoinEvent(playerHashMapManagement), this);
+        if (getConfig().getBoolean(Properties.LINKED_WORLDS_ENABLED)) {
+            Bukkit.getPluginManager().registerEvents(new PlayerJoinEvent(playerHashMapManagement, this), this);
         }
 
-        String passthroughTpll = Terraplusminus.config.getString("passthrough_tpll");
+        String passthroughTpll = getConfig().getString(Properties.PASSTRHROUGH_TPLL);
         if (passthroughTpll != null && !passthroughTpll.isEmpty()) {
             Bukkit.getPluginManager().registerEvents(new PlayerCommandPreprocessEvent(passthroughTpll), this);
         }
         // --------------------------
 
-        TerraConfig.reducedConsoleMessages = Terraplusminus.config.getBoolean("reduced_console_messages"); // Disables console log of fetching data
+        TerraConfig.reducedConsoleMessages = getConfig().getBoolean("reduced_console_messages"); // Disables console log of fetching data
 
         registerCommands();
 
@@ -108,9 +114,9 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
     }
 
     @EventHandler
-    public void onWorldInit(WorldInitEvent event) {
+    public void onWorldInit(@NotNull WorldInitEvent event) {
         World world = event.getWorld();
-        boolean shouldInstallHeightDatapack = Terraplusminus.config.getBoolean("height_datapack");
+        boolean shouldInstallHeightDatapack = getConfig().getBoolean("height_datapack");
         boolean isDefaultWorld = Bukkit.getWorlds().getFirst().getUID().equals(world.getUID());
         if (shouldInstallHeightDatapack && isDefaultWorld) {
             // Datapacks should be installed in the default world and will apply to all of them.
@@ -120,24 +126,26 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
     }
 
 
+    @Contract("_, _ -> new")
     @Override
-    public ChunkGenerator getDefaultWorldGenerator(@NotNull String worldName, String id) {
+    public @NotNull ChunkGenerator getDefaultWorldGenerator(@NotNull String worldName, String id) {
         // Multiverse different y-offset support
         int yOffset = 0;
-        if (Terraplusminus.config.getBoolean("linked_worlds.enabled") && Terraplusminus.config.getString("linked_worlds.method").equalsIgnoreCase("MULTIVERSE")) {
+        if (getConfig().getBoolean(Properties.LINKED_WORLDS_ENABLED)
+                && getConfig().getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("MULTIVERSE")) {
             for (LinkedWorld world : ConfigurationHelper.getWorlds()) {
                 if (world.getWorldName().equalsIgnoreCase(worldName)) {
                     yOffset = world.getOffset();
                 }
             }
         } else {
-            yOffset = Terraplusminus.config.getInt("y_offset");
+            yOffset = getConfig().getInt("y_offset");
         }
         return new RealWorldGenerator(yOffset);
     }
 
 
-    public void enforceDatapackInstallation(String datapackResourcePath, World world) {
+    public void enforceDatapackInstallation(String datapackResourcePath, @NotNull World world) {
         String datapackName = Path.of(datapackResourcePath).getFileName().toString();
         File droppedFile = world
                 .getWorldFolder().toPath()
@@ -165,24 +173,26 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         Bukkit.getServer().shutdown();
     }
 
+    /**
+     * @deprecated We'll rework the whole config system in a future update to make it more robust. Maybe switching to configurate.
+     * The current system has some flaws like only can update one config version at a time and is generally hard to maintain.
+     */
+    @Deprecated(since = "1.6.0", forRemoval = true)
     private void updateConfig() {
         PluginConfigManipulator manipulator = new PluginConfigManipulator(this);
 
-        double configVersion = Terraplusminus.config.getDouble("config_version");
+        double configVersion = getConfig().getDouble("config_version");
 
         if (configVersion == 0.0) {  // That's the default value if the field was not set at all in the YAML
             this.getComponentLogger().error("Old config detected. Please delete and restart/reload.");
         }
         if (configVersion == 1.0) {
-            String passthroughTpll = Terraplusminus.config.getString("passthrough_tpll");
-            if (passthroughTpll == null) {
-                passthroughTpll = "";
-            }
-            int y = (int) Terraplusminus.config.getDouble("terrain_offset");
-            Terraplusminus.config.set("terrain_offset.x", 0);
-            Terraplusminus.config.set("terrain_offset.y", y);
-            Terraplusminus.config.set("terrain_offset.z", 0);
-            Terraplusminus.config.set("config_version", 1.1);
+            String passthroughTpll = getConfig().getString(Properties.PASSTRHROUGH_TPLL, "");
+            int y = (int) getConfig().getDouble("terrain_offset");
+            getConfig().set("terrain_offset.x", 0);
+            getConfig().set("terrain_offset.y", y);
+            getConfig().set("terrain_offset.z", 0);
+            getConfig().set("config_version", 1.1);
             this.saveConfig();
             manipulator.addLineAbove(
                     "terrain_offset",
@@ -204,7 +214,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
 
         }
         if (configVersion == 1.1) {
-            Terraplusminus.config.set("config_version", 1.2);
+            getConfig().set("config_version", 1.2);
             this.saveConfig();
             manipulator.addLineAbove(
                     "# If disabled, tree generation is turned off.",
@@ -221,7 +231,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
             );
         }
         if (configVersion == 1.2) {
-            Terraplusminus.config.set("config_version", 1.3);
+            getConfig().set("config_version", 1.3);
             this.saveConfig();
             manipulator.deleteLine("# Linked servers -------------------------------------");
             manipulator.deleteLine("# If the height limit on this server is not enough, other servers can be linked to generate higher or lower sections");
@@ -247,7 +257,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
             );
         }
         if (configVersion == 1.3) {
-            Terraplusminus.config.set("config_version", 1.4);
+            getConfig().set("config_version", 1.4);
             this.saveConfig();
             manipulator.addLineBelow(
                     "prefix:",
@@ -271,9 +281,9 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
                     """);
         }
         if (configVersion == 1.4) {
-            Terraplusminus.config.set("config_version", 1.5);
+            getConfig().set("config_version", 1.5);
             this.saveConfig();
-            boolean differentBiomes = Terraplusminus.config.getBoolean("different_biomes");
+            boolean differentBiomes = getConfig().getBoolean("different_biomes");
             manipulator.deleteLine("# The biomes will be generated with https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification.");
             manipulator.deleteLine("# If turned off, everything will be plains biome.");
             manipulator.deleteLine("different_biomes:");
@@ -312,14 +322,12 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         Http.userAgent(userAgent);
     }
 
-    // The old way is deprecated and the new one is experimental, let's go with the new one
-    private String getVersion() {
+    private @NotNull String getVersion() {
         PluginMeta meta = this.getPluginMeta();
         return meta.getVersion();
     }
 
-    // This method has to rely on the unstable paper API as we use paper-plugin.yml, which itself is experimental
-    private String createHttpUserAgent() {
+    private @NotNull String createHttpUserAgent() {
         PluginMeta metadata = this.getPluginMeta();
         return format(Locale.ENGLISH, "%s/%s (%s/%s; +%s)",
                 metadata.getName(),

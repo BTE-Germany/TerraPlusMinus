@@ -11,6 +11,7 @@ import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.gen.RealWorldGenerator;
 import de.btegermany.terraplusminus.utils.ConfigurationHelper;
 import de.btegermany.terraplusminus.utils.LinkedWorld;
+import de.btegermany.terraplusminus.utils.Properties;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
@@ -57,6 +58,7 @@ public class TpllCommand {
 
     // <editor-fold desc="Constants and Fields">
     public static final String LAT_LON_HEIGHT = "latLonHeight";
+    public static final String TPLL_OTHERS_PERMISSION = "t+-.forcetpll";
 
     static String prefix;
     private static final Random dummyRandom = new Random();
@@ -127,7 +129,7 @@ public class TpllCommand {
             return;
         }
 
-        if (!config.getBoolean("linked_worlds.enabled") && height == null) {
+        if (!config.getBoolean(Properties.LINKED_WORLDS_ENABLED) && height == null) {
             checkAndTeleportIfCorrectWorld(target,
                     tpWorld,
                     x,
@@ -143,17 +145,17 @@ public class TpllCommand {
         }
 
         if (height > target.getWorld().getMaxHeight()) {
-            if (config.getString("linked_worlds.method", "").equalsIgnoreCase("SERVER")) {
+            if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("SERVER")) {
                 // send player uuid and coordinates to bungee
                 sendPluginMessageToBungeeBridge(true, target, latLngHeight.latLng().getLat(), latLngHeight.latLng().getLng());
-            } else if (config.getString("linked_worlds.method", "").equalsIgnoreCase("MULTIVERSE")) {
+            } else if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("MULTIVERSE")) {
                 teleportToNextMultiverseWorld(target, height, yOffset, latLngHeight, x, z);
             }
         } else if (height <= target.getWorld().getMinHeight()) {
-            if (config.getString("linked_worlds.method", "").equalsIgnoreCase("SERVER")) {
+            if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("SERVER")) {
                 // send player uuid and coordinates to bungee
                 sendPluginMessageToBungeeBridge(false, target, latLngHeight.latLng().getLat(), latLngHeight.latLng().getLng());
-            } else if (config.getString("linked_worlds.method", "").equalsIgnoreCase("MULTIVERSE")) {
+            } else if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("MULTIVERSE")) {
                 teleportToPreviousMultiverseWorld(target, height, yOffset, latLngHeight, x, z);
             }
         } else
@@ -288,13 +290,14 @@ public class TpllCommand {
      */
     private static void sendPluginMessageToBungeeBridge(boolean isNextServer, @NotNull Player player,
                                                         double lat, double lon) {
+        Terraplusminus plugin = (Terraplusminus) Terraplusminus.getProvidingPlugin(Terraplusminus.class);
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF(player.getUniqueId().toString());
         LinkedWorld server;
         if (isNextServer) {
-            server = ConfigurationHelper.getNextServerName(Bukkit.getServer().getName()); //TODO: Bukkit.getServer().getName() does not return the real name
+            server = ConfigurationHelper.getNextServerName(plugin.getRegisteredServerName());
         } else {
-            server = ConfigurationHelper.getPreviousServerName(Bukkit.getServer().getName()); //TODO: Bukkit.getServer().getName() does not return the real name
+            server = ConfigurationHelper.getPreviousServerName(plugin.getRegisteredServerName());
         }
 
         if (server != null) {
@@ -304,9 +307,7 @@ public class TpllCommand {
             return;
         }
         out.writeUTF(lat + ", " + lon);
-        player.sendPluginMessage(Terraplusminus.instance,
-                "bungeecord:terraplusminus",
-                out.toByteArray());
+        player.sendPluginMessage(plugin, "bungeecord:terraplusminus", out.toByteArray());
 
         player.sendMessage(prefix + "§cSending to another server...");
     }
@@ -326,7 +327,7 @@ public class TpllCommand {
      * @return The configured {@link LiteralCommandNode} for registration
      */
     public static LiteralCommandNode<CommandSourceStack> create() {
-        prefix = Terraplusminus.config.getString("prefix");
+        prefix = Terraplusminus.instance.getConfig().getString("prefix");
 
         // Structure:
         // /tpll <coords>                       -> self teleport
@@ -336,7 +337,7 @@ public class TpllCommand {
         // This is the cleanest solution that works reliably with Brigadier.
         return Commands.literal("tpll")
                 .then(Commands.literal("-p")
-                        .requires(source -> source.getSender().hasPermission("t+-.forcetpll"))
+                        .requires(source -> source.getSender().hasPermission(TPLL_OTHERS_PERMISSION))
                         .then(Commands.argument("players", ArgumentTypes.players())
                                 .then(Commands.argument(LAT_LON_HEIGHT, StringArgumentType.greedyString())
                                         .executes(TpllCommand::executeTarget)
@@ -391,13 +392,13 @@ public class TpllCommand {
      * Checks for {@code t+-.forcetpll} or {@code t+-.tpll} (if self-teleporting).
      */
     private static boolean isPermitted(@NotNull CommandSourceStack source) {
-        return source.getSender().hasPermission("t+-.forcetpll") ||
+        return source.getSender().hasPermission(TPLL_OTHERS_PERMISSION) ||
                (source.getSender() == source.getExecutor() && source.getSender().hasPermission("t+-.tpll"));
     }
 
     /** Checks for {@code t+-.forcetpll} permission. */
     private static boolean isPermittedTarget(@NotNull CommandSourceStack commandSourceStack) {
-        return commandSourceStack.getSender().hasPermission("t+-.forcetpll");
+        return commandSourceStack.getSender().hasPermission(TPLL_OTHERS_PERMISSION);
     }
     // </editor-fold>
 
