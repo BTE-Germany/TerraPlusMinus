@@ -1,5 +1,7 @@
 package de.btegermany.terraplusminus.events;
 
+import com.google.common.io.ByteArrayDataInput;
+import com.google.common.io.ByteStreams;
 import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.utils.PlayerHashMapManagement;
 import org.bukkit.Bukkit;
@@ -16,13 +18,15 @@ import java.util.UUID;
 public class PluginMessageEvent implements PluginMessageListener {
 
     PlayerHashMapManagement playerHashMapManagement;
+    Terraplusminus tpm;
 
-    public PluginMessageEvent(PlayerHashMapManagement playerHashMapManagement) {
+    public PluginMessageEvent(PlayerHashMapManagement playerHashMapManagement, Terraplusminus tpm) {
         this.playerHashMapManagement = playerHashMapManagement;
+        this.tpm = tpm;
     }
 
     @Override
-    public void onPluginMessageReceived(@NotNull String channel, @NotNull Player player, @NotNull byte[] message) {
+    public void onPluginMessageReceived(@NotNull String channel, @NotNull Player player, byte @NotNull [] message) {
         if (channel.equals("bungeecord:terraplusminus")) {
             DataInputStream in = new DataInputStream(new ByteArrayInputStream(message));
             try {
@@ -37,7 +41,13 @@ public class PluginMessageEvent implements PluginMessageListener {
                     targetPlayer.chat("/tpll " + coordinates);
                 }
             } catch (IOException e) {
-                Terraplusminus.instance.getComponentLogger().warn("Failed to read plugin message", e);
+                tpm.getComponentLogger().warn("Failed to read plugin message", e);
+            }
+        } else if (channel.equals("Bungeecord") && tpm.getRegisteredServerName() == null) {
+            ByteArrayDataInput in = ByteStreams.newDataInput(message);
+            String subchannel = in.readUTF();
+            if (subchannel.equals("GetServer")) {
+                tpm.setRegisteredServerName(in.readUTF());
             }
         }
     }

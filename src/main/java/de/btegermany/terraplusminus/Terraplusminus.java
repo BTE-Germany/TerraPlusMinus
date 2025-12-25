@@ -14,6 +14,8 @@ import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.configuration.PluginMeta;
 import io.papermc.paper.plugin.lifecycle.event.LifecycleEventManager;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import lombok.Getter;
+import lombok.Setter;
 import net.buildtheearth.terraminusminus.TerraConfig;
 import net.buildtheearth.terraminusminus.TerraConstants;
 import net.buildtheearth.terraminusminus.util.http.Disk;
@@ -54,6 +56,10 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
     @Deprecated(since = "1.6.0", forRemoval = true)
     public static Terraplusminus instance;
 
+    @Getter
+    @Setter
+    private String registeredServerName = null;
+
     @Override
     public void onEnable() {
         new Metrics(this, 28392); // https://bstats.org/plugin/bukkit/Terraplusminus/28392
@@ -75,7 +81,14 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         // Register plugin messaging channel
         PlayerHashMapManagement playerHashMapManagement = new PlayerHashMapManagement();
         this.getServer().getMessenger().registerOutgoingPluginChannel(this, "bungeecord:terraplusminus");
-        this.getServer().getMessenger().registerIncomingPluginChannel(this, "bungeecord:terraplusminus", new PluginMessageEvent(playerHashMapManagement));
+        PluginMessageEvent pluginMessageListener = new PluginMessageEvent(playerHashMapManagement, this);
+        this.getServer().getMessenger().registerIncomingPluginChannel(this, "bungeecord:terraplusminus", pluginMessageListener);
+
+        // Linked Server current server initialization
+        if (getConfig().getBoolean(Properties.LINKED_WORLDS_ENABLED) && getConfig().getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("SERVER")) {
+            this.getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+            this.getServer().getMessenger().registerIncomingPluginChannel(this, "BungeeCord", pluginMessageListener);
+        }
         // --------------------------
 
         // Registering events
