@@ -144,8 +144,6 @@ public class TpllCommand {
                     tpWorld,
                     new Vector(x, baseHeight.groundHeight(roundedX - ChunkPos.cubeToMinBlock(ChunkPos.blockToCube(roundedX)),
                             roundedX - ChunkPos.cubeToMinBlock(ChunkPos.blockToCube(roundedX))) + 1d, z),
-                    x,
-                    z,
                     yOffset,
                     latLngHeight.latLng(),
                     config));
