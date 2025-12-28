@@ -19,10 +19,10 @@ import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSele
 import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
 import net.buildtheearth.terraminusminus.projection.GeographicProjection;
 import net.buildtheearth.terraminusminus.projection.OutOfProjectionBoundsException;
+import net.buildtheearth.terraminusminus.substitutes.ChunkPos;
 import net.buildtheearth.terraminusminus.util.geo.CoordinateParseUtils;
 import net.buildtheearth.terraminusminus.util.geo.LatLng;
 import org.bukkit.Bukkit;
-import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
@@ -30,14 +30,13 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.generator.ChunkGenerator;
+import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Command handler for the /tpll command.
@@ -61,7 +60,6 @@ public class TpllCommand {
     public static final String TPLL_OTHERS_PERMISSION = "t+-.forcetpll";
 
     static String prefix;
-    private static final Random dummyRandom = new Random();
     // </editor-fold>
 
     // <editor-fold desc="Core Teleportation Logic">
@@ -132,34 +130,26 @@ public class TpllCommand {
         if (!config.getBoolean(Properties.LINKED_WORLDS_ENABLED) && height == null) {
             checkAndTeleportIfCorrectWorld(target,
                     tpWorld,
-                    x,
-                    z,
-                    tpWorld.getHighestBlockYAt((int) x, (int) z) + 1d,
-                    latLngHeight.latLng().getLat(),
-                    latLngHeight.latLng().getLng());
+                    new Vector(x, tpWorld.getHighestBlockYAt((int) x, (int) z) + 1d, z),
+                    yOffset,
+                    latLngHeight.latLng(),
+                    config);
             return;
         }
 
         if (height == null) {
-            height = (double) terraGenerator.getBaseHeight(tpWorld, dummyRandom, (int) Math.round(x), (int) Math.round(z), HeightMap.WORLD_SURFACE) + 1;
+            int roundedX = (int) Math.round(x);
+            int roundedZ = (int) Math.round(z);
+            terraGenerator.getBaseHeightAsync(roundedX, roundedZ).thenAcceptAsync(baseHeight -> checkAndTeleportIfCorrectWorld(target,
+                    tpWorld,
+                    new Vector(x, baseHeight.groundHeight(roundedX - ChunkPos.cubeToMinBlock(ChunkPos.blockToCube(roundedX)),
+                            roundedX - ChunkPos.cubeToMinBlock(ChunkPos.blockToCube(roundedX))) + 1d, z),
+                    x,
+                    z,
+                    yOffset,
+                    latLngHeight.latLng(),
+                    config));
         }
-
-        if (height > target.getWorld().getMaxHeight()) {
-            if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("SERVER")) {
-                // send player uuid and coordinates to bungee
-                sendPluginMessageToBungeeBridge(true, target, latLngHeight.latLng().getLat(), latLngHeight.latLng().getLng());
-            } else if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("MULTIVERSE")) {
-                teleportToNextMultiverseWorld(target, height, yOffset, latLngHeight, x, z);
-            }
-        } else if (height <= target.getWorld().getMinHeight()) {
-            if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("SERVER")) {
-                // send player uuid and coordinates to bungee
-                sendPluginMessageToBungeeBridge(false, target, latLngHeight.latLng().getLat(), latLngHeight.latLng().getLng());
-            } else if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("MULTIVERSE")) {
-                teleportToPreviousMultiverseWorld(target, height, yOffset, latLngHeight, x, z);
-            }
-        } else
-            checkAndTeleportIfCorrectWorld(target, tpWorld, x, z, height, latLngHeight.latLng().getLat(), latLngHeight.latLng().getLng());
     }
 
     /**
@@ -170,11 +160,11 @@ public class TpllCommand {
      * @param target        The player to teleport
      * @param height        The calculated target height
      * @param yOffset       The Y-offset of the current world
-     * @param latLngHeight  The parsed latitude, longitude, and height
+     * @param latLng        The parsed latitude, longitude
      * @param x             The calculated Minecraft X coordinate
      * @param z             The calculated Minecraft Z coordinate
      */
-    private static void teleportToPreviousMultiverseWorld(@NotNull Player target, Double height, int yOffset, LatLongHeight latLngHeight, double x, double z) {
+    private static void teleportToPreviousMultiverseWorld(@NotNull Player target, Double height, double yOffset, LatLng latLng, double x, double z) {
         World tpWorld;
         LinkedWorld previousServer = ConfigurationHelper.getPreviousServerName(target.getWorld().getName());
         if (previousServer == null) {
@@ -183,7 +173,7 @@ public class TpllCommand {
         }
         tpWorld = Bukkit.getWorld(previousServer.getWorldName());
         height = height - yOffset + previousServer.getOffset();
-        target.sendMessage(prefix + "§7Teleporting to " + latLngHeight.latLng().getLat() + ", " + latLngHeight.latLng().getLng() + " in another" +
+        target.sendMessage(prefix + "§7Teleporting to " + latLng.getLat() + ", " + latLng.getLng() + " in another" +
                 " world. This may take a bit...");
         target.teleportAsync(
                 new Location(tpWorld,
@@ -203,11 +193,11 @@ public class TpllCommand {
      * @param target        The player to teleport
      * @param height        The calculated target height
      * @param yOffset       The Y-offset of the current world
-     * @param latLngHeight  The parsed latitude, longitude, and height
+     * @param latLng        The parsed latitude, longitude
      * @param x             The calculated Minecraft X coordinate
      * @param z             The calculated Minecraft Z coordinate
      */
-    private static void teleportToNextMultiverseWorld(@NotNull Player target, Double height, int yOffset, LatLongHeight latLngHeight, double x, double z) {
+    private static void teleportToNextMultiverseWorld(@NotNull Player target, double height, double yOffset, LatLng latLng, double x, double z) {
         World tpWorld;
         LinkedWorld nextServer = ConfigurationHelper.getNextServerName(target.getWorld().getName());
         if (nextServer == null) {
@@ -217,7 +207,7 @@ public class TpllCommand {
         }
         tpWorld = Bukkit.getWorld(nextServer.getWorldName());
         height = height - yOffset + nextServer.getOffset();
-        target.sendMessage(prefix + "§7Teleporting to " + latLngHeight.latLng().getLat() + ", " + latLngHeight.latLng().getLng() + " in " +
+        target.sendMessage(prefix + "§7Teleporting to " + latLng.getLat() + ", " + latLng.getLng() + " in " +
                 "another world. This may take a bit...");
         target.teleportAsync(
                 new Location(tpWorld,
@@ -234,34 +224,49 @@ public class TpllCommand {
      * <p>
      * If the height is outside the world's min/max height, an error message is sent.
      *
-     * @param target The player to teleport
+     * @param target  The player to teleport
      * @param tpWorld The target world
-     * @param x The Minecraft X coordinate
-     * @param z The Minecraft Z coordinate
-     * @param height The target height
-     * @param lat The latitude coordinate (for message display)
-     * @param lon The longitude coordinate (for message display)
+     * @param cord    The calculated Minecraft X/Y/Z coordinates
+     * @param latLng  The geo coordinates (for message display)
+     * @param config  The supplied config for linked worlds
      */
-    private static void checkAndTeleportIfCorrectWorld(@NotNull Player target, World tpWorld, double x, double z, double height, double lat, double lon) {
+    private static void checkAndTeleportIfCorrectWorld(@NotNull Player target, World tpWorld, @NonNull Vector cord, double yOffset, LatLng latLng, FileConfiguration config) {
         String msgPart1 = prefix + "§cYou cannot tpll to these coordinates, because the world is not ";
         String msgPart2 = "enough at the moment.";
-        if (height > target.getWorld().getMaxHeight()) {
+
+        if (cord.getBlockY() > target.getWorld().getMaxHeight()) {
+            if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("SERVER")) {
+                // send player uuid and coordinates to bungee
+                sendPluginMessageToBungeeBridge(true, target, latLng.getLat(), latLng.getLng());
+            } else if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("MULTIVERSE")) {
+                teleportToNextMultiverseWorld(target, cord.getY(), yOffset, latLng, cord.getX(), cord.getZ());
+            }
+        } else if (cord.getBlockY() <= target.getWorld().getMinHeight()) {
+            if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("SERVER")) {
+                // send player uuid and coordinates to bungee
+                sendPluginMessageToBungeeBridge(false, target, latLng.getLat(), latLng.getLng());
+            } else if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("MULTIVERSE")) {
+                teleportToPreviousMultiverseWorld(target, cord.getY(), yOffset, latLng, cord.getX(), cord.getZ());
+            }
+        }
+
+        if (cord.getBlockY() > target.getWorld().getMaxHeight()) {
             target.sendMessage(msgPart1 + "high" + msgPart2);
             return;
-        } else if (height <= target.getWorld().getMinHeight()) {
+        } else if (cord.getBlockY() <= target.getWorld().getMinHeight()) {
             target.sendMessage(msgPart1 + "low" + msgPart2);
             return;
         }
 
         Location location = new Location(tpWorld,
-                x,
-                height,
-                z,
+                cord.getX(),
+                cord.getBlockY(),
+                cord.getZ(),
                 target.getLocation().getYaw(),
                 target.getLocation().getPitch());
 
         target.teleportAsync(location, PlayerTeleportEvent.TeleportCause.COMMAND);
-        target.sendMessage(prefix + "§7Teleported to " + lat + ", " + lon + ", " + height + ".");
+        target.sendMessage(prefix + "§7Teleported to " + latLng.getLat() + ", " + latLng.getLng() + ", " + cord.getBlockY() + ".");
     }
     // </editor-fold>
 

@@ -231,15 +231,7 @@ public class RealWorldGenerator extends ChunkGenerator {
         }
     }
 
-    public void generateBedrock(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull ChunkGenerator.ChunkData chunkData) {
-        // no bedrock, because bedrock bad
-    }
-
-    public void generateCaves(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull ChunkGenerator.ChunkData chunkData) {
-        // no caves, because caves scary
-    }
-
-
+    @Override
     public int getBaseHeight(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull HeightMap heightMap) {
         int chunkX = blockToCube(x);
         int chunkZ = blockToCube(z);
@@ -256,6 +248,13 @@ public class RealWorldGenerator extends ChunkGenerator {
         }
     }
 
+    public CompletableFuture<CachedChunkData> getBaseHeightAsync(int x, int z) {
+        int chunkX = blockToCube(x);
+        int chunkZ = blockToCube(z);
+        return this.cache.getUnchecked(new ChunkPos(chunkX, chunkZ));
+    }
+
+    @Override
     public boolean canSpawn(@NotNull World world, int x, int z) {
         Block highest = world.getBlockAt(x, world.getHighestBlockYAt(x, z), z);
 
@@ -267,48 +266,17 @@ public class RealWorldGenerator extends ChunkGenerator {
         };
     }
 
+    @Override
     @NotNull
     public List<BlockPopulator> getDefaultPopulators(@NotNull World world) {
         return Collections.singletonList(new TreePopulator(customBiomeProvider, yOffset));
     }
 
+    @Override
     @Nullable
     public Location getFixedSpawnLocation(@NotNull World world, @NotNull Random random) {
         if (spawnLocation == null)
             spawnLocation = new Location(world, 3517417, 58, -5288234);
         return spawnLocation;
-    }
-
-    public boolean shouldGenerateNoise() {
-        return false;
-    }
-
-
-    public boolean shouldGenerateSurface() {
-        return false;
-    }
-
-
-    public boolean shouldGenerateBedrock() {
-        return false;
-    }
-
-
-    public boolean shouldGenerateCaves() {
-        return false;
-    }
-
-
-    public boolean shouldGenerateDecorations() {
-        return false;
-    }
-
-
-    public boolean shouldGenerateMobs() {
-        return false;
-    }
-
-    public boolean shouldGenerateStructures() {
-        return false;
     }
 }
