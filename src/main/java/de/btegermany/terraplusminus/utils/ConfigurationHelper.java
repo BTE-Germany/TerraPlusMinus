@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class ConfigurationHelper {
-    private static final List<LinkedWorld> worlds = convertList(Terraplusminus.config.getMapList("linked_worlds.worlds"));
 
     /**
      * Returns a material from the configuration,
@@ -50,8 +49,22 @@ public final class ConfigurationHelper {
         return new LinkedWorld(worldName, offset);
     }
 
+    /**
+     * Gets the linked worlds list from config dynamically.
+     * This ensures the list is always up-to-date after config reloads.
+     */
+    private static List<LinkedWorld> getWorldsList() {
+        return convertList(Terraplusminus.instance.getConfig().getMapList("linked_worlds.worlds"));
+    }
+
     public static LinkedWorld getNextServerName(String currentWorldName) {
+        List<LinkedWorld> worlds = getWorldsList();
         int currentIndex = -1;
+
+        Terraplusminus.instance.getComponentLogger().debug("Searching for world: '{}' in linked worlds list", currentWorldName);
+        for (LinkedWorld w : worlds) {
+            Terraplusminus.instance.getComponentLogger().debug("Available world in config: '{}'", w.getWorldName());
+        }
 
         for (int i = 0; i < worlds.size(); i++) {
             LinkedWorld world = worlds.get(i);
@@ -65,12 +78,19 @@ public final class ConfigurationHelper {
             return worlds.get(currentIndex + 1);
         } else {
             // Entweder wurde die Welt nicht gefunden oder sie ist die letzte Welt in der Liste
+            Terraplusminus.instance.getComponentLogger().warn("World after '{}' not found in linked worlds configuration", currentWorldName);
             return null;
         }
     }
 
     public static LinkedWorld getPreviousServerName(String currentWorldName) {
+        List<LinkedWorld> worlds = getWorldsList();
         int currentIndex = -1;
+
+        Terraplusminus.instance.getComponentLogger().debug("Searching for world: '{}' in linked worlds list", currentWorldName);
+        for (LinkedWorld w : worlds) {
+            Terraplusminus.instance.getComponentLogger().debug("Available world in config: '{}'", w.getWorldName());
+        }
 
         for (int i = 0; i < worlds.size(); i++) {
             LinkedWorld world = worlds.get(i);
@@ -84,12 +104,13 @@ public final class ConfigurationHelper {
             return worlds.get(currentIndex - 1);
         } else {
             // Entweder wurde die Welt nicht gefunden oder sie ist die erste Welt in der Liste
+            Terraplusminus.instance.getComponentLogger().warn("World after '{}' not found in linked worlds configuration", currentWorldName);
             return null;
         }
     }
 
     public static List<LinkedWorld> getWorlds() {
-        return worlds;
+        return getWorldsList();
     }
 
 }

@@ -213,18 +213,21 @@ public class TpllCommand {
     private static void finalizeTeleport(@NotNull Player target, @NonNull World tpWorld, @NonNull Vector mcCoords, LatLng geoCoords, @NonNull FileConfiguration config, int yOffset) {
         int xOffset = config.getInt("terrain_offset.x");
         int zOffset = config.getInt("terrain_offset.z");
+        int destinationY = mcCoords.getBlockY() + yOffset + 1; // You want to stand above the block you are teleporting to
 
-        if (mcCoords.getBlockY() > tpWorld.getMaxHeight()) {
+        Terraplusminus.instance.getComponentLogger().debug("Current world max height: {}, min height: {}, requested height: {}", tpWorld.getMaxHeight(), tpWorld.getMinHeight(), destinationY);
+
+        if (destinationY > tpWorld.getMaxHeight()) {
             handleLinkedWorlds(target, true, geoCoords, mcCoords, xOffset, zOffset);
             return;
-        } else if (mcCoords.getBlockY() <= tpWorld.getMinHeight()) {
+        } else if (destinationY <= tpWorld.getMinHeight()) {
             handleLinkedWorlds(target, false, geoCoords, mcCoords, xOffset, zOffset);
             return;
         }
 
         Location location = new Location(tpWorld,
                 mcCoords.getX() + xOffset,
-                mcCoords.getBlockY() + yOffset + 1d, // You want to stand above the block you are teleporting to
+                destinationY,
                 mcCoords.getZ() + zOffset,
                 target.getLocation().getYaw(),
                 target.getLocation().getPitch());
