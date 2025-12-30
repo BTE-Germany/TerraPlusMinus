@@ -38,6 +38,8 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.*;
 
+import static org.bukkit.ChatColor.RED;
+
 /**
  * Command handler for the /tpll command.
  * <p>
@@ -63,6 +65,7 @@ public class TpllCommand {
     // </editor-fold>
 
     // <editor-fold desc="Core Teleportation Logic">
+
     /**
      * Executes the teleportation logic for a player to geographic coordinates.
      * <p>
@@ -97,10 +100,7 @@ public class TpllCommand {
         }
         EarthGeneratorSettings generatorSettings = terraGenerator.getSettings();
         GeographicProjection projection = generatorSettings.projection();
-        int yOffset = terraGenerator.getYOffset();
-
-        LatLongHeight latLngHeight = parseArguments(args, yOffset);
-        Double height = latLngHeight.height();
+        LatLongHeight latLngHeight = parseArguments(args);
 
         if (latLngHeight.latLng() == null) {
             sendUsageMessage(sender);
@@ -127,150 +127,110 @@ public class TpllCommand {
             return;
         }
 
-        if (!config.getBoolean(Properties.LINKED_WORLDS_ENABLED) && height == null) {
-            checkAndTeleportIfCorrectWorld(target,
+        int yOffset = terraGenerator.getYOffset();
+
+        if (!config.getBoolean(Properties.LINKED_WORLDS_ENABLED) && latLngHeight.height() == null) {
+            finalizeTeleport(target,
                     tpWorld,
-                    new Vector(x, tpWorld.getHighestBlockYAt((int) x, (int) z) + 1d, z),
-                    yOffset,
+                    new Vector(x, tpWorld.getHighestBlockYAt((int) x, (int) z), z),
                     latLngHeight.latLng(),
-                    config);
+                    config, yOffset);
             return;
         }
 
-        if (height == null) {
+        if (latLngHeight.height() == null) {
             int roundedX = (int) Math.round(x);
             int roundedZ = (int) Math.round(z);
-            terraGenerator.getBaseHeightAsync(roundedX, roundedZ).thenAcceptAsync(baseHeight -> checkAndTeleportIfCorrectWorld(target,
-                    tpWorld,
-                    new Vector(x, baseHeight.groundHeight(roundedX - ChunkPos.cubeToMinBlock(ChunkPos.blockToCube(roundedX)),
-                            roundedX - ChunkPos.cubeToMinBlock(ChunkPos.blockToCube(roundedX))) + 1d, z),
-                    yOffset,
-                    latLngHeight.latLng(),
-                    config));
+            terraGenerator.getBaseHeightAsync(roundedX, roundedZ)
+                    .thenAcceptAsync(baseHeight ->
+                            finalizeTeleport(target,
+                                    tpWorld,
+                                    new Vector(x, baseHeight.groundHeight(roundedX - ChunkPos.cubeToMinBlock(ChunkPos.blockToCube(roundedX)),
+                                            roundedX - ChunkPos.cubeToMinBlock(ChunkPos.blockToCube(roundedX))), z),
+                                    latLngHeight.latLng(),
+                                    config,
+                                    yOffset
+                            )).exceptionally(ex -> {
+                        target.sendMessage(RED + "Error while fetching elevation from API!");
+                        Terraplusminus.instance.getComponentLogger().error("Error while fetching elevation from API for tpll!", ex);
+                        return null;
+                    });
         } else {
-            checkAndTeleportIfCorrectWorld(target, tpWorld, new Vector(x, height, z), yOffset, latLngHeight.latLng(), config);
+            finalizeTeleport(target, tpWorld, new Vector(x, latLngHeight.height(), z), latLngHeight.latLng(), config, yOffset);
         }
     }
 
     /**
-     * Teleports a player to a lower-elevation linked Multiverse world.
-     * <p>
-     * Used when the target height is below the current world's minimum height.
-     *
-     * @param target        The player to teleport
-     * @param height        The calculated target height
-     * @param yOffset       The Y-offset of the current world
-     * @param latLng        The parsed latitude, longitude
-     * @param x             The calculated Minecraft X coordinate
-     * @param z             The calculated Minecraft Z coordinate
-     */
-    private static void teleportToPreviousMultiverseWorld(@NotNull Player target, Double height, double yOffset, LatLng latLng, double x, double z) {
-        World tpWorld;
-        LinkedWorld previousServer = ConfigurationHelper.getPreviousServerName(target.getWorld().getName());
-        if (previousServer == null) {
-            target.sendMessage(prefix + "§cYou cannot tpll to these coordinates, because the world is not low enough at the moment.");
-            return;
-        }
-        tpWorld = Bukkit.getWorld(previousServer.getWorldName());
-        height = height - yOffset + previousServer.getOffset();
-        target.sendMessage(prefix + "§7Teleporting to " + latLng.getLat() + ", " + latLng.getLng() + " in another" +
-                " world. This may take a bit...");
-        target.teleportAsync(
-                new Location(tpWorld,
-                        x,
-                        height,
-                        z,
-                        target.getLocation().getYaw(),
-                        target.getLocation().getPitch()),
-                PlayerTeleportEvent.TeleportCause.COMMAND);
-    }
-
-    /**
-     * Teleports a player to a higher-elevation linked Multiverse world.
+     * Teleports a player to a higher-elevation linked Multiverse world or another server.
      * <p>
      * Used when the target height exceeds the current world's maximum height.
      *
-     * @param target        The player to teleport
-     * @param height        The calculated target height
-     * @param yOffset       The Y-offset of the current world
-     * @param latLng        The parsed latitude, longitude
-     * @param x             The calculated Minecraft X coordinate
-     * @param z             The calculated Minecraft Z coordinate
+     * @param target    The player to teleport
+     * @param isNext    Teleport to next or previous world?
+     * @param geoCoords The parsed latitude, longitude
+     * @param mcCoords  The calculated Minecraft X/Y/Z coordinates
+     * @param xOff      The configured X-offset
+     * @param zOff      The configured Z-offset
      */
-    private static void teleportToNextMultiverseWorld(@NotNull Player target, double height, double yOffset, LatLng latLng, double x, double z) {
-        World tpWorld;
-        LinkedWorld nextServer = ConfigurationHelper.getNextServerName(target.getWorld().getName());
-        if (nextServer == null) {
-            target.sendMessage(prefix + "§cYou cannot tpll to these coordinates, because the worlds are " +
-                    "not high enough at the moment.");
+    private static void handleLinkedWorlds(Player target, boolean isNext, LatLng geoCoords, @NonNull Vector mcCoords, int xOff, int zOff) {
+        String method = Terraplusminus.config.getString("linked_worlds.method", "");
+        if (!Terraplusminus.config.getBoolean("linked_worlds.enabled") || !(method.equalsIgnoreCase("SERVER") || method.equalsIgnoreCase("MULTIVERSE"))) {
+            target.sendMessage(Terraplusminus.config.getString("prefix") + RED + "World height limit reached!");
             return;
         }
-        tpWorld = Bukkit.getWorld(nextServer.getWorldName());
-        height = height - yOffset + nextServer.getOffset();
-        target.sendMessage(prefix + "§7Teleporting to " + latLng.getLat() + ", " + latLng.getLng() + " in " +
-                "another world. This may take a bit...");
-        target.teleportAsync(
-                new Location(tpWorld,
-                        x,
-                        height,
-                        z,
-                        target.getLocation().getYaw(),
-                        target.getLocation().getPitch()),
-                PlayerTeleportEvent.TeleportCause.COMMAND);
+
+        if (method.equalsIgnoreCase("SERVER")) {
+            sendPluginMessageToBungeeBridge(isNext, target, geoCoords);
+        } else if (method.equalsIgnoreCase("MULTIVERSE")) {
+            LinkedWorld linked = isNext ? ConfigurationHelper.getNextServerName(target.getWorld().getName()) : ConfigurationHelper.getPreviousServerName(target.getWorld().getName());
+            if (linked == null) {
+                target.sendMessage(Terraplusminus.config.getString("prefix") + RED + "No linked world found!");
+                return;
+            }
+            World linkedWorld = Bukkit.getWorld(linked.getWorldName());
+            double newHeight = mcCoords.getY() + linked.getOffset() + 1;
+            target.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleporting to linked world...");
+            target.teleportAsync(new Location(linkedWorld, mcCoords.getX() + xOff, newHeight, mcCoords.getZ() + zOff, target.getLocation().getYaw(), target.getLocation().getPitch()))
+                    .thenAcceptAsync(success -> {
+                        if (success)
+                            target.sendMessage(prefix + "§7Teleported to " + geoCoords.getLat() + ", " + geoCoords.getLng() + ", " + mcCoords.getBlockY() + ".");
+                    });
+        }
     }
 
     /**
      * Validates height bounds and teleports the player if within range.
      * <p>
-     * If the height is outside the world's min/max height, an error message is sent.
+     * Depending on the configuration it uses multiverse worlds or the configured server if the height limit is exceeded.
      *
-     * @param target  The player to teleport
-     * @param tpWorld The target world
-     * @param cord    The calculated Minecraft X/Y/Z coordinates
-     * @param latLng  The geo coordinates (for message display)
-     * @param config  The supplied config for linked worlds
+     * @param target    The player to teleport
+     * @param tpWorld   The target world
+     * @param mcCoords  The calculated Minecraft X/Y/Z coordinates
+     * @param geoCoords The geo coordinates (for message display)
+     * @param config    The supplied config for linked worlds
+     * @param yOffset   The configured terrain offset
      */
-    private static void checkAndTeleportIfCorrectWorld(@NotNull Player target, World tpWorld, @NonNull Vector cord, double yOffset, LatLng latLng, FileConfiguration config) {
-        String msgPart1 = prefix + "§cYou cannot tpll to these coordinates, because the world is not ";
-        String msgPart2 = " enough at the moment.";
+    private static void finalizeTeleport(@NotNull Player target, @NonNull World tpWorld, @NonNull Vector mcCoords, LatLng geoCoords, @NonNull FileConfiguration config, int yOffset) {
+        int xOffset = config.getInt("terrain_offset.x");
+        int zOffset = config.getInt("terrain_offset.z");
 
-        if (cord.getBlockY() > target.getWorld().getMaxHeight()) {
-            if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("SERVER")) {
-                // send player uuid and coordinates to bungee
-                sendPluginMessageToBungeeBridge(true, target, latLng.getLat(), latLng.getLng());
-                return;
-            } else if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("MULTIVERSE")) {
-                teleportToNextMultiverseWorld(target, cord.getY(), yOffset, latLng, cord.getX(), cord.getZ());
-                return;
-            }
-        } else if (cord.getBlockY() <= target.getWorld().getMinHeight()) {
-            if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("SERVER")) {
-                // send player uuid and coordinates to bungee
-                sendPluginMessageToBungeeBridge(false, target, latLng.getLat(), latLng.getLng());
-                return;
-            } else if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("MULTIVERSE")) {
-                teleportToPreviousMultiverseWorld(target, cord.getY(), yOffset, latLng, cord.getX(), cord.getZ());
-                return;
-            }
-        }
-
-        if (cord.getBlockY() > target.getWorld().getMaxHeight()) {
-            target.sendMessage(msgPart1 + "high" + msgPart2);
+        if (mcCoords.getBlockY() > tpWorld.getMaxHeight()) {
+            handleLinkedWorlds(target, true, geoCoords, mcCoords, xOffset, zOffset);
             return;
-        } else if (cord.getBlockY() <= target.getWorld().getMinHeight()) {
-            target.sendMessage(msgPart1 + "low" + msgPart2);
+        } else if (mcCoords.getBlockY() <= tpWorld.getMinHeight()) {
+            handleLinkedWorlds(target, false, geoCoords, mcCoords, xOffset, zOffset);
             return;
         }
 
         Location location = new Location(tpWorld,
-                cord.getX(),
-                cord.getBlockY(),
-                cord.getZ(),
+                mcCoords.getX() + xOffset,
+                mcCoords.getBlockY() + yOffset + 1d, // You want to stand above the block you are teleporting to
+                mcCoords.getZ() + zOffset,
                 target.getLocation().getYaw(),
                 target.getLocation().getPitch());
 
         target.teleportAsync(location, PlayerTeleportEvent.TeleportCause.COMMAND);
-        target.sendMessage(prefix + "§7Teleported to " + latLng.getLat() + ", " + latLng.getLng() + ", " + cord.getBlockY() + ".");
+        target.sendMessage(prefix + "§7Teleported to " + geoCoords.getLat() + ", " + geoCoords.getLng() + ", " + mcCoords.getBlockY() + ".");
     }
     // </editor-fold>
 
@@ -294,11 +254,10 @@ public class TpllCommand {
      *
      * @param isNextServer {@code true} to teleport to a higher world, {@code false} for lower
      * @param player       The player to teleport
-     * @param lat          The target latitude
-     * @param lon          The target longitude
+     * @param geoCoords    The geo coordinates
      */
     private static void sendPluginMessageToBungeeBridge(boolean isNextServer, @NotNull Player player,
-                                                        double lat, double lon) {
+                                                        LatLng geoCoords) {
         Terraplusminus plugin = (Terraplusminus) Terraplusminus.getProvidingPlugin(Terraplusminus.class);
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF(player.getUniqueId().toString());
@@ -315,7 +274,7 @@ public class TpllCommand {
             player.sendMessage(prefix + "§cPlease contact server administrator. Your config is not set up correctly.");
             return;
         }
-        out.writeUTF(lat + ", " + lon);
+        out.writeUTF(geoCoords.getLat() + ", " + geoCoords.getLng());
         player.sendPluginMessage(plugin, "bungeecord:terraplusminus", out.toByteArray());
 
         player.sendMessage(prefix + "§cSending to another server...");
@@ -323,6 +282,7 @@ public class TpllCommand {
     // </editor-fold>
 
     // <editor-fold desc="Command Registration">
+
     /**
      * Creates and returns the Brigadier command node for the /tpll command.
      * <p>
@@ -402,16 +362,19 @@ public class TpllCommand {
      */
     private static boolean isPermitted(@NotNull CommandSourceStack source) {
         return source.getSender().hasPermission(TPLL_OTHERS_PERMISSION) ||
-               (source.getSender() == source.getExecutor() && source.getSender().hasPermission("t+-.tpll"));
+                (source.getSender() == source.getExecutor() && source.getSender().hasPermission("t+-.tpll"));
     }
 
-    /** Checks for {@code t+-.forcetpll} permission. */
+    /**
+     * Checks for {@code t+-.forcetpll} permission.
+     */
     private static boolean isPermittedTarget(@NotNull CommandSourceStack commandSourceStack) {
         return commandSourceStack.getSender().hasPermission(TPLL_OTHERS_PERMISSION);
     }
     // </editor-fold>
 
     // <editor-fold desc="Argument Parsing">
+
     /**
      * Parses the raw command arguments into latitude, longitude, and optional height.
      * <p>
@@ -422,13 +385,12 @@ public class TpllCommand {
      *     <li>{@code <player> <lat> <lon> [height]} - With player prefix (handled elsewhere)</li>
      * </ul>
      *
-     * @param args    The raw argument string to parse
-     * @param yOffset The Y-offset to apply to the height
+     * @param args The raw argument string to parse
      * @return A {@link LatLongHeight} record containing parsed coordinates and height
      */
-    @Contract("_, _ -> new")
-    private static @NotNull LatLongHeight parseArguments(String args, int yOffset) {
-        Terraplusminus.instance.getComponentLogger().debug("parseArguments input: '{}', yOffset: {}", args, yOffset);
+    @Contract("_ -> new")
+    private static @NotNull LatLongHeight parseArguments(String args) {
+        Terraplusminus.instance.getComponentLogger().debug("parseArguments input: '{}'", args);
 
         String[] argsArray = args.split(" ");
 
@@ -441,7 +403,7 @@ public class TpllCommand {
             if (parsedHeight != null) {
                 LatLng latLng = CoordinateParseUtils.parseVerbatimCoordinates(String.join(" ", inverseSelectArray(argsArray, argsArray.length - 1)));
                 if (latLng != null) {
-                    return new LatLongHeight(latLng, parsedHeight + yOffset);
+                    return new LatLongHeight(latLng, parsedHeight);
                 }
             }
         }
@@ -455,7 +417,9 @@ public class TpllCommand {
         return new LatLongHeight(null, null);
     }
 
-    /** Tries to parse a string as a double, returns null if parsing fails. */
+    /**
+     * Tries to parse a string as a double, returns null if parsing fails.
+     */
     @Contract(pure = true)
     private static @Nullable Double tryParseDouble(String value) {
         try {
@@ -469,7 +433,7 @@ public class TpllCommand {
      * Gets all objects in a string array under a given index
      * Example: {@code inverseSelectArray(["a", "b", "c"], 2)} → {@code ["a", "b"]}
      *
-     * @param args  Initial array
+     * @param args    Initial array
      * @param toIndex Starting index
      * @return Selected array
      */
@@ -480,7 +444,11 @@ public class TpllCommand {
     // </editor-fold>
 
     // <editor-fold desc="Inner Classes">
-    /** Parsed coordinates with optional height. */
-    private record LatLongHeight(LatLng latLng, Double height) { }
+
+    /**
+     * Parsed coordinates with optional height.
+     */
+    private record LatLongHeight(LatLng latLng, Double height) {
+    }
     // </editor-fold>
 }
