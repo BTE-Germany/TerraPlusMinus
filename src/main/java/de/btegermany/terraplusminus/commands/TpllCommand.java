@@ -30,6 +30,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.generator.ChunkGenerator;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -93,12 +94,28 @@ public class TpllCommand {
         double maxLon = config.getDouble(Properties.MAX_LON);
 
         ChunkGenerator generator = tpWorld.getGenerator();
-        if (!(generator instanceof RealWorldGenerator terraGenerator)) { // after server reloads the generator isn't instanceof RealWorldGenerator anymore
-            sender.sendMessage(prefix + "§cThis is not a Terraplusmins world.");
-            Terraplusminus.instance.getComponentLogger().warn("This is not a Terraplusminus world: {}." +
-                    "The world generator must be set to Terraplusminus for T+- to work." +
-                    "Remove the permission t+-.tpll for this world if you don't want to see this warning.", tpWorld.getName());
-            return;
+        RealWorldGenerator terraGenerator = null;
+        if (!(generator instanceof RealWorldGenerator tg)) {
+            var worlds = Bukkit.getWorlds();
+            if (target.hasPermission("t+-.tpll.otherWorld")) {
+                for (var world : worlds) {
+                    if (world.getGenerator() instanceof RealWorldGenerator gen) {
+                        terraGenerator = gen;
+                        tpWorld = world;
+                        break;
+                    }
+                }
+            }
+
+            if (terraGenerator == null) {
+                sender.sendMessage(prefix + "§cThis is not a Terraplusmins world.");
+                Terraplusminus.instance.getComponentLogger().warn("This is not a Terraplusminus world: {}." +
+                        "The world generator must be set to Terraplusminus for T+- to work." +
+                        "Remove the permission t+-.tpll for this world if you don't want to see this warning.", tpWorld.getName());
+                return;
+            }
+        } else {
+            terraGenerator = tg;
         }
         EarthGeneratorSettings generatorSettings = terraGenerator.getSettings();
         GeographicProjection projection = generatorSettings.projection();
@@ -143,10 +160,11 @@ public class TpllCommand {
         if (latLngHeight.height() == null) {
             int roundedX = (int) Math.round(x);
             int roundedZ = (int) Math.round(z);
+            World finalTpWorld = tpWorld;
             terraGenerator.getBaseHeightAsync(roundedX, roundedZ)
                     .thenAcceptAsync(baseHeight ->
                             finalizeTeleport(target,
-                                    tpWorld,
+                                    finalTpWorld,
                                     new Vector(x, baseHeight.groundHeight(roundedX - ChunkPos.cubeToMinBlock(ChunkPos.blockToCube(roundedX)),
                                             roundedX - ChunkPos.cubeToMinBlock(ChunkPos.blockToCube(roundedX))), z),
                                     latLngHeight.latLng(),
@@ -195,7 +213,7 @@ public class TpllCommand {
             target.sendMessage(prefix + "§7Teleporting to linked world...");
             target.teleportAsync(new Location(linkedWorld, mcCoords.getX() + xOff, newHeight, mcCoords.getZ() + zOff, target.getLocation().getYaw(), target.getLocation().getPitch()))
                     .thenAcceptAsync(success -> {
-                        if (success)
+                        if (Boolean.TRUE.equals(success))
                             target.sendMessage(prefix + "§7Teleported to " + geoCoords.getLat() + ", " + geoCoords.getLng() + ", " + mcCoords.getBlockY() + ".");
                     });
         }
@@ -264,7 +282,7 @@ public class TpllCommand {
      */
     private static void sendPluginMessageToBungeeBridge(boolean isNextServer, @NotNull Player player,
                                                         LatLng geoCoords) {
-        Terraplusminus plugin = (Terraplusminus) Terraplusminus.getProvidingPlugin(Terraplusminus.class);
+        Terraplusminus plugin = (Terraplusminus) JavaPlugin.getProvidingPlugin(Terraplusminus.class);
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF(player.getUniqueId().toString());
         LinkedWorld server;
