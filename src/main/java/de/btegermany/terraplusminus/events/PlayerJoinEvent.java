@@ -22,7 +22,7 @@ public class PlayerJoinEvent implements Listener {
     @EventHandler
     private void onPlayerJoin(org.bukkit.event.player.@NonNull PlayerJoinEvent event) {
         if (plugin.getRegisteredServerName() == null && plugin.getConfig().getBoolean(Properties.LINKED_WORLDS_ENABLED)
-                && plugin.getConfig().getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("SERVER")) {
+                && plugin.getConfig().getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase(Properties.NonConfigurable.METHOD_SRV)) {
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 plugin.getComponentLogger().info("Sending plugin message to BungeeCord to get server name.");
                 ByteArrayDataOutput out = ByteStreams.newDataOutput();
@@ -31,7 +31,7 @@ public class PlayerJoinEvent implements Listener {
             }, 20);
         }
         if (playerHashMapManagement.containsPlayer(event.getPlayer())) {
-            event.getPlayer().chat("/tpll " + playerHashMapManagement.getCoordinates(event.getPlayer()));
+            event.getPlayer().performCommand("tpll " + playerHashMapManagement.getCoordinates(event.getPlayer()));
             playerHashMapManagement.removePlayer(event.getPlayer());
         }
     }

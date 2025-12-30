@@ -2,6 +2,7 @@ package de.btegermany.terraplusminus.events;
 
 import de.btegermany.terraplusminus.utils.ConfigurationHelper;
 import de.btegermany.terraplusminus.utils.LinkedWorld;
+import de.btegermany.terraplusminus.utils.Properties;
 import lombok.NonNull;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -36,29 +37,29 @@ public class PlayerMoveEvent implements Listener {
     private static final long TELEPORT_COOLDOWN_MS = 5000; // 5 seconds
     private final ConcurrentHashMap<UUID, Long> teleportCooldowns = new ConcurrentHashMap<>();
 
-    public PlayerMoveEvent(Plugin plugin) {
+    public PlayerMoveEvent(@org.jspecify.annotations.NonNull Plugin plugin) {
         this.plugin = plugin;
-        xOffset = plugin.getConfig().getInt("terrain_offset.x");
-        yOffsetConfigEntry = plugin.getConfig().getInt("terrain_offset.y");
-        zOffset = plugin.getConfig().getInt("terrain_offset.z");
-        linkedWorldsEnabled = plugin.getConfig().getBoolean("linked_worlds.enabled");
-        linkedWorldsMethod = plugin.getConfig().getString("linked_worlds.method");
+        xOffset = plugin.getConfig().getInt(Properties.X_OFFSET, 0);
+        yOffsetConfigEntry = plugin.getConfig().getInt(Properties.Y_OFFSET, 0);
+        zOffset = plugin.getConfig().getInt(Properties.Z_OFFSET, 0);
+        linkedWorldsEnabled = plugin.getConfig().getBoolean(Properties.LINKED_WORLDS_ENABLED);
+        linkedWorldsMethod = plugin.getConfig().getString(Properties.LINKED_WORLDS_METHOD);
         worldHashMap = new HashMap<>();
         if (linkedWorldsEnabled && linkedWorldsMethod != null
-                && linkedWorldsMethod.equalsIgnoreCase("MULTIVERSE")) {
+                && linkedWorldsMethod.equalsIgnoreCase(Properties.NonConfigurable.METHOD_MV)) {
             List<LinkedWorld> worlds = ConfigurationHelper.getWorlds();
             for (LinkedWorld world : worlds) {
                 this.worldHashMap.put(world.getWorldName(), world.getOffset());
             }
             plugin.getComponentLogger().info("Linked worlds enabled, using Multiverse method.");
         }
-        if (plugin.getConfig().getBoolean("height_in_actionbar")) startKeepActionBarAlive();
+        if (plugin.getConfig().getBoolean(Properties.ACTIONBAR_HEIGHT)) startKeepActionBarAlive();
     }
 
     @EventHandler
     void onPlayerMove(org.bukkit.event.player.@NotNull PlayerMoveEvent event) {
         Player player = event.getPlayer();
-        if (plugin.getConfig().getBoolean("height_in_actionbar")) setHeightInActionBar(player);
+        if (plugin.getConfig().getBoolean(Properties.ACTIONBAR_HEIGHT)) setHeightInActionBar(player);
     }
 
     private void startKeepActionBarAlive() {
@@ -79,7 +80,7 @@ public class PlayerMoveEvent implements Listener {
 
     @EventHandler
     void onPlayerFall(org.bukkit.event.player.PlayerMoveEvent event) {
-        if (!this.linkedWorldsEnabled && !this.linkedWorldsMethod.equalsIgnoreCase("MULTIVERSE")) {
+        if (!this.linkedWorldsEnabled && !this.linkedWorldsMethod.equalsIgnoreCase(Properties.NonConfigurable.METHOD_MV)) {
             return;
         }
 
@@ -125,7 +126,7 @@ public class PlayerMoveEvent implements Listener {
         Location newLocation = new Location(tpWorld, location.getX() + xOffset, height, location.getZ() + zOffset, location.getYaw(), location.getPitch());
         p.teleportAsync(newLocation);
         if (p.getAllowFlight()) p.setFlying(true);
-        p.sendMessage(plugin.getConfig().getString("prefix") + "§7You have been teleported to another world.");
+        p.sendMessage(plugin.getConfig().getString(Properties.CHAT_PREFIX) + "§7You have been teleported to another world.");
     }
 
     private boolean isOnTeleportCooldown(@NonNull Player player) {

@@ -9,12 +9,7 @@ import de.btegermany.terraplusminus.events.PlayerJoinEvent;
 import de.btegermany.terraplusminus.events.PlayerMoveEvent;
 import de.btegermany.terraplusminus.events.PluginMessageEvent;
 import de.btegermany.terraplusminus.gen.RealWorldGenerator;
-import de.btegermany.terraplusminus.utils.ConfigurationHelper;
-import de.btegermany.terraplusminus.utils.FolderMigrator;
-import de.btegermany.terraplusminus.utils.LinkedWorld;
-import de.btegermany.terraplusminus.utils.PlayerHashMapManagement;
-import de.btegermany.terraplusminus.utils.PluginConfigManipulator;
-import de.btegermany.terraplusminus.utils.Properties;
+import de.btegermany.terraplusminus.utils.*;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.configuration.PluginMeta;
 import io.papermc.paper.plugin.lifecycle.event.LifecycleEventManager;
@@ -107,7 +102,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
             Bukkit.getPluginManager().registerEvents(new PlayerJoinEvent(playerHashMapManagement, this), this);
         }
 
-        String passthroughTpll = getConfig().getString(Properties.PASSTRHROUGH_TPLL);
+        String passthroughTpll = getConfig().getString(Properties.PASSTHROUGH_TPLL);
         if (passthroughTpll != null && !passthroughTpll.isEmpty()) {
             Bukkit.getPluginManager().registerEvents(new PlayerCommandPreprocessEvent(passthroughTpll), this);
         }
@@ -136,7 +131,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
     @EventHandler
     public void onWorldInit(@NotNull WorldInitEvent event) {
         World world = event.getWorld();
-        boolean shouldInstallHeightDatapack = getConfig().getBoolean("height_datapack");
+        boolean shouldInstallHeightDatapack = getConfig().getBoolean(Properties.HEIGHT_DATAPACK);
         boolean isDefaultWorld = Bukkit.getWorlds().getFirst().getUID().equals(world.getUID());
         if (shouldInstallHeightDatapack && isDefaultWorld) {
             // Datapacks should be installed in the default world and will apply to all of them.
@@ -152,16 +147,16 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         // Multiverse different y-offset support
         int yOffset = 0;
         if (getConfig().getBoolean(Properties.LINKED_WORLDS_ENABLED)
-                && getConfig().getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("MULTIVERSE")) {
+                && getConfig().getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase(Properties.NonConfigurable.METHOD_MV)) {
             for (LinkedWorld world : ConfigurationHelper.getWorlds()) {
                 if (world.getWorldName().equalsIgnoreCase(worldName)) {
                     yOffset = world.getOffset();
                 }
             }
         } else {
-            yOffset = getConfig().getInt("y_offset");
+            yOffset = getConfig().getInt(Properties.Y_OFFSET);
         }
-        return new RealWorldGenerator(yOffset);
+        return new RealWorldGenerator(yOffset, this);
     }
 
 
@@ -207,7 +202,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
             this.getComponentLogger().error("Old config detected. Please delete and restart/reload.");
         }
         if (configVersion == 1.0) {
-            String passthroughTpll = getConfig().getString(Properties.PASSTRHROUGH_TPLL, "");
+            String passthroughTpll = getConfig().getString(Properties.PASSTHROUGH_TPLL, "");
             int y = (int) getConfig().getDouble("terrain_offset");
             getConfig().set("terrain_offset.x", 0);
             getConfig().set("terrain_offset.y", y);

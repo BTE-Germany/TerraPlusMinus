@@ -36,7 +36,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.bukkit.ChatColor.RED;
 
@@ -49,7 +51,7 @@ import static org.bukkit.ChatColor.RED;
  *     <li>Direct teleportation using latitude and longitude</li>
  *     <li>Optional height specification</li>
  *     <li>Teleporting other players (with appropriate permissions)</li>
- *     <li>Cross-world teleportation via Multiverse or BungeeCord</li>
+ *     <li>Cross-world teleportation via Multiverse or Proxy</li>
  * </ul>
  *
  * @see RealWorldGenerator
@@ -85,10 +87,10 @@ public class TpllCommand {
     private static void execute(CommandSender sender, @NotNull Player target, @NotNull String args) {
         World tpWorld = target.getWorld();
         FileConfiguration config = Terraplusminus.instance.getConfig();
-        double minLat = config.getDouble("min_latitude");
-        double maxLat = config.getDouble("max_latitude");
-        double minLon = config.getDouble("min_longitude");
-        double maxLon = config.getDouble("max_longitude");
+        double minLat = config.getDouble(Properties.MIN_LAT);
+        double maxLat = config.getDouble(Properties.MAX_LAT);
+        double minLon = config.getDouble(Properties.MIN_LON);
+        double maxLon = config.getDouble(Properties.MAX_LON);
 
         ChunkGenerator generator = tpWorld.getGenerator();
         if (!(generator instanceof RealWorldGenerator terraGenerator)) { // after server reloads the generator isn't instanceof RealWorldGenerator anymore
@@ -173,23 +175,24 @@ public class TpllCommand {
      * @param zOff      The configured Z-offset
      */
     private static void handleLinkedWorlds(Player target, boolean isNext, LatLng geoCoords, @NonNull Vector mcCoords, int xOff, int zOff) {
-        String method = Terraplusminus.config.getString("linked_worlds.method", "");
-        if (!Terraplusminus.config.getBoolean("linked_worlds.enabled") || !(method.equalsIgnoreCase("SERVER") || method.equalsIgnoreCase("MULTIVERSE"))) {
-            target.sendMessage(Terraplusminus.config.getString("prefix") + RED + "World height limit reached!");
+        String method = Terraplusminus.config.getString(Properties.LINKED_WORLDS_METHOD, "");
+        if (!Terraplusminus.config.getBoolean(Properties.LINKED_WORLDS_ENABLED) ||
+                !(method.equalsIgnoreCase(Properties.NonConfigurable.METHOD_SRV) || method.equalsIgnoreCase(Properties.NonConfigurable.METHOD_MV))) {
+            target.sendMessage(prefix + RED + "World height limit reached!");
             return;
         }
 
-        if (method.equalsIgnoreCase("SERVER")) {
+        if (method.equalsIgnoreCase(Properties.NonConfigurable.METHOD_SRV)) {
             sendPluginMessageToBungeeBridge(isNext, target, geoCoords);
-        } else if (method.equalsIgnoreCase("MULTIVERSE")) {
+        } else if (method.equalsIgnoreCase(Properties.NonConfigurable.METHOD_MV)) {
             LinkedWorld linked = isNext ? ConfigurationHelper.getNextServerName(target.getWorld().getName()) : ConfigurationHelper.getPreviousServerName(target.getWorld().getName());
             if (linked == null) {
-                target.sendMessage(Terraplusminus.config.getString("prefix") + RED + "No linked world found!");
+                target.sendMessage(prefix + RED + "No linked world found!");
                 return;
             }
             World linkedWorld = Bukkit.getWorld(linked.getWorldName());
             double newHeight = mcCoords.getY() + linked.getOffset() + 1;
-            target.sendMessage(Terraplusminus.config.getString("prefix") + "§7Teleporting to linked world...");
+            target.sendMessage(prefix + "§7Teleporting to linked world...");
             target.teleportAsync(new Location(linkedWorld, mcCoords.getX() + xOff, newHeight, mcCoords.getZ() + zOff, target.getLocation().getYaw(), target.getLocation().getPitch()))
                     .thenAcceptAsync(success -> {
                         if (success)
@@ -211,8 +214,8 @@ public class TpllCommand {
      * @param yOffset   The configured terrain offset
      */
     private static void finalizeTeleport(@NotNull Player target, @NonNull World tpWorld, @NonNull Vector mcCoords, LatLng geoCoords, @NonNull FileConfiguration config, int yOffset) {
-        int xOffset = config.getInt("terrain_offset.x");
-        int zOffset = config.getInt("terrain_offset.z");
+        int xOffset = config.getInt(Properties.X_OFFSET);
+        int zOffset = config.getInt(Properties.Z_OFFSET);
         int destinationY = mcCoords.getBlockY() + yOffset + 1; // You want to stand above the block you are teleporting to
 
         Terraplusminus.instance.getComponentLogger().debug("Current world max height: {}, min height: {}, requested height: {}", tpWorld.getMaxHeight(), tpWorld.getMinHeight(), destinationY);
@@ -250,10 +253,10 @@ public class TpllCommand {
     }
 
     /**
-     * Sends a plugin message to the BungeeCord bridge for cross-server teleportation.
+     * Sends a plugin message to the Proxy bridge for cross-server teleportation.
      * <p>
      * Used when the target height is outside the current world's bounds and the server
-     * is configured to use BungeeCord for linked worlds.
+     * is configured to use Proxy for linked worlds.
      *
      * @param isNextServer {@code true} to teleport to a higher world, {@code false} for lower
      * @param player       The player to teleport
@@ -278,7 +281,7 @@ public class TpllCommand {
             return;
         }
         out.writeUTF(geoCoords.getLat() + ", " + geoCoords.getLng());
-        player.sendPluginMessage(plugin, "bungeecord:terraplusminus", out.toByteArray());
+        player.sendPluginMessage(plugin, Properties.NonConfigurable.CROSS_TELEPORTATION_CHANNEL, out.toByteArray());
 
         player.sendMessage(prefix + "§cSending to another server...");
     }
@@ -299,7 +302,7 @@ public class TpllCommand {
      * @return The configured {@link LiteralCommandNode} for registration
      */
     public static LiteralCommandNode<CommandSourceStack> create() {
-        prefix = Terraplusminus.instance.getConfig().getString("prefix");
+        prefix = Terraplusminus.instance.getConfig().getString(Properties.CHAT_PREFIX);
 
         // Structure:
         // /tpll <coords>                       -> self teleport

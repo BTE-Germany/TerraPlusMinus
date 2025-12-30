@@ -4,6 +4,7 @@ import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteStreams;
 import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.utils.PlayerHashMapManagement;
+import de.btegermany.terraplusminus.utils.Properties;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.PluginMessageListener;
@@ -28,7 +29,7 @@ public class PluginMessageEvent implements PluginMessageListener {
     @Override
     public void onPluginMessageReceived(@NotNull String channel, @NotNull Player player, byte @NotNull [] message) {
         tpm.getComponentLogger().debug("Received plugin message on channel: {}", channel);
-        if (channel.equals("bungeecord:terraplusminus")) {
+        if (channel.equals(Properties.NonConfigurable.CROSS_TELEPORTATION_CHANNEL)) {
             DataInputStream in = new DataInputStream(new ByteArrayInputStream(message));
             try {
                 UUID playerUUID = UUID.fromString(in.readUTF());
@@ -39,7 +40,7 @@ public class PluginMessageEvent implements PluginMessageListener {
                     playerHashMapManagement.addPlayer(player, coordinates);
                 } else {
                     // online
-                    targetPlayer.chat("/tpll " + coordinates);
+                    targetPlayer.performCommand("tpll " + coordinates);
                 }
             } catch (IOException e) {
                 tpm.getComponentLogger().warn("Failed to read plugin message", e);

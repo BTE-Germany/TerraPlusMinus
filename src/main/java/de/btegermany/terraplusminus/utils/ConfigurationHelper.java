@@ -4,6 +4,8 @@ import de.btegermany.terraplusminus.Terraplusminus;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
@@ -36,14 +38,14 @@ public final class ConfigurationHelper {
         throw new IllegalStateException();
     }
 
-    public static List<LinkedWorld> convertList(List<Map<?, ?>> originalList) {
+    public static List<LinkedWorld> convertList(@NonNull List<Map<?, ?>> originalList) {
         return originalList.stream()
                 .map(ConfigurationHelper::convertMapToLinkedWorld)
                 .filter(world -> !world.getWorldName().equalsIgnoreCase("another_world/server") || !world.getWorldName().equalsIgnoreCase("current_world/server"))
                 .collect(Collectors.toList());
     }
 
-    private static LinkedWorld convertMapToLinkedWorld(Map<?, ?> originalMap) {
+    private static @NonNull LinkedWorld convertMapToLinkedWorld(@NonNull Map<?, ?> originalMap) {
         String worldName = originalMap.get("name").toString();
         int offset = (Integer) originalMap.get("offset");
         return new LinkedWorld(worldName, offset);
@@ -57,7 +59,7 @@ public final class ConfigurationHelper {
         return convertList(Terraplusminus.instance.getConfig().getMapList("linked_worlds.worlds"));
     }
 
-    public static LinkedWorld getNextServerName(String currentWorldName) {
+    public static @Nullable LinkedWorld getNextServerName(String currentWorldName) {
         List<LinkedWorld> worlds = getWorldsList();
         int currentIndex = -1;
 
@@ -83,7 +85,7 @@ public final class ConfigurationHelper {
         }
     }
 
-    public static LinkedWorld getPreviousServerName(String currentWorldName) {
+    public static @Nullable LinkedWorld getPreviousServerName(String currentWorldName) {
         List<LinkedWorld> worlds = getWorldsList();
         int currentIndex = -1;
 
