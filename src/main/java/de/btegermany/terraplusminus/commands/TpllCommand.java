@@ -147,6 +147,8 @@ public class TpllCommand {
                     yOffset,
                     latLngHeight.latLng(),
                     config));
+        } else {
+            checkAndTeleportIfCorrectWorld(target, tpWorld, new Vector(x, height, z), yOffset, latLngHeight.latLng(), config);
         }
     }
 
@@ -230,21 +232,25 @@ public class TpllCommand {
      */
     private static void checkAndTeleportIfCorrectWorld(@NotNull Player target, World tpWorld, @NonNull Vector cord, double yOffset, LatLng latLng, FileConfiguration config) {
         String msgPart1 = prefix + "§cYou cannot tpll to these coordinates, because the world is not ";
-        String msgPart2 = "enough at the moment.";
+        String msgPart2 = " enough at the moment.";
 
         if (cord.getBlockY() > target.getWorld().getMaxHeight()) {
             if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("SERVER")) {
                 // send player uuid and coordinates to bungee
                 sendPluginMessageToBungeeBridge(true, target, latLng.getLat(), latLng.getLng());
+                return;
             } else if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("MULTIVERSE")) {
                 teleportToNextMultiverseWorld(target, cord.getY(), yOffset, latLng, cord.getX(), cord.getZ());
+                return;
             }
         } else if (cord.getBlockY() <= target.getWorld().getMinHeight()) {
             if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("SERVER")) {
                 // send player uuid and coordinates to bungee
                 sendPluginMessageToBungeeBridge(false, target, latLng.getLat(), latLng.getLng());
+                return;
             } else if (config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("MULTIVERSE")) {
                 teleportToPreviousMultiverseWorld(target, cord.getY(), yOffset, latLng, cord.getX(), cord.getZ());
+                return;
             }
         }
 
@@ -424,8 +430,7 @@ public class TpllCommand {
     private static @NotNull LatLongHeight parseArguments(String args, int yOffset) {
         Terraplusminus.instance.getComponentLogger().debug("parseArguments input: '{}', yOffset: {}", args, yOffset);
 
-        String[] argsArray = args.split("\\s+");
-        Terraplusminus.instance.getComponentLogger().debug("Split into {} parts: {}", argsArray.length, Arrays.toString(argsArray));
+        String[] argsArray = args.split(" ");
 
         // Try parsing coordinates with height at the end (need at least 3 parts: lat, lon, height)
         if (argsArray.length >= 3) {
@@ -435,7 +440,6 @@ public class TpllCommand {
             Terraplusminus.instance.getComponentLogger().debug("Parsed height: {}", parsedHeight);
             if (parsedHeight != null) {
                 LatLng latLng = CoordinateParseUtils.parseVerbatimCoordinates(String.join(" ", inverseSelectArray(argsArray, argsArray.length - 1)));
-                Terraplusminus.instance.getComponentLogger().debug("Parsed latLng (with height): {}", latLng);
                 if (latLng != null) {
                     return new LatLongHeight(latLng, parsedHeight + yOffset);
                 }
@@ -444,7 +448,6 @@ public class TpllCommand {
 
         // Try parsing the full string as coordinates (no height specified)
         LatLng latLng = CoordinateParseUtils.parseVerbatimCoordinates(args);
-        Terraplusminus.instance.getComponentLogger().debug("Parsed latLng (full string): {}", latLng);
         if (latLng != null) {
             return new LatLongHeight(latLng, null);
         }

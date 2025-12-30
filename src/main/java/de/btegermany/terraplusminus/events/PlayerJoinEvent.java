@@ -4,6 +4,8 @@ import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.utils.PlayerHashMapManagement;
+import de.btegermany.terraplusminus.utils.Properties;
+import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.jspecify.annotations.NonNull;
@@ -19,10 +21,14 @@ public class PlayerJoinEvent implements Listener {
 
     @EventHandler
     private void onPlayerJoin(org.bukkit.event.player.@NonNull PlayerJoinEvent event) {
-        if (plugin.getRegisteredServerName() == null) {
-            ByteArrayDataOutput out = ByteStreams.newDataOutput();
-            out.writeUTF("GetServer");
-            event.getPlayer().sendPluginMessage(plugin, "BungeeCord", out.toByteArray());
+        if (plugin.getRegisteredServerName() == null && plugin.getConfig().getBoolean(Properties.LINKED_WORLDS_ENABLED)
+                && plugin.getConfig().getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("SERVER")) {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                plugin.getComponentLogger().info("Sending plugin message to BungeeCord to get server name.");
+                ByteArrayDataOutput out = ByteStreams.newDataOutput();
+                out.writeUTF("GetServer");
+                event.getPlayer().sendPluginMessage(plugin, "BungeeCord", out.toByteArray());
+            }, 20);
         }
         if (playerHashMapManagement.containsPlayer(event.getPlayer())) {
             event.getPlayer().chat("/tpll " + playerHashMapManagement.getCoordinates(event.getPlayer()));

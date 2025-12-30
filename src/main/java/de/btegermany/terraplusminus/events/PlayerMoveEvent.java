@@ -1,6 +1,5 @@
 package de.btegermany.terraplusminus.events;
 
-import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.utils.ConfigurationHelper;
 import de.btegermany.terraplusminus.utils.LinkedWorld;
 import lombok.NonNull;
@@ -39,27 +38,27 @@ public class PlayerMoveEvent implements Listener {
 
     public PlayerMoveEvent(Plugin plugin) {
         this.plugin = plugin;
-        this.xOffset = Terraplusminus.config.getInt("terrain_offset.x");
-        this.yOffsetConfigEntry = Terraplusminus.config.getInt("terrain_offset.y");
-        this.zOffset = Terraplusminus.config.getInt("terrain_offset.z");
-        this.linkedWorldsEnabled = Terraplusminus.config.getBoolean("linked_worlds.enabled");
-        this.linkedWorldsMethod = Terraplusminus.config.getString("linked_worlds.method");
-        this.worldHashMap = new HashMap<>();
-        if (this.linkedWorldsEnabled && this.linkedWorldsMethod != null
-                && this.linkedWorldsMethod.equalsIgnoreCase("MULTIVERSE")) {
+        xOffset = plugin.getConfig().getInt("terrain_offset.x");
+        yOffsetConfigEntry = plugin.getConfig().getInt("terrain_offset.y");
+        zOffset = plugin.getConfig().getInt("terrain_offset.z");
+        linkedWorldsEnabled = plugin.getConfig().getBoolean("linked_worlds.enabled");
+        linkedWorldsMethod = plugin.getConfig().getString("linked_worlds.method");
+        worldHashMap = new HashMap<>();
+        if (linkedWorldsEnabled && linkedWorldsMethod != null
+                && linkedWorldsMethod.equalsIgnoreCase("MULTIVERSE")) {
             List<LinkedWorld> worlds = ConfigurationHelper.getWorlds();
             for (LinkedWorld world : worlds) {
                 this.worldHashMap.put(world.getWorldName(), world.getOffset());
             }
-            Terraplusminus.instance.getComponentLogger().info("Linked worlds enabled, using Multiverse method.");
+            plugin.getComponentLogger().info("Linked worlds enabled, using Multiverse method.");
         }
-        this.startKeepActionBarAlive();
+        if (plugin.getConfig().getBoolean("height_in_actionbar")) startKeepActionBarAlive();
     }
 
     @EventHandler
     void onPlayerMove(org.bukkit.event.player.@NotNull PlayerMoveEvent event) {
         Player player = event.getPlayer();
-        setHeightInActionBar(player);
+        if (plugin.getConfig().getBoolean("height_in_actionbar")) setHeightInActionBar(player);
     }
 
     private void startKeepActionBarAlive() {
@@ -126,7 +125,7 @@ public class PlayerMoveEvent implements Listener {
         Location newLocation = new Location(tpWorld, location.getX() + xOffset, height, location.getZ() + zOffset, location.getYaw(), location.getPitch());
         p.teleportAsync(newLocation);
         if (p.getAllowFlight()) p.setFlying(true);
-        p.sendMessage(Terraplusminus.config.getString("prefix") + "§7You have been teleported to another world.");
+        p.sendMessage(plugin.getConfig().getString("prefix") + "§7You have been teleported to another world.");
     }
 
     private boolean isOnTeleportCooldown(@NonNull Player player) {

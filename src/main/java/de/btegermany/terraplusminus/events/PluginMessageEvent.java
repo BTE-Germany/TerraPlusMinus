@@ -27,6 +27,7 @@ public class PluginMessageEvent implements PluginMessageListener {
 
     @Override
     public void onPluginMessageReceived(@NotNull String channel, @NotNull Player player, byte @NotNull [] message) {
+        tpm.getComponentLogger().debug("Received plugin message on channel: {}", channel);
         if (channel.equals("bungeecord:terraplusminus")) {
             DataInputStream in = new DataInputStream(new ByteArrayInputStream(message));
             try {
@@ -43,11 +44,13 @@ public class PluginMessageEvent implements PluginMessageListener {
             } catch (IOException e) {
                 tpm.getComponentLogger().warn("Failed to read plugin message", e);
             }
-        } else if (channel.equals("Bungeecord") && tpm.getRegisteredServerName() == null) {
+        } else if (channel.equals("BungeeCord") && tpm.getRegisteredServerName() == null) {
             ByteArrayDataInput in = ByteStreams.newDataInput(message);
             String subchannel = in.readUTF();
             if (subchannel.equals("GetServer")) {
-                tpm.setRegisteredServerName(in.readUTF());
+                String serverName = in.readUTF();
+                tpm.setRegisteredServerName(serverName);
+                tpm.getComponentLogger().info("Registered server name: {}", serverName);
             }
         }
     }

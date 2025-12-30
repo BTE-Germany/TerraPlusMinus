@@ -9,7 +9,12 @@ import de.btegermany.terraplusminus.events.PlayerJoinEvent;
 import de.btegermany.terraplusminus.events.PlayerMoveEvent;
 import de.btegermany.terraplusminus.events.PluginMessageEvent;
 import de.btegermany.terraplusminus.gen.RealWorldGenerator;
-import de.btegermany.terraplusminus.utils.*;
+import de.btegermany.terraplusminus.utils.ConfigurationHelper;
+import de.btegermany.terraplusminus.utils.FolderMigrator;
+import de.btegermany.terraplusminus.utils.LinkedWorld;
+import de.btegermany.terraplusminus.utils.PlayerHashMapManagement;
+import de.btegermany.terraplusminus.utils.PluginConfigManipulator;
+import de.btegermany.terraplusminus.utils.Properties;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.configuration.PluginMeta;
 import io.papermc.paper.plugin.lifecycle.event.LifecycleEventManager;
@@ -88,12 +93,14 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         if (getConfig().getBoolean(Properties.LINKED_WORLDS_ENABLED) && getConfig().getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("SERVER")) {
             this.getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
             this.getServer().getMessenger().registerIncomingPluginChannel(this, "BungeeCord", pluginMessageListener);
+            getComponentLogger().debug("Linked server initialization successful");
         }
         // --------------------------
 
         // Registering events
         Bukkit.getPluginManager().registerEvents(this, this);
-        if (getConfig().getBoolean("height_in_actionbar")) {
+        if (getConfig().getBoolean("height_in_actionbar") ||
+                (getConfig().getBoolean(Properties.LINKED_WORLDS_ENABLED) && getConfig().getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("MULTIVERSE"))) {
             Bukkit.getPluginManager().registerEvents(new PlayerMoveEvent(this), this);
         }
         if (getConfig().getBoolean(Properties.LINKED_WORLDS_ENABLED)) {
