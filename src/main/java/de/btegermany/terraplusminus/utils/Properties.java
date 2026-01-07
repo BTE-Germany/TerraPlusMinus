@@ -22,6 +22,9 @@ public class Properties {
     public static final String BUILDING_OUTLINES_MATERIAL = "building_outlines_material";
     public static final String ROAD_MATERIAL = "road_material";
     public static final String PATH_MATERIAL = "path_material";
+    public static final String GENERATE_TREES = "generate_trees";
+    public static final String USE_LEGACY_BIOME_DATASET = "biomes.legacy_dataset";
+    public static final String REDUCED_CONSOLE_MSG = "reduced_console_messages";
 
     public class NonConfigurable {
         public static final String METHOD_MV = "MULTIVERSE";

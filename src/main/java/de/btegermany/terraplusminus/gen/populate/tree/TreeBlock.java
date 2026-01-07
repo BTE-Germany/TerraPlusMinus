@@ -1,4 +1,4 @@
-package de.btegermany.terraplusminus.gen.tree;
+package de.btegermany.terraplusminus.gen.populate.tree;
 
 import org.bukkit.Material;
 

@@ -42,6 +42,7 @@ TerraPlusMinus is a plugin which generates the real world terrain and outlines i
 - set coordinate bounds to prevent players from teleporting to areas, which are being worked on by other build teams
 - custom tree generation
 - link your servers to generate different height sections ([preview](https://youtu.be/oqROhmaSxgY?si=Hl8zi3lAVEWfAGHy))
+- use plugin add-ons for improved features
 
 # Images
 
@@ -170,9 +171,14 @@ linked_worlds:
 # If disabled, tree generation is turned off.
 generate_trees: true
 
-# The biomes will be generated with https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification.
-# If turned off, everything will be plains biome.
-different_biomes: true
+biomes:
+  # If 'use_dataset' is enabled, biomes will be generated based on: https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification.
+  use_dataset: true
+  # If 'legacy_dataset' is enabled, biomes will be generated based on the legacy T121 biome dataset
+  legacy_dataset: false
+  # If 'use_dataset' is disabled, this biome will be used everywhere instead (if 'generate_trees' is also enabled -> oak and birch).
+  # Possible values found in "Resource location" on: https://minecraft.wiki/w/Biome#Biome_IDs (use with namespace e.g. minecraft:plains)
+  biome: minecraft:plains
 
 # Customize the material, the blocks will be generated with.
 surface_material: GRASS_BLOCK
