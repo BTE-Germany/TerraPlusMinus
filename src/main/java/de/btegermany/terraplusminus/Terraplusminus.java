@@ -308,6 +308,8 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
                     biomes:
                       # If 'use_dataset' is enabled, biomes will be generated based on: https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification.
                       use_dataset: USE_DATASET
+                      # If 'legacy_dataset' is enabled, biomes will be generated based on the legacy T121 biome dataset
+                      legacy_dataset: false
                       # If 'use_dataset' is disabled, this biome will be used everywhere instead (if 'generate_trees' is also enabled -> oak and birch).
                       # Possible values found in "Resource location" on: https://minecraft.wiki/w/Biome#Biome_IDs (use with namespace e.g. minecraft:plains)
                       biome: minecraft:plains

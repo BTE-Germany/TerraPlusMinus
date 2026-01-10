@@ -3,18 +3,19 @@ package de.btegermany.terraplusminus.gen;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import de.btegermany.terraplusminus.Terraplusminus;
-import de.btegermany.terraplusminus.gen.tree.TreePopulator;
+import de.btegermany.terraplusminus.gen.populate.RealWorldPopulator;
+import de.btegermany.terraplusminus.gen.populate.tree.TreePopulator;
 import de.btegermany.terraplusminus.utils.ConfigurationHelper;
 import de.btegermany.terraplusminus.utils.Properties;
 import lombok.Getter;
-import net.buildtheearth.terraminusminus.generator.CachedChunkData;
-import net.buildtheearth.terraminusminus.generator.ChunkDataLoader;
-import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
+import net.buildtheearth.terraminusminus.generator.*;
 import net.buildtheearth.terraminusminus.projection.GeographicProjection;
 import net.buildtheearth.terraminusminus.projection.transform.OffsetProjectionTransform;
 import net.buildtheearth.terraminusminus.substitutes.BlockState;
 import net.buildtheearth.terraminusminus.substitutes.ChunkPos;
 import net.buildtheearth.terraminusminus.util.http.Http;
+import net.daporkchop.lib.common.reference.ReferenceStrength;
+import net.daporkchop.lib.common.reference.cache.Cached;
 import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -45,10 +46,34 @@ public class RealWorldGenerator extends ChunkGenerator {
     @Getter
     private final EarthGeneratorSettings settings;
     @Getter
+    private final GeographicProjection projection;
+    @Getter
+    private final Terraplusminus plugin;
+    @Getter
     private final int yOffset;
+    @Getter
+    private final int xOffset;
+    @Getter
+    private final int zOffset;
     private Location spawnLocation = null;
 
+    @Getter
+    private final RealWorldPopulator[] populators;
+
+    protected transient final Cached<EarthBiomeProvider> biomeProvider;
+
+    public final EarthBiomeProvider getBiomeProvider() {
+        return biomeProvider.get();
+    }
+
+    protected final Cached<GeneratorDatasets> datasets;
+
+    public final GeneratorDatasets getDatasets(){
+        return datasets.get();
+    }
+
     private final LoadingCache<ChunkPos, CompletableFuture<CachedChunkData>> cache;
+    @Getter
     private final CustomBiomeProvider customBiomeProvider;
 
 
@@ -64,15 +89,20 @@ public class RealWorldGenerator extends ChunkGenerator {
     );
 
     public RealWorldGenerator(int yOffset, Terraplusminus plugin) {
+        this.plugin = plugin;
 
         Http.configChanged(); // This ensures the T-- default config is loaded regarding the number of concurrent http requests for specific urls.
 
         EarthGeneratorSettings settings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
 
+        //Ensure the offset is the nearest lower multiple of 16
+        this.xOffset = plugin.getConfig().getInt(Properties.X_OFFSET) & ~15;
+        this.zOffset = plugin.getConfig().getInt(Properties.Z_OFFSET) & ~15;
+
         GeographicProjection projection = new OffsetProjectionTransform(
                 settings.projection(),
-                plugin.getConfig().getInt(Properties.X_OFFSET),
-                plugin.getConfig().getInt(Properties.Z_OFFSET)
+                xOffset,
+                zOffset
         );
         if (yOffset == 0) {
             this.yOffset = plugin.getConfig().getInt(Properties.Y_OFFSET);
@@ -81,12 +111,21 @@ public class RealWorldGenerator extends ChunkGenerator {
         }
 
         this.settings = settings.withProjection(projection);
+        this.projection = projection;
 
-        this.customBiomeProvider = new CustomBiomeProvider(projection);
+        this.customBiomeProvider = new CustomBiomeProvider(this);
+
+        Map<String, Object> datasetsMap = RealWorldGeneratorPipelines.datasets(this.settings);
+        GeneratorDatasets generatorDatasets = new GeneratorDatasets(datasetsMap, this.projection);
+
+        datasets = Cached.global(() -> generatorDatasets, ReferenceStrength.SOFT);
+        biomeProvider = Cached.global(() -> new EarthBiomeProvider(generatorDatasets, RealWorldGeneratorPipelines.biomeFilters(this.settings, this, plugin.getConfig().getBoolean(Properties.USE_LEGACY_BIOME_DATASET))), ReferenceStrength.SOFT);
+
+        this.populators = RealWorldGeneratorPipelines.populators(this.settings, this);
         this.cache = CacheBuilder.newBuilder()
                 .expireAfterAccess(5L, TimeUnit.MINUTES)
                 .softValues()
-                .build(new ChunkDataLoader(this.settings));
+                .build(new ChunkDataLoader(getDatasets(), RealWorldGeneratorPipelines.dataBakers(this.settings, this, getBiomeProvider())));
 
         this.surfaceMaterial = ConfigurationHelper.getMaterial(plugin.getConfig(), Properties.SURFACE_MATERIAL, GRASS_BLOCK);
         this.materialMapping = Map.of(
@@ -213,12 +252,28 @@ public class RealWorldGenerator extends ChunkGenerator {
         }
     }
 
-    private CachedChunkData getTerraChunkData(int chunkX, int chunkZ) {
+    public CachedChunkData getTerraChunkData(int chunkX, int chunkZ) {
         try {
             return this.cache.getUnchecked(new ChunkPos(chunkX, chunkZ)).get();
         } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Unrecoverable exception when generating chunk data synchronously in Terra--", e);
+        }
+    }
+
+    public CompletableFuture<CachedChunkData> getTerraChunkDataAsync(int chunkX, int chunkZ) {
+        try {
+            return this.cache.getUnchecked(new ChunkPos(chunkX, chunkZ));
+        }catch (Exception e){
             throw new RuntimeException("Unrecoverable exception when generating chunk data asynchronously in Terra--", e);
         }
+    }
+
+    public ChunkPos getDataChunkPosFromChunk(int chunkX, int chunkZ){
+        return new ChunkPos(chunkX - (xOffset / 16), chunkZ - (zOffset / 16));
+    }
+
+    public ChunkPos getDataChunkPosFromBlock(int x, int z) {
+        return getDataChunkPosFromChunk( x >> 4, z >> 4);
     }
 
     @Override
@@ -259,7 +314,7 @@ public class RealWorldGenerator extends ChunkGenerator {
     @Override
     @NotNull
     public List<BlockPopulator> getDefaultPopulators(@NotNull World world) {
-        return Collections.singletonList(new TreePopulator(customBiomeProvider, yOffset));
+        return Arrays.asList(getPopulators());
     }
 
     @Override
@@ -268,5 +323,50 @@ public class RealWorldGenerator extends ChunkGenerator {
         if (spawnLocation == null)
             spawnLocation = new Location(world, 3517417, 58, -5288234);
         return spawnLocation;
+    }
+
+    @Override
+    public void generateBedrock(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull ChunkGenerator.ChunkData chunkData) {
+        // no bedrock, because bedrock bad
+    }
+
+    @Override
+    public void generateCaves(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull ChunkGenerator.ChunkData chunkData) {
+        // no caves, because caves scary
+    }
+
+    @Override
+    public boolean shouldGenerateNoise() {
+        return false;
+    }
+
+    @Override
+    public boolean shouldGenerateSurface() {
+        return false;
+    }
+
+    @Override
+    public boolean shouldGenerateBedrock() {
+        return false;
+    }
+
+    @Override
+    public boolean shouldGenerateCaves() {
+        return false;
+    }
+
+    @Override
+    public boolean shouldGenerateDecorations() {
+        return false;
+    }
+
+    @Override
+    public boolean shouldGenerateMobs() {
+        return false;
+    }
+
+    @Override
+    public boolean shouldGenerateStructures() {
+        return false;
     }
 }
