@@ -159,6 +159,13 @@ public class TpllCommand {
             return;
         }
 
+        if (config.getBoolean(Properties.LINKED_WORLDS_ENABLED) &&
+                config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase(Properties.NonConfigurable.METHOD_MV)
+                && latLngHeight.height() == null) {
+            Terraplusminus.instance.getComponentLogger().debug("Try to fetch elevation from Heightmaps...");
+            if (getHeightFromMapsAndTeleportIfThere(target, tpWorld, latLngHeight, yOffset, x, z)) return;
+        }
+
         if (latLngHeight.height() == null) {
             Terraplusminus.instance.getComponentLogger().debug("Fetching elevation from API...");
             int roundedX = (int) Math.round(x);
@@ -279,6 +286,32 @@ public class TpllCommand {
 
         target.teleportAsync(location, PlayerTeleportEvent.TeleportCause.COMMAND);
         target.sendMessage(prefix + "§7Teleported to " + geoCoords.getLat() + ", " + geoCoords.getLng() + ", " + (mcCoords.getBlockY() - yOffset) + ".");
+    }
+
+    private static boolean getHeightFromMapsAndTeleportIfThere(@NotNull Player target, World tpWorld, LatLongHeight latLngHeight, int yOffset, double x, double z) {
+        var worlds = ConfigurationHelper.getWorlds();
+        for (var world : worlds) {
+            if (world.getWorldName().equalsIgnoreCase(tpWorld.getName())) {
+                World linkedWorld = Bukkit.getWorld(world.getWorldName());
+                if (linkedWorld == null) {
+                    target.sendMessage(prefix + RED + "Linked world not found!");
+                    return false;
+                }
+                if (!linkedWorld.isChunkGenerated(ChunkPos.blockToCube((int) Math.round(x)), ChunkPos.blockToCube((int) Math.round(z))))
+                    continue;
+
+                Terraplusminus.instance.getComponentLogger().debug("Chunk is already generated, fetching height from Heightmap...");
+
+                int newHeight = tpWorld.getHighestBlockYAt((int) x, (int) z) + 1;
+                finalizeTeleport(target,
+                        linkedWorld,
+                        new Vector(x, newHeight, z),
+                        latLngHeight.latLng(),
+                        yOffset);
+                return true;
+            }
+        }
+        return false;
     }
     // </editor-fold>
 
