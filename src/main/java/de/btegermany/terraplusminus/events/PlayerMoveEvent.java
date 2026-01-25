@@ -19,7 +19,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -106,24 +105,25 @@ public class PlayerMoveEvent implements Listener {
                 if (p.getLocation().getY() < world.getMinHeight()) {
                     LinkedWorld previousServer = ConfigurationHelper.getPreviousServerName(world.getName());
                     if (previousServer != null) {
-                        teleportPlayer(previousServer, location, p, true);
+                        teleportPlayer(previousServer, location, p);
                     }
                 } else if (p.getLocation().getY() > world.getMaxHeight()) {
                     LinkedWorld nextServer = ConfigurationHelper.getNextServerName(world.getName());
                     if (nextServer != null) {
-                        teleportPlayer(nextServer, location, p, false);
+                        teleportPlayer(nextServer, location, p);
                     }
                 }
             }
         }.runTaskLater(plugin, 60L);
     }
 
-    private void teleportPlayer(@NotNull LinkedWorld linkedWorld, @NotNull Location location, Player p, boolean maxY) {
+    private void teleportPlayer(@NotNull LinkedWorld linkedWorld, @NotNull Location location, Player p) {
         setTeleportCooldown(p);
 
         World tpWorld = Bukkit.getWorld(linkedWorld.getWorldName());
-        int height = maxY ? Objects.requireNonNull(tpWorld).getMaxHeight() : Objects.requireNonNull(tpWorld).getMinHeight();
-        Location newLocation = new Location(tpWorld, location.getX() + xOffset, height, location.getZ() + zOffset, location.getYaw(), location.getPitch());
+
+        Location newLocation = new Location(tpWorld, location.getX() + xOffset, tpWorld.getHighestBlockYAt(location.getBlockX(), location.getBlockZ()),
+                location.getZ() + zOffset, location.getYaw(), location.getPitch());
         p.teleportAsync(newLocation);
         if (p.getAllowFlight()) p.setFlying(true);
         p.sendMessage(plugin.getConfig().getString(Properties.CHAT_PREFIX) + "§7You have been teleported to another world.");
