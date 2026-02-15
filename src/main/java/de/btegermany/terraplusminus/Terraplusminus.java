@@ -1,6 +1,7 @@
 package de.btegermany.terraplusminus;
 
 
+import de.btegermany.terraplusminus.commands.DistortionCommand;
 import de.btegermany.terraplusminus.commands.OffsetCommand;
 import de.btegermany.terraplusminus.commands.TpllCommand;
 import de.btegermany.terraplusminus.commands.WhereCommand;
@@ -324,6 +325,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
             commands.register(TpllCommand.create(), "tpll", List.of("tpc"));
             commands.register("where", "Gives you the longitude and latitude of your minecraft coordinates", new WhereCommand());
             commands.register("offset", "Displays the x,y and z offset of your world", new OffsetCommand());
+            commands.register("distortion", "Display you the scale distortion at your particular location", new DistortionCommand());
         });
     }
 
