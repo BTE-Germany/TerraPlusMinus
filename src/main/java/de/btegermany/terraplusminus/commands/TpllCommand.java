@@ -131,7 +131,7 @@ public class TpllCommand {
         double z;
         try {
             double[] mcCoordinates = projection.fromGeo(latLngHeight.latLng().getLng(), latLngHeight.latLng().getLat()); // projection.fromGeo is eccentric and expects lon, lat
-            x = mcCoordinates[0]; // These Coordinates already contains the configured offsets
+            x = mcCoordinates[0]; // These Coordinates already contain the configured offsets
             z = mcCoordinates[1];
         } catch (OutOfProjectionBoundsException e) {
             sender.sendMessage(prefix + "§cLocation is not within projection bounds.");
@@ -155,7 +155,7 @@ public class TpllCommand {
                     tpWorld,
                     new Vector(x, tpWorld.getHighestBlockYAt((int) x, (int) z) + 1d, z),
                     latLngHeight.latLng(),
-                    yOffset);
+                    config, yOffset);
             return;
         }
 
@@ -180,6 +180,7 @@ public class TpllCommand {
                                     new Vector(x, baseHeight.surfaceHeight(roundedX - ChunkPos.cubeToMinBlock(chunkX),
                                             roundedZ - ChunkPos.cubeToMinBlock(chunkZ)) + yOffset + 1d, z),
                                     latLngHeight.latLng(),
+                                    config,
                                     yOffset
                             )).exceptionally(ex -> {
                         target.sendMessage(RED + "Error while fetching elevation from API!");
@@ -187,7 +188,7 @@ public class TpllCommand {
                         return null;
                     });
         } else {
-            finalizeTeleport(target, tpWorld, new Vector(x, latLngHeight.height() + yOffset, z), latLngHeight.latLng(), yOffset);
+            finalizeTeleport(target, tpWorld, new Vector(x, latLngHeight.height() + yOffset, z), latLngHeight.latLng(), config, yOffset);
         }
     }
 
@@ -202,7 +203,7 @@ public class TpllCommand {
      * @param mcCoords  The calculated Minecraft X/Y/Z coordinates
      * @param yOff      The configured Y-offset - used for calculating the new right height
      */
-    private static void handleLinkedWorlds(Player target, boolean isNext, LatLng geoCoords, @NonNull Vector mcCoords, double yOff) {
+    private static void handleLinkedWorlds(Player target, boolean isNext, LatLng geoCoords, @NonNull Vector mcCoords, double yOff, String method) {
         handleLinkedWorlds(target, isNext, geoCoords, mcCoords, yOff, target.getWorld().getName());
     }
 
@@ -218,8 +219,7 @@ public class TpllCommand {
      * @param yOff      The configured Y-offset - used for calculating the new right height
      * @param worldName The name of the current world. Used for cross-world teleportation.
      */
-    private static void handleLinkedWorlds(Player target, boolean isNext, LatLng geoCoords, @NonNull Vector mcCoords, double yOff, String worldName) {
-        String method = Terraplusminus.config.getString(Properties.LINKED_WORLDS_METHOD, "");
+    private static void handleLinkedWorlds(Player target, boolean isNext, LatLng geoCoords, @NonNull Vector mcCoords, double yOff, String method, String worldName) {
         if (!Terraplusminus.config.getBoolean(Properties.LINKED_WORLDS_ENABLED) ||
                 !(method.equalsIgnoreCase(Properties.NonConfigurable.METHOD_SRV) || method.equalsIgnoreCase(Properties.NonConfigurable.METHOD_MV))) {
             target.sendMessage(prefix + RED + "World height limit reached!");
@@ -263,18 +263,25 @@ public class TpllCommand {
      * @param tpWorld   The target world
      * @param mcCoords  The calculated Minecraft X/Y/Z coordinates
      * @param geoCoords The geo coordinates (for message display)
+     * @param config    The supplied config for linked worlds
      * @param yOffset   The configured terrain offset
      */
-    private static void finalizeTeleport(@NotNull Player target, @NonNull World tpWorld, @NonNull Vector mcCoords, LatLng geoCoords, int yOffset) {
+    private static void finalizeTeleport(@NotNull Player target, @NonNull World tpWorld, @NonNull Vector mcCoords, LatLng geoCoords, @NonNull FileConfiguration config, int yOffset) {
 
         Terraplusminus.instance.getComponentLogger().debug("Current world max height: {}, min height: {}, requested height: {}", tpWorld.getMaxHeight(), tpWorld.getMinHeight(), mcCoords.getBlockY());
 
-        if (mcCoords.getBlockY() > tpWorld.getMaxHeight()) {
-            handleLinkedWorlds(target, true, geoCoords, mcCoords, yOffset);
-            return;
-        } else if (mcCoords.getBlockY() <= tpWorld.getMinHeight()) {
-            handleLinkedWorlds(target, false, geoCoords, mcCoords, yOffset);
-            return;
+        if (mcCoords.getBlockY() > tpWorld.getMaxHeight() || mcCoords.getBlockY() <= tpWorld.getMinHeight()) {
+            if (!Terraplusminus.config.getBoolean(Properties.LINKED_WORLDS_ENABLED)) {
+                target.sendMessage(prefix + RED + "World height limit reached!");
+                return;
+            } else {
+                String method = Terraplusminus.config.getString(Properties.LINKED_WORLDS_METHOD, "");
+                if (method.equalsIgnoreCase(Properties.NonConfigurable.METHOD_SRV) || method.equalsIgnoreCase(Properties.NonConfigurable.METHOD_MV)) {
+                    boolean isNext = mcCoords.getBlockY() > tpWorld.getMaxHeight();
+                    handleLinkedWorlds(target, isNext, geoCoords, mcCoords, yOffset, method);
+                    return;
+                }
+            }
         }
 
         Location location = new Location(tpWorld,

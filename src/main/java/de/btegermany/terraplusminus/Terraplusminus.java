@@ -85,7 +85,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         this.getServer().getMessenger().registerIncomingPluginChannel(this, "bungeecord:terraplusminus", pluginMessageListener);
 
         // Linked Server current server initialization
-        if (getConfig().getBoolean(Properties.LINKED_WORLDS_ENABLED) && getConfig().getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("SERVER")) {
+        if (getConfig().getBoolean(Properties.LINKED_WORLDS_ENABLED) && getConfig().getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase(Properties.NonConfigurable.METHOD_SRV)) {
             this.getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
             this.getServer().getMessenger().registerIncomingPluginChannel(this, "BungeeCord", pluginMessageListener);
             getComponentLogger().debug("Linked server initialization successful");
@@ -95,10 +95,10 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         // Registering events
         Bukkit.getPluginManager().registerEvents(this, this);
         if (getConfig().getBoolean("height_in_actionbar") ||
-                (getConfig().getBoolean(Properties.LINKED_WORLDS_ENABLED) && getConfig().getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase("MULTIVERSE"))) {
+                (getConfig().getBoolean(Properties.LINKED_WORLDS_ENABLED) && getConfig().getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase(Properties.NonConfigurable.METHOD_MV))) {
             Bukkit.getPluginManager().registerEvents(new PlayerMoveEvent(this), this);
         }
-        if (getConfig().getBoolean(Properties.LINKED_WORLDS_ENABLED)) {
+        if (getConfig().getBoolean(Properties.LINKED_WORLDS_ENABLED) && !getConfig().getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase(Properties.NonConfigurable.METHOD_CUSTOM)) {
             Bukkit.getPluginManager().registerEvents(new PlayerJoinEvent(playerHashMapManagement, this), this);
         }
 
@@ -145,6 +145,7 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
     @Override
     public @NotNull ChunkGenerator getDefaultWorldGenerator(@NotNull String worldName, String id) {
         // Multiverse different y-offset support
+        getLogger().info("Generating world: " + worldName + " with generator id: " + id);
         int yOffset = 0;
         if (getConfig().getBoolean(Properties.LINKED_WORLDS_ENABLED)
                 && getConfig().getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase(Properties.NonConfigurable.METHOD_MV)) {
@@ -153,12 +154,13 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
                     yOffset = world.getOffset();
                 }
             }
+        } else if (id != null) {
+            yOffset = getOffsetFromGeneratorId(id, getConfig().getInt(Properties.Y_OFFSET));
         } else {
             yOffset = getConfig().getInt(Properties.Y_OFFSET);
         }
         return new RealWorldGenerator(yOffset, this);
     }
-
 
     public void enforceDatapackInstallation(String datapackResourcePath, @NotNull World world) {
         String datapackName = Path.of(datapackResourcePath).getFileName().toString();
@@ -371,4 +373,11 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         this.getComponentLogger().info("Created default Terra-- configuration at {}", droppedFile.getAbsolutePath());
     }
 
+    private int getOffsetFromGeneratorId(String generatorId, int defaultOffset) {
+        try {
+            return Integer.parseInt(generatorId);
+        } catch (NumberFormatException e) {
+            return defaultOffset;
+        }
+    }
 }

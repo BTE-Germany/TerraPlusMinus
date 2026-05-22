@@ -48,6 +48,7 @@ public class Properties {
     public class NonConfigurable {
         public static final String METHOD_MV = "MULTIVERSE";
         public static final String METHOD_SRV = "SERVER";
+        public static final String METHOD_CUSTOM = "CUSTOM";
         public static final String CROSS_TELEPORTATION_CHANNEL = "terraplusminus:teleportbridge";
     }
 
