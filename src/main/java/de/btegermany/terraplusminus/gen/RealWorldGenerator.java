@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -51,8 +52,14 @@ public class RealWorldGenerator extends ChunkGenerator {
     @Getter
     private final int yOffset;
 
+    private static final int CHUNK_DATA_MAX_ATTEMPTS = 3;
+    private static final long CHUNK_DATA_RETRY_DELAY_MILLIS = 500L;
+    private static final int PRIME_CACHE_CONCURRENCY = 4;
+
+    private final Terraplusminus plugin;
     private final LoadingCache<@NotNull ChunkPos, @NotNull CompletableFuture<CachedChunkData>> cache;
     private final CustomBiomeProvider customBiomeProvider;
+    private final List<BlockPopulator> defaultPopulators;
 
 
     private final BlockData defaultSurfaceBlock;
@@ -75,6 +82,7 @@ public class RealWorldGenerator extends ChunkGenerator {
     );
 
     public RealWorldGenerator(int yOffset, Terraplusminus plugin) {
+        this.plugin = plugin;
 
         Http.configChanged(); // This ensures the T-- default config is loaded regarding the number of concurrent http requests for specific urls.
 
@@ -98,6 +106,7 @@ public class RealWorldGenerator extends ChunkGenerator {
                 .expireAfterAccess(5L, TimeUnit.MINUTES)
                 .softValues()
                 .build(new ChunkDataLoader(this.settings));
+        this.defaultPopulators = singletonList(new TreePopulator(this.customBiomeProvider, this.yOffset, this::getChunkDataAsync));
 
         // This code is explicitly there for backward compatibility and is legitimate in using the deprecated config keys
         this.blockMapper = BlockMapper.fromPlugin(plugin)
@@ -158,15 +167,14 @@ public class RealWorldGenerator extends ChunkGenerator {
 
                 int groundY = terraData.groundHeight(x, z) + this.yOffset;
 
-                // We do that for each column, so it does not depend on the configuration but only on the seed
-                int startMountainHeight = random.nextInt(7500, 7520);
-
                 if (groundY < minWorldY || groundY >= maxWorldY) {
                     continue; // We are not within vertical bounds, continue
                 }
 
                 BlockData surfaceBlock = this.blockMapper.map(terraData.surfaceBlock(x, z));
                 if (surfaceBlock == null) {
+                    // We do that for each column, so it does not depend on the configuration but only on the seed
+                    int startMountainHeight = random.nextInt(7500, 7520);
                     if (groundY >= startMountainHeight) {
                         surfaceBlock = this.mountainSurfaceBlock; // Mountains stay bare
                     } else {
@@ -190,8 +198,11 @@ public class RealWorldGenerator extends ChunkGenerator {
 
     private CachedChunkData getTerraChunkData(int chunkX, int chunkZ) {
         try {
-            return this.cache.getUnchecked(new ChunkPos(chunkX, chunkZ)).get();
-        } catch (InterruptedException | ExecutionException e) {
+            return this.getChunkDataAsync(new ChunkPos(chunkX, chunkZ)).get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted when generating chunk data asynchronously in Terra--", e);
+        } catch (ExecutionException e) {
             throw new RuntimeException("Unrecoverable exception when generating chunk data asynchronously in Terra--", e);
         }
     }
@@ -204,7 +215,92 @@ public class RealWorldGenerator extends ChunkGenerator {
      * @return A CompletableFuture containing the CachedChunkData
      */
     public CompletableFuture<CachedChunkData> getBaseHeightAsync(int chunkX, int chunkZ) {
-        return this.cache.getUnchecked(new ChunkPos(chunkX, chunkZ));
+        return this.getChunkDataAsync(new ChunkPos(chunkX, chunkZ));
+    }
+
+    /**
+     * Starts loading Terra-- data for a square chunk radius around a target chunk.
+     * The returned future completes when all requested chunk data is present in the cache.
+     */
+    public CompletableFuture<Void> primeCache(int centerChunkX, int centerChunkZ, int radiusChunks) {
+        int radius = Math.max(0, radiusChunks);
+        CompletableFuture<Void> result = CompletableFuture.completedFuture(null);
+        List<ChunkPos> batch = new ArrayList<>(PRIME_CACHE_CONCURRENCY);
+        for (int chunkX = centerChunkX - radius; chunkX <= centerChunkX + radius; chunkX++) {
+            for (int chunkZ = centerChunkZ - radius; chunkZ <= centerChunkZ + radius; chunkZ++) {
+                batch.add(new ChunkPos(chunkX, chunkZ));
+                if (batch.size() >= PRIME_CACHE_CONCURRENCY) {
+                    result = this.appendPrimeBatch(result, batch);
+                    batch = new ArrayList<>(PRIME_CACHE_CONCURRENCY);
+                }
+            }
+        }
+        if (!batch.isEmpty()) {
+            result = this.appendPrimeBatch(result, batch);
+        }
+        return result;
+    }
+
+    private CompletableFuture<Void> appendPrimeBatch(CompletableFuture<Void> previous, List<ChunkPos> batch) {
+        List<ChunkPos> chunkBatch = List.copyOf(batch);
+        return previous.thenCompose(unused -> CompletableFuture.allOf(
+                chunkBatch.stream()
+                        .map(chunkPos -> this.getChunkDataAsync(chunkPos).thenApply(data -> null))
+                        .toArray(CompletableFuture[]::new)
+        ));
+    }
+
+    private CompletableFuture<CachedChunkData> getChunkDataAsync(ChunkPos chunkPos) {
+        return this.getChunkDataAsync(chunkPos, 1);
+    }
+
+    private CompletableFuture<CachedChunkData> getChunkDataAsync(ChunkPos chunkPos, int attempt) {
+        CompletableFuture<CachedChunkData> future;
+        try {
+            future = this.cache.getUnchecked(chunkPos);
+        } catch (RuntimeException e) {
+            return this.retryChunkData(chunkPos, attempt, e);
+        }
+
+        return future.handle((data, throwable) -> {
+            if (throwable == null) {
+                return CompletableFuture.completedFuture(data);
+            }
+            return this.retryChunkData(chunkPos, attempt, throwable);
+        }).thenCompose(result -> result);
+    }
+
+    private CompletableFuture<CachedChunkData> retryChunkData(ChunkPos chunkPos, int attempt, Throwable throwable) {
+        this.cache.invalidate(chunkPos);
+        if (attempt >= CHUNK_DATA_MAX_ATTEMPTS) {
+            return CompletableFuture.failedFuture(throwable);
+        }
+
+        Throwable rootCause = unwrap(throwable);
+        this.plugin.getComponentLogger().warn(
+                "Terra-- chunk data load failed for chunk {}/{} on attempt {}/{}. Retrying in {} ms.",
+                chunkPos.x(),
+                chunkPos.z(),
+                attempt,
+                CHUNK_DATA_MAX_ATTEMPTS,
+                CHUNK_DATA_RETRY_DELAY_MILLIS,
+                rootCause
+        );
+
+        return CompletableFuture
+                .supplyAsync(
+                        () -> null,
+                        CompletableFuture.delayedExecutor(CHUNK_DATA_RETRY_DELAY_MILLIS, TimeUnit.MILLISECONDS)
+                )
+                .thenCompose(unused -> this.getChunkDataAsync(chunkPos, attempt + 1));
+    }
+
+    private static Throwable unwrap(Throwable throwable) {
+        Throwable current = throwable;
+        while ((current instanceof CompletionException || current instanceof ExecutionException) && current.getCause() != null) {
+            current = current.getCause();
+        }
+        return current;
     }
 
     @Override
@@ -239,7 +335,12 @@ public class RealWorldGenerator extends ChunkGenerator {
     @Override
     @NotNull
     public List<BlockPopulator> getDefaultPopulators(@NotNull World world) {
-        return singletonList(new TreePopulator(this.customBiomeProvider, yOffset));
+        return this.defaultPopulators;
+    }
+
+    @Override
+    public boolean isParallelCapable() {
+        return true;
     }
 
     @Nullable
