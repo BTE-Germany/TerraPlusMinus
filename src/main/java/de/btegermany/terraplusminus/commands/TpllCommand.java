@@ -64,6 +64,7 @@ public class TpllCommand {
     // <editor-fold desc="Constants and Fields">
     public static final String LAT_LON_HEIGHT = "latLonHeight";
     public static final String TPLL_OTHERS_PERMISSION = "t+-.forcetpll";
+    private static final int TELEPORT_PREP_RADIUS_CHUNKS = 16;
 
     static String prefix;
     // </editor-fold>
@@ -151,11 +152,13 @@ public class TpllCommand {
 
         if (!config.getBoolean(Properties.LINKED_WORLDS_ENABLED) && latLngHeight.height() == null) {
             Terraplusminus.instance.getComponentLogger().debug("Fetching elevation from Heightmap...");
-            finalizeTeleport(target,
-                    tpWorld,
-                    new Vector(x, tpWorld.getHighestBlockYAt((int) x, (int) z) + 1d, z),
-                    latLngHeight.latLng(),
-                    yOffset);
+            World finalTpWorld = tpWorld;
+            prepareTeleportRegion(target, finalTpWorld, x, z, () ->
+                    finalizeTeleport(target,
+                            finalTpWorld,
+                            new Vector(x, finalTpWorld.getHighestBlockYAt((int) x, (int) z) + 1d, z),
+                            latLngHeight.latLng(),
+                            yOffset));
             return;
         }
 
@@ -173,21 +176,26 @@ public class TpllCommand {
             int chunkX = ChunkPos.blockToCube(roundedX);
             int chunkZ = ChunkPos.blockToCube(roundedZ);
             World finalTpWorld = tpWorld;
-            terraGenerator.getBaseHeightAsync(chunkX, chunkZ)
-                    .thenAcceptAsync(baseHeight ->
-                            finalizeTeleport(target,
-                                    finalTpWorld,
-                                    new Vector(x, baseHeight.surfaceHeight(roundedX - ChunkPos.cubeToMinBlock(chunkX),
-                                            roundedZ - ChunkPos.cubeToMinBlock(chunkZ)) + yOffset + 1d, z),
-                                    latLngHeight.latLng(),
-                                    yOffset
-                            )).exceptionally(ex -> {
-                        target.sendMessage(RED + "Error while fetching elevation from API!");
-                        Terraplusminus.instance.getComponentLogger().error("Error while fetching elevation from API for tpll!", ex);
-                        return null;
-                    });
+            RealWorldGenerator finalTerraGenerator = terraGenerator;
+            prepareTeleportRegion(target, finalTpWorld, x, z, () ->
+                    finalTerraGenerator.getBaseHeightAsync(chunkX, chunkZ)
+                            .thenAccept(baseHeight -> Bukkit.getScheduler().runTask(Terraplusminus.instance, () ->
+                                    finalizeTeleport(target,
+                                            finalTpWorld,
+                                            new Vector(x, baseHeight.surfaceHeight(roundedX - ChunkPos.cubeToMinBlock(chunkX),
+                                                    roundedZ - ChunkPos.cubeToMinBlock(chunkZ)) + yOffset + 1d, z),
+                                            latLngHeight.latLng(),
+                                            yOffset
+                                    ))).exceptionally(ex -> {
+                                Bukkit.getScheduler().runTask(Terraplusminus.instance, () ->
+                                        target.sendMessage(RED + "Error while fetching elevation from API!"));
+                                Terraplusminus.instance.getComponentLogger().error("Error while fetching elevation from API for tpll!", ex);
+                                return null;
+                            }));
         } else {
-            finalizeTeleport(target, tpWorld, new Vector(x, latLngHeight.height() + yOffset, z), latLngHeight.latLng(), yOffset);
+            World finalTpWorld = tpWorld;
+            prepareTeleportRegion(target, finalTpWorld, x, z, () ->
+                    finalizeTeleport(target, finalTpWorld, new Vector(x, latLngHeight.height() + yOffset, z), latLngHeight.latLng(), yOffset));
         }
     }
 
@@ -245,12 +253,14 @@ public class TpllCommand {
                 return;
             }
 
-            target.sendMessage(prefix + "§7Teleporting to linked world...");
-            target.teleportAsync(new Location(linkedWorld, mcCoords.getX(), newHeight, mcCoords.getZ(), target.getLocation().getYaw(), target.getLocation().getPitch()))
-                    .thenAcceptAsync(success -> {
-                        if (Boolean.TRUE.equals(success))
-                            target.sendMessage(prefix + "§7Teleported to " + geoCoords.getLat() + ", " + geoCoords.getLng() + ", " + (mcCoords.getBlockY() - yOff) + ".");
-                    });
+            prepareTeleportRegion(target, linkedWorld, mcCoords.getX(), mcCoords.getZ(), () -> {
+                target.sendMessage(prefix + "§7Teleporting to linked world...");
+                target.teleportAsync(new Location(linkedWorld, mcCoords.getX(), newHeight, mcCoords.getZ(), target.getLocation().getYaw(), target.getLocation().getPitch()))
+                        .thenAcceptAsync(success -> {
+                            if (Boolean.TRUE.equals(success))
+                                target.sendMessage(prefix + "§7Teleported to " + geoCoords.getLat() + ", " + geoCoords.getLng() + ", " + (mcCoords.getBlockY() - yOff) + ".");
+                        });
+            });
         }
     }
 
@@ -312,6 +322,23 @@ public class TpllCommand {
             }
         }
         return false;
+    }
+
+    private static void prepareTeleportRegion(@NotNull Player target, @NotNull World world, double x, double z, @NotNull Runnable teleportAction) {
+        if (Terraplusminus.instance.isTeleportRegionGenerated(world, x, z, TELEPORT_PREP_RADIUS_CHUNKS)) {
+            teleportAction.run();
+            return;
+        }
+
+        target.sendMessage(prefix + "§7The target region is currently being generated. You will be teleported once it is ready.");
+        Terraplusminus.instance.primeTeleportRegionCache(world, x, z, TELEPORT_PREP_RADIUS_CHUNKS)
+                .thenRun(() -> Bukkit.getScheduler().runTask(Terraplusminus.instance, teleportAction))
+                .exceptionally(ex -> {
+                    Terraplusminus.instance.getComponentLogger().error("Failed to prepare tpll target region.", ex);
+                    Bukkit.getScheduler().runTask(Terraplusminus.instance, () ->
+                            target.sendMessage(prefix + RED + "Failed to generate the target region. Please try again later."));
+                    return null;
+                });
     }
     // </editor-fold>
 

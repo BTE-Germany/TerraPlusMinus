@@ -1,7 +1,5 @@
 package de.btegermany.terraplusminus.gen.tree;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.LoadingCache;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -9,18 +7,13 @@ import com.google.gson.stream.JsonReader;
 import de.btegermany.terraplusminus.Terraplusminus;
 import de.btegermany.terraplusminus.gen.CustomBiomeProvider;
 import net.buildtheearth.terraminusminus.generator.CachedChunkData;
-import net.buildtheearth.terraminusminus.generator.ChunkDataLoader;
 import net.buildtheearth.terraminusminus.generator.EarthGeneratorPipelines;
-import net.buildtheearth.terraminusminus.generator.EarthGeneratorSettings;
 import net.buildtheearth.terraminusminus.generator.data.TreeCoverBaker;
 import net.buildtheearth.terraminusminus.substitutes.BlockState;
 import net.buildtheearth.terraminusminus.substitutes.ChunkPos;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.LimitedRegion;
 import org.bukkit.generator.WorldInfo;
@@ -30,22 +23,20 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 
 public class TreePopulator extends BlockPopulator {
 
     public static final Cached<byte[]> RNG_CACHE = Cached.threadLocal(() -> new byte[16 * 16], ReferenceStrength.SOFT);
-    public final LoadingCache<ChunkPos, CompletableFuture<CachedChunkData>> cache;
-    private final EarthGeneratorSettings bteGeneratorSettings = EarthGeneratorSettings.parse(EarthGeneratorSettings.BTE_DEFAULT_SETTINGS);
-    ChunkDataLoader loader = new ChunkDataLoader(bteGeneratorSettings);
-    int xOffset;
+    public final Function<ChunkPos, CompletableFuture<CachedChunkData>> chunkDataProvider;
     int yOffset;
-    int zOffset;
     boolean generateTrees; // Should Trees be added to the Terrain
     String surface;
     CustomBiomeProvider customBiomeProvider;
@@ -54,17 +45,16 @@ public class TreePopulator extends BlockPopulator {
     HashMap<String, ArrayList<ArrayList<TreeBlock>>> trees = new HashMap<>();
 
 
-    public TreePopulator(CustomBiomeProvider customBiomeProvider, int yOffset) {
+    public TreePopulator(
+            CustomBiomeProvider customBiomeProvider,
+            int yOffset,
+            Function<ChunkPos, CompletableFuture<CachedChunkData>> chunkDataProvider
+    ) {
         this.customBiomeProvider = customBiomeProvider;
-        this.xOffset = Terraplusminus.config.getInt("terrain_offset.x");
         this.yOffset = yOffset;
-        this.zOffset = Terraplusminus.config.getInt("terrain_offset.z");
         this.generateTrees = Terraplusminus.config.getBoolean("generate_trees");
         this.surface = Terraplusminus.config.getString("surface_material");
-        this.cache = CacheBuilder.newBuilder()
-                .expireAfterAccess(5L, TimeUnit.MINUTES)
-                .softValues()
-                .build(new ChunkDataLoader(this.bteGeneratorSettings));
+        this.chunkDataProvider = chunkDataProvider;
 
 
         // Load Trees from customTrees.json
@@ -110,21 +100,19 @@ public class TreePopulator extends BlockPopulator {
     }
 
     public void populate(@NotNull WorldInfo worldInfo, @NotNull Random random, int x, int z, @NotNull LimitedRegion limitedRegion) {
-        World world = Bukkit.getWorld(worldInfo.getName());
         if (generateTrees) {
             try {
-                CachedChunkData data = this.loader.load(new ChunkPos(x - (xOffset / 16), z - (zOffset / 16))).get();
+                CachedChunkData data = this.chunkDataProvider.apply(new ChunkPos(x, z)).get();
 
                 byte[] treeCover = data.getCustom(EarthGeneratorPipelines.KEY_DATA_TREE_COVER, TreeCoverBaker.FALLBACK_TREE_DENSITY);
                 byte[] rng = RNG_CACHE.get();
+                random.nextBytes(rng);
 
                 for (int i = 0, dx = 0; dx < 16 >> 1; dx++) {
                     for (int dz = 0; dz < 16 >> 1; dz++, i++) {
-                        if ((rng[i] & 0xFF) < (treeCover[(((x * 16) & 0xF) << 4) | ((z * 16) & 0xF)] & 0xFF)) {
-                            random.nextBytes(rng);
-
-                            int valueX = random.nextInt(15) + 1; // Depending on the size of the tree this should be changed
-                            int valueZ = random.nextInt(15) + 1;
+                        int valueX = random.nextInt(16); // Depending on the size of the tree this should be changed
+                        int valueZ = random.nextInt(16);
+                        if ((rng[i] & 0xFF) < (treeCover[(valueX << 4) | valueZ] & 0xFF)) {
                             int groundY = 0;
                             int waterY = 0;
                             BlockState state = data.surfaceBlock(0, 0);
@@ -144,23 +132,26 @@ public class TreePopulator extends BlockPopulator {
                                 return;
                             }
 
-                            Location loc = new Location(world, valueX + x * 16, groundY + 1 + yOffset, valueZ + z * 16); // is offset missing?
-                            if (!(groundY < waterY) && groundY + yOffset < world.getMaxHeight() - 35 && groundY + yOffset > world.getMinHeight() && state == null) {
-                                switch ((int) customBiomeProvider.getBiome()) {
+                            int originX = valueX + x * 16;
+                            int originY = groundY + 1 + yOffset;
+                            int originZ = valueZ + z * 16;
+                            if (groundY + yOffset < worldInfo.getMaxHeight() - 35 && groundY + yOffset > worldInfo.getMinHeight() && state == null) {
+                                double biomeData = customBiomeProvider.getBiomeData(worldInfo, originX, groundY + yOffset, originZ);
+                                switch ((int) biomeData) {
                                     case 4, 6, 17: // desert and savanna
-                                        generateCustomTree(limitedRegion, loc, "savanna");
+                                        generateCustomTree(limitedRegion, random, originX, originY, originZ, "savanna");
                                         break;
                                     case 14, 15: // flower forest
-                                        generateCustomTree(limitedRegion, loc, "oak", "birch");
+                                        generateCustomTree(limitedRegion, random, originX, originY, originZ, "oak", "birch");
                                         break;
                                     case 27: // taiga
-                                        generateCustomTree(limitedRegion, loc, "spruce");
+                                        generateCustomTree(limitedRegion, random, originX, originY, originZ, "spruce");
                                         break;
                                     case 28, 29, 30: // snowy regions
                                         // TODO: trees with snow
                                         break;
                                     default:
-                                        generateCustomTree(limitedRegion, loc, "oak", "birch");
+                                        generateCustomTree(limitedRegion, random, originX, originY, originZ, "oak", "birch");
                                         break;
                                 }
                             }
@@ -169,7 +160,15 @@ public class TreePopulator extends BlockPopulator {
                 }
 
 
-            } catch (InterruptedException | ExecutionException e) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                Terraplusminus.instance.getComponentLogger().warn(
+                        "Interrupted when generating trees in chunk {}/{} in world {}",
+                        x, z,
+                        worldInfo.getName(),
+                        e
+                );
+            } catch (ExecutionException e) {
                 Terraplusminus.instance.getComponentLogger().warn(
                         "Exception when generating trees in chunk {}/{} in world {}",
                         x, z,
@@ -180,31 +179,12 @@ public class TreePopulator extends BlockPopulator {
         }
     }
 
-    public void generateCustomTree(LimitedRegion limitedRegion, Location loc, String... types) {
-
-        ArrayList<ArrayList<TreeBlock>> trees = new ArrayList<>();
-        for (String type : types) {
-            this.trees.get(type).forEach((tree) -> {
-                trees.add(tree);
-            });
-        }
-
-        // Random Tree
-        if (trees.size() == 0) return;
-
-        int randTree = (new Random()).nextInt(trees.size());
-        if (randTree < 0) randTree = 0;
-        if (randTree > trees.size() - 1) randTree = trees.size() - 1;
-        ArrayList<TreeBlock> tree = trees.get(randTree);
-
-        int originX = loc.getBlockX();
-        int originY = loc.getBlockY();
-        int originZ = loc.getBlockZ();
-
+    public void generateCustomTree(LimitedRegion limitedRegion, Random random, int originX, int originY, int originZ, String... types) {
+        List<TreeBlock> tree = selectTree(random, types);
+        if (tree.isEmpty()) return;
 
         // Rotate Tree Randomly
-        Random rand = new Random();
-        int angle = rand.nextInt(4) * 90;
+        int angle = random.nextInt(4) * 90;
 
         // Place Tree
         for (TreeBlock block : tree) {
@@ -224,6 +204,32 @@ public class TreePopulator extends BlockPopulator {
             }
             limitedRegion.setType(originX + x, originY + block.getY(), originZ + z, block.getMaterial());
         }
+    }
+
+    private List<TreeBlock> selectTree(Random random, String... types) {
+        int totalTrees = 0;
+        for (String type : types) {
+            ArrayList<ArrayList<TreeBlock>> variants = this.trees.get(type);
+            if (variants != null) {
+                totalTrees += variants.size();
+            }
+        }
+        if (totalTrees == 0) {
+            return Collections.emptyList();
+        }
+
+        int selectedTree = random.nextInt(totalTrees);
+        for (String type : types) {
+            ArrayList<ArrayList<TreeBlock>> variants = this.trees.get(type);
+            if (variants == null) {
+                continue;
+            }
+            if (selectedTree < variants.size()) {
+                return variants.get(selectedTree);
+            }
+            selectedTree -= variants.size();
+        }
+        return Collections.emptyList();
     }
 
     public JsonObject getJSONObject() {

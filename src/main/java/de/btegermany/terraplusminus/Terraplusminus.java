@@ -39,8 +39,10 @@ import java.io.*;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 
 import static java.lang.String.format;
+import static net.buildtheearth.terraminusminus.substitutes.ChunkPos.blockToCube;
 import static net.daporkchop.lib.common.util.PValidation.checkState;
 
 public final class Terraplusminus extends JavaPlugin implements Listener {
@@ -157,6 +159,68 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
             yOffset = getConfig().getInt(Properties.Y_OFFSET);
         }
         return new RealWorldGenerator(yOffset, this);
+    }
+
+    /**
+     * Returns whether every chunk in the target teleport radius already exists on disk/in world data.
+     * This method is intentionally public so optional teleportation plugins can call it without
+     * Terraplusminus depending on them.
+     */
+    public boolean isTeleportRegionGenerated(@NotNull World world, double x, double z, int radiusChunks) {
+        if (!(world.getGenerator() instanceof RealWorldGenerator)) {
+            return true;
+        }
+
+        int centerChunkX = blockToCube(blockCoordinate(x));
+        int centerChunkZ = blockToCube(blockCoordinate(z));
+        int radius = Math.max(0, radiusChunks);
+
+        for (int chunkX = centerChunkX - radius; chunkX <= centerChunkX + radius; chunkX++) {
+            for (int chunkZ = centerChunkZ - radius; chunkZ <= centerChunkZ + radius; chunkZ++) {
+                if (!world.isChunkGenerated(chunkX, chunkZ)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Primes Terra-- chunk data for the requested teleport region when the world uses Terraplusminus.
+     * Non-Terraplusminus worlds complete immediately so this API is safe for optional integrations.
+     */
+    public @NotNull CompletableFuture<Void> primeTeleportRegionCache(@NotNull World world, double x, double z, int radiusChunks) {
+        if (!(world.getGenerator() instanceof RealWorldGenerator generator)) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        int centerChunkX = blockToCube(blockCoordinate(x));
+        int centerChunkZ = blockToCube(blockCoordinate(z));
+        CompletableFuture<Void> result = new CompletableFuture<>();
+        Bukkit.getScheduler().runTaskAsynchronously(this, () ->
+                generator.primeCache(centerChunkX, centerChunkZ, radiusChunks)
+                        .whenComplete((unused, throwable) -> {
+                            if (throwable != null) {
+                                result.completeExceptionally(throwable);
+                                return;
+                            }
+                            result.complete(null);
+                        }));
+        return result;
+    }
+
+    /**
+     * Prepares a teleport target region and returns true when the region was already generated.
+     */
+    public @NotNull CompletableFuture<Boolean> prepareTeleportRegion(@NotNull World world, double x, double z, int radiusChunks) {
+        if (this.isTeleportRegionGenerated(world, x, z, radiusChunks)) {
+            return CompletableFuture.completedFuture(true);
+        }
+        return this.primeTeleportRegionCache(world, x, z, radiusChunks).thenApply(unused -> false);
+    }
+
+    private static int blockCoordinate(double coordinate) {
+        return (int) Math.floor(coordinate);
     }
 
 
