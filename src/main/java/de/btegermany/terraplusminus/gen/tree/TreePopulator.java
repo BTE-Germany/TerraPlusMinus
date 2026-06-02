@@ -14,6 +14,7 @@ import net.buildtheearth.terraminusminus.substitutes.ChunkPos;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 import org.bukkit.Material;
+import org.bukkit.block.Biome;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.LimitedRegion;
 import org.bukkit.generator.WorldInfo;
@@ -136,23 +137,17 @@ public class TreePopulator extends BlockPopulator {
                             int originY = groundY + 1 + yOffset;
                             int originZ = valueZ + z * 16;
                             if (groundY + yOffset < worldInfo.getMaxHeight() - 35 && groundY + yOffset > worldInfo.getMinHeight() && state == null) {
-                                double biomeData = customBiomeProvider.getBiomeData(worldInfo, originX, groundY + yOffset, originZ);
-                                switch ((int) biomeData) {
-                                    case 4, 6, 17: // desert and savanna
-                                        generateCustomTree(limitedRegion, random, originX, originY, originZ, "savanna");
-                                        break;
-                                    case 14, 15: // flower forest
-                                        generateCustomTree(limitedRegion, random, originX, originY, originZ, "oak", "birch");
-                                        break;
-                                    case 27: // taiga
-                                        generateCustomTree(limitedRegion, random, originX, originY, originZ, "spruce");
-                                        break;
-                                    case 28, 29, 30: // snowy regions
-                                        // TODO: trees with snow
-                                        break;
-                                    default:
-                                        generateCustomTree(limitedRegion, random, originX, originY, originZ, "oak", "birch");
-                                        break;
+                                Biome biome = customBiomeProvider.getBiome(worldInfo, originX, groundY + yOffset, originZ);
+                                if (biome == Biome.DESERT || biome == Biome.SAVANNA || biome == Biome.SAVANNA_PLATEAU) {
+                                    generateCustomTree(limitedRegion, random, originX, originY, originZ, "savanna");
+                                } else if (biome == Biome.FLOWER_FOREST) {
+                                    generateCustomTree(limitedRegion, random, originX, originY, originZ, "oak", "birch");
+                                } else if (biome == Biome.TAIGA) {
+                                    generateCustomTree(limitedRegion, random, originX, originY, originZ, "spruce");
+                                } else if (biome == Biome.SNOWY_SLOPES || biome == Biome.SNOWY_PLAINS || biome == Biome.ICE_SPIKES) {
+                                    // TODO: trees with snow
+                                } else {
+                                    generateCustomTree(limitedRegion, random, originX, originY, originZ, "oak", "birch");
                                 }
                             }
                         }
