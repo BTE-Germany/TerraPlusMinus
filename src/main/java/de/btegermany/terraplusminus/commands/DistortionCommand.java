@@ -18,7 +18,7 @@ public class DistortionCommand implements BasicCommand {
 
     @Override
     public boolean canUse(final @NonNull CommandSender sender) {
-        return sender instanceof Player && Permission.OFFSET_CMD.isGrantedTo(sender);
+        return sender instanceof Player && Permission.DISTORTION_CMD.isGrantedTo(sender);
     }
 
     @Override
