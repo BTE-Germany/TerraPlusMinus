@@ -52,7 +52,7 @@ dependencies {
 }
 
 group = "de.btegermany"
-version = "1.7.1"
+version = "1.7.2-SNAPSHOT"
 description = "A plugin which implements the terra-- api in a paper plugin"
 java.sourceCompatibility = JavaVersion.VERSION_21
 
