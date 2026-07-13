@@ -42,11 +42,13 @@ dependencies {
     paperLibrary(libs.pluginupdater.common) {
         exclude(group = "com.google.guava", module = "guava")
     }
+    paperLibrary(libs.jspecify)
     paperLibrary(libs.pluginupdater.paper)
     compileOnly(libs.paper.api)
     // Terra+- itself doesn't need Jackson, but we are hitting this JDK bug: https://bugs.openjdk.org/browse/JDK-8305250.
     // Having a direct compile dependency on Jackson gets rid of the unnecessary warning.
     compileOnly(libs.jackson.databind)
+    compileOnly(libs.jetbrains.annotations)
 }
 
 group = "de.btegermany"

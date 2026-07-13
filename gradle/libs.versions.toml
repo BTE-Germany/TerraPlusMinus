@@ -12,6 +12,10 @@ paper-api = "1.21.11-R0.1-SNAPSHOT"
 pluginupdater = "3.0.0"
 # https://maven.smyler.net/#/releases/net/buildtheearth/terraminusminus/terraminusminus-bukkit - use fork which uses daporkchop lib as releases
 terraminusminus = "2.2.1-1.21.8"
+# https://jspecify.dev/docs/
+jspecify = "1.0.0"
+# https://javadoc.io/doc/org.jetbrains/annotations/latest/index.html
+jetbrains-annotations = "26.1.0"
 #
 # Plugins
 #
@@ -32,6 +36,8 @@ paper-api = { module = "io.papermc.paper:paper-api", version.ref = "paper-api" }
 pluginupdater-paper = { module = "org.lushplugins.pluginupdater:updater.paper-api", version.ref = "pluginupdater" }
 pluginupdater-common = { module = "org.lushplugins.pluginupdater:updater.common-api", version.ref = "pluginupdater" }
 terraminusminus = { module = "net.buildtheearth.terraminusminus:terraminusminus-bukkit", version.ref = "terraminusminus" }
+jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
+jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains-annotations" }
 
 [plugins]
 lombok = { id = "io.freefair.lombok", version.ref = "lombok" }
