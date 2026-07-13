@@ -386,7 +386,7 @@ public class TpllCommand {
         // This is the cleanest solution that works reliably with Brigadier.
         return Commands.literal("tpll")
                 .then(Commands.literal("-p")
-                        .requires(source -> Permission.ADMIN.isGrantedTo(source.getSender()))
+                        .requires(source -> Permission.FORCETPLL_CMD.isGrantedTo(source.getSender()))
                         .then(Commands.argument("players", ArgumentTypes.players())
                                 .then(Commands.argument(LAT_LON_HEIGHT, StringArgumentType.greedyString())
                                         .executes(TpllCommand::executeTarget)
@@ -441,15 +441,15 @@ public class TpllCommand {
      * Checks for {@code t+-.forcetpll} or {@code t+-.tpll} (if self-teleporting).
      */
     private static boolean isPermitted(@NonNull CommandSourceStack source) {
-        return Permission.ADMIN.isGrantedTo(source.getSender()) ||
-                (source.getSender() == source.getExecutor() && Permission.TPLL_OTHER_WORLD_CMD.isGrantedTo(source.getSender()));
+        return Permission.FORCETPLL_CMD.isGrantedTo(source.getSender()) ||
+                (source.getSender() == source.getExecutor() && Permission.TPLL_CMD.isGrantedTo(source.getSender()));
     }
 
     /**
      * Checks for {@code t+-.forcetpll} permission.
      */
     private static boolean isPermittedTarget(@NonNull CommandSourceStack commandSourceStack) {
-        return Permission.ADMIN.isGrantedTo(commandSourceStack.getSender());
+        return Permission.FORCETPLL_CMD.isGrantedTo(commandSourceStack.getSender());
     }
     // </editor-fold>
 
