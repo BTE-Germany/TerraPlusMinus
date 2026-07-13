@@ -69,7 +69,7 @@ paper {
 
     main = "de.btegermany.terraplusminus.Terraplusminus"
 
-    apiVersion = "1.21.4"
+    apiVersion = "1.21"
 
     load = BukkitPluginDescription.PluginLoadOrder.STARTUP
     authors = listOf("meysster", "Nudlsupp", "Nachwahl", "Zoriot")
