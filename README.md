@@ -57,7 +57,7 @@ Permission node: `t+-.admin` - Bypasses the coordinate bounds of tpll
 
 Permission node: `t+-.tpll.ungenerated-chunks` - Allows `/tpll` into chunks which are not generated yet. It is inherited
 from `t+-.tpll`, so existing setups keep working - deny it explicitly (e.g. for visitors) to prevent players from
-generating new chunks. `t+-.admin` and `t+-.forcetpll` bypass this restriction
+generating new chunks
 
 Permission node: `t+-.autoteleport` - Enables automatic teleportation between linked worlds
 
