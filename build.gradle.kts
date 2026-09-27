@@ -78,6 +78,22 @@ paper {
 
     loader = "de.btegermany.terraplusminus.PluginLibrariesLoader"
     generateLibrariesJson = true // https://docs.eldoria.de/pluginyml/libraries/#paper
+
+    // t+-.tpll is the parent of t+-.tpll.ungenerated-chunks, so granting t+-.tpll implicitly grants teleporting into
+    // ungenerated chunks and existing setups keep working. Deny the child node explicitly (e.g. for visitors) to
+    // prevent players from generating new chunks via /tpll - see https://github.com/BTE-Germany/TerraPlusMinus/issues/74
+    // The OP defaults match the behaviour of the previously undeclared nodes, please don't change them lightly.
+    permissions {
+        register("t+-.tpll") {
+            description = "Allows usage of /tpll"
+            default = BukkitPluginDescription.Permission.Default.OP
+            children = listOf("t+-.tpll.ungenerated-chunks")
+        }
+        register("t+-.tpll.ungenerated-chunks") {
+            description = "Allows /tpll into chunks which are not generated yet. Inherited from t+-.tpll - deny it explicitly to prevent players from generating new chunks"
+            default = BukkitPluginDescription.Permission.Default.OP
+        }
+    }
 }
 
 tasks {
