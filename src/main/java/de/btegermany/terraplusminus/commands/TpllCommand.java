@@ -77,6 +77,7 @@ public class TpllCommand {
      *     <li>Validates the world is a Terraplusminus world</li>
      *     <li>Parses the coordinates from the arguments</li>
      *     <li>Checks boundary restrictions</li>
+     *     <li>Checks the permission to teleport into ungenerated chunks</li>
      *     <li>Handles cross-world teleportation if needed</li>
      *     <li>Performs the actual teleport</li>
      * </ol>
@@ -146,11 +147,15 @@ public class TpllCommand {
             return;
         }
 
+        // Has to happen before any height lookup, because e.g. World#getHighestBlockYAt already generates the chunk
+        if (!isPermittedToTeleport(sender, tpWorld, x, z)) return;
+
         int yOffset = terraGenerator.getYOffset();
 
         if (!config.getBoolean(Properties.LINKED_WORLDS_ENABLED) && latLngHeight.height() == null) {
             Terraplusminus.instance.getComponentLogger().debug("Fetching elevation from Heightmap...");
-            finalizeTeleport(target,
+            finalizeTeleport(sender,
+                    target,
                     tpWorld,
                     new Vector(x, tpWorld.getHighestBlockYAt((int) x, (int) z) + 1d, z),
                     latLngHeight.latLng(),
@@ -162,7 +167,7 @@ public class TpllCommand {
                 config.getString(Properties.LINKED_WORLDS_METHOD, "").equalsIgnoreCase(Properties.NonConfigurable.METHOD_MV)
                 && latLngHeight.height() == null) {
             Terraplusminus.instance.getComponentLogger().debug("Try to fetch elevation from Heightmaps...");
-            if (getHeightFromMapsAndTeleportIfThere(target, tpWorld, latLngHeight, yOffset, x, z)) return;
+            if (getHeightFromMapsAndTeleportIfThere(sender, target, tpWorld, latLngHeight, yOffset, x, z)) return;
         }
 
         if (latLngHeight.height() == null) {
@@ -174,7 +179,8 @@ public class TpllCommand {
             World finalTpWorld = tpWorld;
             terraGenerator.getBaseHeightAsync(chunkX, chunkZ)
                     .thenAcceptAsync(baseHeight ->
-                            finalizeTeleport(target,
+                            finalizeTeleport(sender,
+                                    target,
                                     finalTpWorld,
                                     new Vector(x, baseHeight.surfaceHeight(roundedX - ChunkPos.cubeToMinBlock(chunkX),
                                             roundedZ - ChunkPos.cubeToMinBlock(chunkZ)) + yOffset + 1d, z),
@@ -186,8 +192,45 @@ public class TpllCommand {
                         return null;
                     });
         } else {
-            finalizeTeleport(target, tpWorld, new Vector(x, latLngHeight.height() + yOffset, z), latLngHeight.latLng(), yOffset);
+            finalizeTeleport(sender, target, tpWorld, new Vector(x, latLngHeight.height() + yOffset, z), latLngHeight.latLng(), yOffset);
         }
+    }
+
+    /**
+     * Checks whether the sender may teleport to the given destination inside the given world.
+     * <p>
+     * Teleporting to a location whose chunk is not generated yet triggers the generation of that chunk, which is
+     * gated behind {@code t+-.tpll.ungenerated-chunks}. The node is inherited from {@code t+-.tpll}, so existing
+     * setups keep working and it only has to be denied explicitly for players (e.g. visitors) which should not
+     * generate new chunks. {@code t+-.admin} and {@code t+-.forcetpll} are trusted staff permissions which bypass
+     * the check.
+     * <p>
+     * Must be called before any height lookup, because e.g. {@link World#getHighestBlockYAt(int, int)} already
+     * generates the chunk. For the {@code SERVER} linked-worlds method the destination server runs /tpll again on
+     * arrival, which enforces this check for the chunks of that server.
+     *
+     * @param sender The sender which caused the teleport
+     * @param world  The world the destination lies in
+     * @param x      The destination x coordinate
+     * @param z      The destination z coordinate
+     * @return {@code true} if the teleport may be performed, {@code false} if it was denied and the sender was notified
+     */
+    private static boolean isPermittedToTeleport(@NonNull CommandSender sender, @NonNull World world, double x, double z) {
+        if (Permission.ADMIN.isGrantedTo(sender) || Permission.FORCETPLL_CMD.isGrantedTo(sender) ||
+                Permission.TPLL_UNGENERATED_CHUNKS.isGrantedTo(sender)) {
+            return true;
+        }
+
+        int chunkX = ChunkPos.blockToCube((int) Math.round(x));
+        int chunkZ = ChunkPos.blockToCube((int) Math.round(z));
+        if (world.isChunkGenerated(chunkX, chunkZ)) {
+            return true;
+        }
+
+        Terraplusminus.instance.getComponentLogger().debug("Denied tpll for '{}' into the ungenerated chunk ({}, {}) of world '{}', missing {}",
+                sender.getName(), chunkX, chunkZ, world.getName(), Permission.TPLL_UNGENERATED_CHUNKS.getNode());
+        sender.sendMessage(prefix + "§cYou cannot tpll to these coordinates, because the chunk is not generated yet and you are not allowed to generate new chunks.");
+        return false;
     }
 
     /**
@@ -195,14 +238,15 @@ public class TpllCommand {
      * <p>
      * Used when the target height exceeds the current world's maximum height.
      *
+     * @param sender    The sender which caused the teleport
      * @param target    The player to teleport
      * @param isNext    Teleport to next or previous world?
      * @param geoCoords The parsed latitude, longitude
      * @param mcCoords  The calculated Minecraft X/Y/Z coordinates
      * @param yOff      The configured Y-offset - used for calculating the new right height
      */
-    private static void handleLinkedWorlds(Player target, boolean isNext, LatLng geoCoords, @NonNull Vector mcCoords, double yOff) {
-        handleLinkedWorlds(target, isNext, geoCoords, mcCoords, yOff, target.getWorld().getName());
+    private static void handleLinkedWorlds(@NonNull CommandSender sender, Player target, boolean isNext, LatLng geoCoords, @NonNull Vector mcCoords, double yOff) {
+        handleLinkedWorlds(sender, target, isNext, geoCoords, mcCoords, yOff, target.getWorld().getName());
     }
 
     /**
@@ -210,6 +254,7 @@ public class TpllCommand {
      * <p>
      * Used when the target height exceeds the current world's maximum height.
      *
+     * @param sender    The sender which caused the teleport
      * @param target    The player to teleport
      * @param isNext    Teleport to next or previous world?
      * @param geoCoords The parsed latitude, longitude
@@ -217,7 +262,7 @@ public class TpllCommand {
      * @param yOff      The configured Y-offset - used for calculating the new right height
      * @param worldName The name of the current world. Used for cross-world teleportation.
      */
-    private static void handleLinkedWorlds(Player target, boolean isNext, LatLng geoCoords, @NonNull Vector mcCoords, double yOff, String worldName) {
+    private static void handleLinkedWorlds(@NonNull CommandSender sender, Player target, boolean isNext, LatLng geoCoords, @NonNull Vector mcCoords, double yOff, String worldName) {
         String method = Terraplusminus.config.getString(Properties.LINKED_WORLDS_METHOD, "");
         if (!Terraplusminus.config.getBoolean(Properties.LINKED_WORLDS_ENABLED) ||
                 !(method.equalsIgnoreCase(Properties.NonConfigurable.METHOD_SRV) || method.equalsIgnoreCase(Properties.NonConfigurable.METHOD_MV))) {
@@ -237,12 +282,16 @@ public class TpllCommand {
             double newHeight = mcCoords.getY() - yOff + linked.getOffset() + 1;
 
             if (newHeight > Objects.requireNonNull(linkedWorld, "Linked world was removed from Bukkit").getMaxHeight()) {
-                handleLinkedWorlds(target, true, geoCoords, new Vector(mcCoords.getX(), newHeight, mcCoords.getZ()), linked.getOffset(), linkedWorld.getName());
+                handleLinkedWorlds(sender, target, true, geoCoords, new Vector(mcCoords.getX(), newHeight, mcCoords.getZ()), linked.getOffset(), linkedWorld.getName());
                 return;
             } else if (newHeight <= linkedWorld.getMinHeight()) {
-                handleLinkedWorlds(target, false, geoCoords, new Vector(mcCoords.getX(), newHeight, mcCoords.getZ()), linked.getOffset(), linkedWorld.getName());
+                handleLinkedWorlds(sender, target, false, geoCoords, new Vector(mcCoords.getX(), newHeight, mcCoords.getZ()), linked.getOffset(), linkedWorld.getName());
                 return;
             }
+
+            // The destination chunk of a linked world is generated independently of the world checked in execute,
+            // so the permission has to be verified again for the world the player actually ends up in
+            if (!isPermittedToTeleport(sender, linkedWorld, mcCoords.getX(), mcCoords.getZ())) return;
 
             target.sendMessage(prefix + "§7Teleporting to linked world...");
             target.teleportAsync(new Location(linkedWorld, mcCoords.getX(), newHeight, mcCoords.getZ(), target.getLocation().getYaw(), target.getLocation().getPitch()))
@@ -258,21 +307,22 @@ public class TpllCommand {
      * <p>
      * Depending on the configuration it uses multiverse worlds or the configured server if the height limit is exceeded.
      *
+     * @param sender    The sender which caused the teleport
      * @param target    The player to teleport
      * @param tpWorld   The target world
      * @param mcCoords  The calculated Minecraft X/Y/Z coordinates
      * @param geoCoords The geo coordinates (for message display)
      * @param yOffset   The configured terrain offset
      */
-    private static void finalizeTeleport(@NonNull Player target, @NonNull World tpWorld, @NonNull Vector mcCoords, LatLng geoCoords, int yOffset) {
+    private static void finalizeTeleport(@NonNull CommandSender sender, @NonNull Player target, @NonNull World tpWorld, @NonNull Vector mcCoords, LatLng geoCoords, int yOffset) {
 
         Terraplusminus.instance.getComponentLogger().debug("Current world max height: {}, min height: {}, requested height: {}", tpWorld.getMaxHeight(), tpWorld.getMinHeight(), mcCoords.getBlockY());
 
         if (mcCoords.getBlockY() > tpWorld.getMaxHeight()) {
-            handleLinkedWorlds(target, true, geoCoords, mcCoords, yOffset);
+            handleLinkedWorlds(sender, target, true, geoCoords, mcCoords, yOffset);
             return;
         } else if (mcCoords.getBlockY() <= tpWorld.getMinHeight()) {
-            handleLinkedWorlds(target, false, geoCoords, mcCoords, yOffset);
+            handleLinkedWorlds(sender, target, false, geoCoords, mcCoords, yOffset);
             return;
         }
 
@@ -287,7 +337,7 @@ public class TpllCommand {
         target.sendMessage(prefix + "§7Teleported to " + geoCoords.getLat() + ", " + geoCoords.getLng() + ", " + (mcCoords.getBlockY() - yOffset) + ".");
     }
 
-    private static boolean getHeightFromMapsAndTeleportIfThere(@NonNull Player target, World tpWorld, LatLongHeight latLngHeight, int yOffset, double x, double z) {
+    private static boolean getHeightFromMapsAndTeleportIfThere(@NonNull CommandSender sender, @NonNull Player target, World tpWorld, LatLongHeight latLngHeight, int yOffset, double x, double z) {
         var worlds = ConfigurationHelper.getWorlds();
         for (var world : worlds) {
             if (world.getWorldName().equalsIgnoreCase(tpWorld.getName())) {
@@ -302,7 +352,8 @@ public class TpllCommand {
                 Terraplusminus.instance.getComponentLogger().debug("Chunk is already generated, fetching height from Heightmap...");
 
                 int newHeight = tpWorld.getHighestBlockYAt((int) x, (int) z) + 1;
-                finalizeTeleport(target,
+                finalizeTeleport(sender,
+                        target,
                         linkedWorld,
                         new Vector(x, newHeight, z),
                         latLngHeight.latLng(),
