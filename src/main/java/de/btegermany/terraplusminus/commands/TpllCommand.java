@@ -77,6 +77,7 @@ public class TpllCommand {
      *     <li>Validates the world is a Terraplusminus world</li>
      *     <li>Parses the coordinates from the arguments</li>
      *     <li>Checks boundary restrictions</li>
+     *     <li>Checks the permission to teleport into ungenerated chunks</li>
      *     <li>Handles cross-world teleportation if needed</li>
      *     <li>Performs the actual teleport</li>
      * </ol>
@@ -146,13 +147,16 @@ public class TpllCommand {
             return;
         }
 
+        // Has to happen before any height lookup, because e.g. World#getHighestBlockYAt already generates the chunk
+        if (!isPermittedToTeleport(target, tpWorld, x, z)) return;
+
         int yOffset = terraGenerator.getYOffset();
 
         if (!config.getBoolean(Properties.LINKED_WORLDS_ENABLED) && latLngHeight.height() == null) {
             Terraplusminus.instance.getComponentLogger().debug("Fetching elevation from Heightmap...");
             finalizeTeleport(target,
                     tpWorld,
-                    new Vector(x, tpWorld.getHighestBlockYAt((int) x, (int) z) + 1d, z),
+                    new Vector(x, tpWorld.getHighestBlockYAt((int) Math.floor(x), (int) Math.floor(z)) + 1d, z),
                     latLngHeight.latLng(),
                     yOffset);
             return;
@@ -188,6 +192,43 @@ public class TpllCommand {
         } else {
             finalizeTeleport(target, tpWorld, new Vector(x, latLngHeight.height() + yOffset, z), latLngHeight.latLng(), yOffset);
         }
+    }
+
+    /**
+     * Checks whether the target may be teleported to the given destination inside the given world.
+     * <p>
+     * Teleporting to a location whose chunk is not generated yet triggers the generation of that chunk, which is
+     * gated behind {@code t+-.tpll.ungenerated-chunks}. The node is inherited from {@code t+-.tpll}, so existing
+     * setups keep working and it only has to be denied explicitly for players (e.g. visitors) which should not
+     * generate new chunks.
+     * <p>
+     * The target is checked instead of the sender, because for the {@code SERVER} linked-worlds method the
+     * destination server runs /tpll again as the target on arrival, so this keeps the enforced permission the same
+     * on every server. Must be called before any height lookup, because e.g. {@link World#getHighestBlockYAt(int, int)}
+     * already generates the chunk. The chunk is derived with floor semantics, so the check inspects exactly the
+     * chunk the teleport lands in (like {@link Location#getBlockX()}).
+     *
+     * @param target The player to teleport
+     * @param world  The world the destination lies in
+     * @param x      The destination x coordinate
+     * @param z      The destination z coordinate
+     * @return {@code true} if the teleport may be performed, {@code false} if it was denied and the target was notified
+     */
+    private static boolean isPermittedToTeleport(@NonNull Player target, @NonNull World world, double x, double z) {
+        if (Permission.TPLL_UNGENERATED_CHUNKS.isGrantedTo(target)) {
+            return true;
+        }
+
+        int chunkX = ChunkPos.blockToCube((int) Math.floor(x));
+        int chunkZ = ChunkPos.blockToCube((int) Math.floor(z));
+        if (world.isChunkGenerated(chunkX, chunkZ)) {
+            return true;
+        }
+
+        Terraplusminus.instance.getComponentLogger().debug("Denied tpll into the ungenerated chunk ({}, {}) of world '{}' for '{}', missing {}",
+                chunkX, chunkZ, world.getName(), target.getName(), Permission.TPLL_UNGENERATED_CHUNKS.getNode());
+        target.sendMessage(prefix + "§cYou cannot tpll to these coordinates, because the chunk is not generated yet and you are not allowed to generate new chunks.");
+        return false;
     }
 
     /**
@@ -243,6 +284,10 @@ public class TpllCommand {
                 handleLinkedWorlds(target, false, geoCoords, new Vector(mcCoords.getX(), newHeight, mcCoords.getZ()), linked.getOffset(), linkedWorld.getName());
                 return;
             }
+
+            // The destination chunk of a linked world is generated independently of the world checked in execute,
+            // so the permission has to be verified again for the world the player actually ends up in
+            if (!isPermittedToTeleport(target, linkedWorld, mcCoords.getX(), mcCoords.getZ())) return;
 
             target.sendMessage(prefix + "§7Teleporting to linked world...");
             target.teleportAsync(new Location(linkedWorld, mcCoords.getX(), newHeight, mcCoords.getZ(), target.getLocation().getYaw(), target.getLocation().getPitch()))
@@ -301,7 +346,7 @@ public class TpllCommand {
 
                 Terraplusminus.instance.getComponentLogger().debug("Chunk is already generated, fetching height from Heightmap...");
 
-                int newHeight = tpWorld.getHighestBlockYAt((int) x, (int) z) + 1;
+                int newHeight = tpWorld.getHighestBlockYAt((int) Math.floor(x), (int) Math.floor(z)) + 1;
                 finalizeTeleport(target,
                         linkedWorld,
                         new Vector(x, newHeight, z),
