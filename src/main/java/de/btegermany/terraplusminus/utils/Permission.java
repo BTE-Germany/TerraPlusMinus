@@ -11,6 +11,7 @@ public enum Permission {
     WHERE_CMD(Properties.NonConfigurable.PERMISSION_PREFIX + "where"),
     TPLL_CMD(Properties.NonConfigurable.PERMISSION_PREFIX + "tpll"),
     TPLL_OTHER_WORLD_CMD(TPLL_CMD.node + ".otherWorld"),
+    TPLL_UNGENERATED_CHUNKS(TPLL_CMD.node + ".ungenerated-chunks"),
     FORCETPLL_CMD(Properties.NonConfigurable.PERMISSION_PREFIX + "forcetpll"),
     ADMIN(Properties.NonConfigurable.PERMISSION_PREFIX + "admin"),
     AUTOTELEPORT(Properties.NonConfigurable.PERMISSION_PREFIX + "autoteleport"),
