@@ -36,8 +36,9 @@ public class PluginMessageEvent implements PluginMessageListener {
                 Player targetPlayer = Bukkit.getPlayer(playerUUID);
                 String coordinates = in.readUTF();
                 if (targetPlayer == null) {
-                    // not online
-                    playerHashMapManagement.addPlayer(player, coordinates);
+                    // The proxy sends this the moment it hands the player over, so it regularly
+                    // arrives before they finish connecting. Park the target until they join.
+                    playerHashMapManagement.addPlayer(playerUUID, coordinates);
                 } else {
                     // online
                     targetPlayer.performCommand("tpll " + coordinates);
@@ -45,7 +46,8 @@ public class PluginMessageEvent implements PluginMessageListener {
             } catch (IOException e) {
                 tpm.getComponentLogger().warn("Failed to read plugin message", e);
             }
-        } else if (channel.equals("BungeeCord") && tpm.getRegisteredServerName() == null) {
+        } else if (("BungeeCord".equals(channel) || "bungeecord:main".equals(channel))
+                && tpm.getRegisteredServerName() == null) {
             ByteArrayDataInput in = ByteStreams.newDataInput(message);
             String subchannel = in.readUTF();
             if (subchannel.equals("GetServer")) {

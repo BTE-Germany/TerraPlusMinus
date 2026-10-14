@@ -31,16 +31,21 @@ terrain_offset:
 
 # Linked worlds ---------------------------------------
 # If the height limit in this world/server is not enough, other worlds/servers can be linked to generate higher or lower sections
+# Each entry places its terrain at 'mcY = real height + offset'. Order them from the lowest to the
+# highest, each offset smaller than the one before it by the build limit of that world
+# (2032 block worlds: 0, -2032, -4064). All linked worlds need the same height range, and an offset
+# must match the 'terrain_offset.y' of the world it belongs to.
+#
+# MULTIVERSE: 'name' is the world name, create it with '-g Terraplusminus'.
+# SERVER: 'name' is the server name the proxy uses and needs TerraPlusMinusProxyBridge on the proxy.
+#         Every server needs this list. Only /tpll switches servers, walking across does not.
 linked_worlds:
   enabled: false
-  method: 'MULTIVERSE'                         # 'SERVER' or 'MULTIVERSE'
-  # if method = MULTIVERSE -> world_name, y-offset
+  method: 'MULTIVERSE'          # 'MULTIVERSE' or 'SERVER'
   worlds:
-    - name: another_world/server          # e.g. this world/server has a datapack to extend height to 2032. it covers the height section (-2032) - (-1) m a.s.l. it has a y-offset of -2032.
-      offset: 2032
-    - name: current_world/server                 # do not change! e.g. this world/server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.
+    - name: world/server        # holds everything up to 2031 m
       offset: 0
-    - name: another_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032
+    - name: world/server        # holds 2032 m and above
       offset: -2032
 
 # If disabled, tree generation is turned off.
