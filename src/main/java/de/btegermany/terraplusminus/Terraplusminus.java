@@ -62,6 +62,13 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
     @Setter
     private String registeredServerName = null;
 
+    /**
+     * The config version ({@code config_version} in config.yml) this plugin release supports.
+     * Configs from older versions are rejected on enable, support for (very) old config
+     * versions was dropped - see https://github.com/BTE-Germany/TerraPlusMinus/issues/83
+     */
+    private static final double SUPPORTED_CONFIG_VERSION = 1.5;
+
     @Override
     public void onEnable() {
         new Metrics(this, 28392); // https://bstats.org/plugin/bukkit/Terraplusminus/28392
@@ -71,7 +78,11 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         ConfigurationSerialization.registerClass(ConfigurationSerializable.class);
         this.saveDefaultConfig();
         config = getConfig();
-        this.updateConfig();
+
+        if (!this.hasSupportedConfigVersion()) {
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
         ConfigurationHelper.load();
         // --------------------------
 
@@ -240,133 +251,27 @@ public final class Terraplusminus extends JavaPlugin implements Listener {
         Bukkit.getServer().shutdown();
     }
 
-    /**
-     * @deprecated We'll rework the whole config system in a future update to make it more robust. Maybe switching to configurate.
-     * The current system has some flaws like only can update one config version at a time and is generally hard to maintain.
-     */
-    @Deprecated(since = "1.6.0", forRemoval = true)
-    private void updateConfig() {
-        PluginConfigManipulator manipulator = new PluginConfigManipulator(this);
+    private boolean hasSupportedConfigVersion() {
+        double configVersion = getConfig().getDouble(Properties.CONFIG_VERSION);
 
-        double configVersion = getConfig().getDouble("config_version");
+        if (configVersion < SUPPORTED_CONFIG_VERSION) {
+            this.getComponentLogger().error(
+                    "Unsupported config version {} in {}. Support for (very) old config versions was dropped. Please delete the config and restart/reload the server, so a fresh one can be generated.",
+                    configVersion,
+                    this.getDataPath().resolve("config.yml")
+            );
+            return false;
+        }
 
-        if (configVersion == 0.0) {  // That's the default value if the field was not set at all in the YAML
-            this.getComponentLogger().error("Old config detected. Please delete and restart/reload.");
-        }
-        if (configVersion == 1.0) {
-            String passthroughTpll = getConfig().getString(Properties.PASSTHROUGH_TPLL, "");
-            int y = (int) getConfig().getDouble("terrain_offset");
-            getConfig().set("terrain_offset.x", 0);
-            getConfig().set("terrain_offset.y", y);
-            getConfig().set("terrain_offset.z", 0);
-            getConfig().set("config_version", 1.1);
-            this.saveConfig();
-            manipulator.addLineAbove(
-                    "terrain_offset",
-                    """
-                    
-                    # Generation -------------------------------------------
-                    # Offset your section which fits into the world."""
+        if (configVersion > SUPPORTED_CONFIG_VERSION) {
+            this.getComponentLogger().warn(
+                    "Config version {} is newer than the supported version {}. Was the plugin downgraded?",
+                    configVersion,
+                    SUPPORTED_CONFIG_VERSION
             );
-            manipulator.deleteLine("# Passthrough tpll");
-            manipulator.deleteLine("passthrough_tpll");
-            manipulator.addLineAbove(
-                    "# Generation",
-                    """
-                    # Passthrough tpll to other bukkit plugins. It will not passthrough when it's empty. Type in the name of your plugin. E.g. Your plugin name is vanillatpll you set passthrough_tpll: 'vanillatpll'
-                    passthrough_tpll: 'PASSTHROUGH_TPLL'
-                    
-                    
-                    """.replace("PASSTHROUGH_TPLL", passthroughTpll)); //Fixes empty config entry from passthrough_tpll
+        }
 
-        }
-        if (configVersion == 1.1) {
-            getConfig().set("config_version", 1.2);
-            this.saveConfig();
-            manipulator.addLineAbove(
-                    "# If disabled, tree generation is turned off.",
-                    """
-                    # Linked servers ---------------------------------------
-                    # If the height limit on this server is not enough, other servers can be linked to generate higher or lower sections.
-                    linked_servers:
-                      enabled: false
-                      servers:
-                        - another_server                 # e.g. this server has a datapack to extend height to 2032. it covers the height section (-2032) - (-1) m a.s.l. it has a y-offset of -2032.
-                        - current_server                 # e.g. this server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.
-                        - another_server                 # e.g. this server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032
-                    """
-            );
-        }
-        if (configVersion == 1.2) {
-            getConfig().set("config_version", 1.3);
-            this.saveConfig();
-            manipulator.deleteLine("# Linked servers -------------------------------------");
-            manipulator.deleteLine("# If the height limit on this server is not enough, other servers can be linked to generate higher or lower sections");
-            manipulator.deleteLine("linked_servers:");
-            manipulator.deleteLine("  enabled: false");
-            manipulator.deleteLine("  servers:");
-            manipulator.deleteLine("- another_server");
-            manipulator.deleteLine("- current_server");
-            manipulator.addLineAbove(
-                    "# If disabled, tree generation is turned off.",
-                    """
-                    # Linked worlds ---------------------------------------
-                    # If the height limit in this world/server is not enough, other worlds/servers can be linked to generate higher or lower sections
-                    linked_worlds:
-                      enabled: false
-                      method: 'SERVER'                         # 'SERVER' or 'MULTIVERSE'
-                      # if method = MULTIVERSE -> world_name, y-offset
-                      worlds:
-                        - another_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section (-2032) - (-1) m a.s.l. it has a y-offset of -2032.
-                        - current_world/server                 # do not change! e.g. this world/server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.
-                        - another_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032
-                    """
-            );
-        }
-        if (configVersion == 1.3) {
-            getConfig().set("config_version", 1.4);
-            this.saveConfig();
-            manipulator.addLineBelow(
-                    "prefix:",
-                    """
-                    
-                    # If disabled, the plugin will log every fetched data to the console
-                    reduced_console_messages: true"""
-            );
-            manipulator.deleteLine("- another_world/server");
-            manipulator.deleteLine("- current_world/server");
-            manipulator.addLineAbove(
-                    "# If disabled, tree generation is turned off.",
-                        """
-                        - name: another_world/server          # e.g. this world/server has a datapack to extend height to 2032. it covers the height section (-2032) - (-1) m a.s.l. it has a y-offset of -2032.
-                          offset: 2032
-                        - name: current_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section 0 - 2032 m a.s.l.
-                          offset: 0
-                        - name: another_world/server                 # e.g. this world/server has a datapack to extend height to 2032. it covers the height section 2033 - 4064 m a.s.l. it has a y-offset of 2032
-                          offset: -2032
-                    
-                    """);
-        }
-        if (configVersion == 1.4) {
-            getConfig().set("config_version", 1.5);
-            this.saveConfig();
-            boolean differentBiomes = getConfig().getBoolean("different_biomes");
-            manipulator.deleteLine("# The biomes will be generated with https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification.");
-            manipulator.deleteLine("# If turned off, everything will be plains biome.");
-            manipulator.deleteLine("different_biomes:");
-            manipulator.addLineAbove(
-                    "# Customize the material, the blocks will be generated with.",
-                    """
-                    biomes:
-                      # If 'use_dataset' is enabled, biomes will be generated based on: https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification.
-                      use_dataset: USE_DATASET
-                      # If 'use_dataset' is disabled, this biome will be used everywhere instead (if 'generate_trees' is also enabled -> oak and birch).
-                      # Possible values found in "Resource location" on: https://minecraft.wiki/w/Biome#Biome_IDs (use with namespace e.g. minecraft:plains)
-                      biome: minecraft:plains
-                    
-                    """.replace("USE_DATASET", "" + differentBiomes)
-            );
-        }
+        return true;
     }
 
     private void registerCommands() {
