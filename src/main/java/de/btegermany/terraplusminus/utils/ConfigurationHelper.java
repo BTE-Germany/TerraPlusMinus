@@ -5,34 +5,50 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class ConfigurationHelper {
+
+    private static final Set<String> PLACEHOLDER_NAMES =
+            Set.of("world/server", "another_world/server", "current_world/server");
+
+    private static volatile List<LinkedWorld> worlds = List.of();
 
     private ConfigurationHelper() {
         throw new IllegalStateException();
     }
 
-    public static List<LinkedWorld> convertList(@NonNull List<Map<?, ?>> originalList) {
+    private static List<LinkedWorld> convertList(@NonNull List<Map<?, ?>> originalList) {
         return originalList.stream()
                 .map(ConfigurationHelper::convertMapToLinkedWorld)
-                .filter(world -> !world.getWorldName().equalsIgnoreCase("another_world/server") || !world.getWorldName().equalsIgnoreCase("current_world/server"))
+                .filter(Objects::nonNull)
+                .filter(world -> !PLACEHOLDER_NAMES.contains(world.getWorldName().toLowerCase(Locale.ROOT)))
                 .collect(Collectors.toList());
     }
 
-    private static @NonNull LinkedWorld convertMapToLinkedWorld(@NonNull Map<?, ?> originalMap) {
-        String worldName = originalMap.get("name").toString();
-        int offset = (Integer) originalMap.get("offset");
-        return new LinkedWorld(worldName, offset);
+    private static @Nullable LinkedWorld convertMapToLinkedWorld(@NonNull Map<?, ?> originalMap) {
+        Object name = originalMap.get("name");
+        Object offset = originalMap.get("offset");
+        if (name == null || !(offset instanceof Number number)) {
+            Terraplusminus.instance.getComponentLogger().warn("Skipping invalid linked world entry {} (requires 'name' and numeric 'offset')", originalMap);
+            return null;
+        }
+        return new LinkedWorld(name.toString(), number.intValue());
     }
 
     /**
-     * Gets the linked worlds list from config dynamically.
-     * This ensures the list is always up-to-date after config reloads.
+     * Parses the linked worlds list from the config.
      */
+    public static void load() {
+        worlds = List.copyOf(convertList(Terraplusminus.instance.getConfig().getMapList("linked_worlds.worlds")));
+    }
+
     private static List<LinkedWorld> getWorldsList() {
-        return convertList(Terraplusminus.instance.getConfig().getMapList("linked_worlds.worlds"));
+        return worlds;
     }
 
     public static @Nullable LinkedWorld getNextServerName(String currentWorldName) {

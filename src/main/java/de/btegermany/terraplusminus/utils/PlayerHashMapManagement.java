@@ -1,31 +1,35 @@
 package de.btegermany.terraplusminus.utils;
 
-import org.bukkit.entity.Player;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
-import java.util.HashMap;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 public class PlayerHashMapManagement {
 
-    HashMap<Player, String> players;
+    /**
+     * Covers any realistic server switch. Whoever does not arrive within it never will, and replaying
+     * their teleport on some later join would drop them somewhere they no longer expect.
+     */
+    private static final long PENDING_TELEPORT_TIMEOUT_SECONDS = 30;
 
-    public PlayerHashMapManagement() {
-        players = new HashMap<>();
+    private final Cache<UUID, String> players = CacheBuilder.newBuilder()
+            .expireAfterWrite(PENDING_TELEPORT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .build();
+
+    public void addPlayer(@NonNull UUID playerId, String coordinates) {
+        players.put(playerId, coordinates);
     }
 
-    public void addPlayer(Player player, String coordinates) {
-        players.put(player, coordinates);
+    public void removePlayer(@NonNull UUID playerId) {
+        players.invalidate(playerId);
     }
 
-    public void removePlayer(Player player) {
-        players.remove(player);
-    }
-
-    public boolean containsPlayer(Player player) {
-        return players.containsKey(player);
-    }
-
-    public String getCoordinates(Player player) {
-        return players.get(player);
+    public @Nullable String getCoordinates(@NonNull UUID playerId) {
+        return players.getIfPresent(playerId);
     }
 
 }
